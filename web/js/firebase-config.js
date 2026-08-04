@@ -1,11 +1,9 @@
-// Filled from `firebase apps:sdkconfig web` after the project is linked.
-// These values are public identifiers, not secrets — security comes from
-// Auth + Firestore rules + App Check.
+// Public identifiers (not secrets) — security comes from Auth + Firestore rules + App Check.
 export const firebaseConfig = {
-  apiKey: "",
-  authDomain: "",
-  projectId: "",
-  storageBucket: "",
-  messagingSenderId: "",
-  appId: "",
+  apiKey: "AIzaSyD_jXQRnv5MnTrrvoA08DcJW0S1VwcIBUQ",
+  authDomain: "useclaimright.firebaseapp.com",
+  projectId: "useclaimright",
+  storageBucket: "useclaimright.firebasestorage.app",
+  messagingSenderId: "223366324716",
+  appId: "1:223366324716:web:c000d277d80af403ae60c9",
 };
