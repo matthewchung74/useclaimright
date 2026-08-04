@@ -1,5 +1,13 @@
 # UseClaimRight — setup & verification checklist
 
+> **Status 2026-08-03:** Steps 1, 2, 4, 6 DONE. New project `useclaimright` under
+> the owner's address; billing linked to the existing "Firebase Payment" account;
+> $25/mo budget with 50/90/100% alerts; GEMINI_API_KEY secret set (validated,
+> `gemini-3.6-flash` confirmed live); hosting + rules + analyze Function deployed to
+> https://useclaimright.web.app with public invoker + in-function auth verified.
+> REMAINING: step 3 (Auth providers — Console), step 5 (GoatCounter), step 7 (App Check),
+> custom-domain reconnect (Namecheap), and the verification runs below.
+
 Everything in the codebase is done; these are the steps that need your accounts/consoles,
 in order. Items marked ☐ are yours; ▶ are commands I (or you) can run once the step above is done.
 
