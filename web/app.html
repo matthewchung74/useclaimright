@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UseClaimRight — Bill Audit</title>
+<style>
+  :root{
+    --ink:#0f2f3d; --ink-soft:#3f5a66; --bg:#f4f8f9; --card:#ffffff;
+    --brand:#0d8a8a; --brand-dark:#0a6d6d; --accent:#e8f4f2; --line:#dbe7e9;
+    --gold:#c98a2b; --good:#0a8a5f; --bad:#b23b3b;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    color:var(--ink);background:var(--bg);line-height:1.6;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:900px;margin:0 auto;padding:0 24px}
+  a{color:var(--brand-dark);text-decoration:none}
+  header{background:var(--card);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20}
+  .nav{display:flex;align-items:center;justify-content:space-between;height:66px}
+  .logo{font-weight:800;font-size:20px;letter-spacing:-.4px;color:var(--ink);display:flex;align-items:center;gap:9px}
+  .logo .mark{width:26px;height:26px;border-radius:7px;background:linear-gradient(135deg,var(--brand),var(--brand-dark));
+    display:inline-flex;align-items:center;justify-content:center;color:#fff;font-size:15px;font-weight:800}
+  .btn{display:inline-block;background:var(--brand);color:#fff;font-weight:700;padding:12px 22px;border-radius:10px;
+    border:none;cursor:pointer;font-size:15px;transition:.15s;box-shadow:0 2px 0 var(--brand-dark)}
+  .btn:hover{background:var(--brand-dark)}
+  .btn.ghost{background:transparent;color:var(--brand-dark);box-shadow:none;border:1px solid var(--line)}
+  .btn.sm{padding:8px 14px;font-size:13px}
+  main{padding:40px 0 80px}
+  section{max-width:900px;margin:0 auto;padding:0 24px}
+  h1{font-size:30px;letter-spacing:-.6px;margin-bottom:8px}
+  h2{font-size:22px;margin-bottom:8px}
+  .lead{color:var(--ink-soft);margin-bottom:24px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:28px;margin-bottom:20px}
+  .error{background:#fdf0f0;border:1px solid #ecc8c8;color:var(--bad);border-radius:10px;padding:12px 16px;margin:12px 0}
+  .banner{background:#fff8ec;border:1px solid #f0dcb0;border-radius:10px;padding:12px 16px;margin:12px 0;color:#6b5320;font-size:14px}
+  .muted{color:var(--ink-soft);font-size:14px}
+  input[type=file],input[type=email]{border:1px solid var(--line);border-radius:10px;padding:10px;width:100%;background:#fff;font-size:14px}
+  label{font-weight:700;font-size:14px;display:block;margin:14px 0 6px}
+  .user-bar{display:none;align-items:center;gap:12px;font-size:14px;color:var(--ink-soft)}
+  body.authed .user-bar{display:flex}
+  /* review */
+  .panes{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:14px 0}
+  .pane{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px;height:420px;overflow:auto;
+    white-space:pre-wrap;font-family:ui-monospace,Menlo,monospace;font-size:12.5px;line-height:1.5}
+  .pane-label{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--ink-soft);margin-bottom:6px}
+  .tabs{display:flex;gap:8px;margin-bottom:10px}
+  .tabs button{border:1px solid var(--line);background:#fff;border-radius:8px;padding:8px 16px;font-weight:700;cursor:pointer}
+  .tabs button.active{background:var(--accent);border-color:var(--brand);color:var(--brand-dark)}
+  /* report */
+  .totals{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin:16px 0}
+  .tot{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px}
+  .tot span{display:block;font-size:12px;color:var(--ink-soft)}
+  .tot b{font-size:20px}
+  .tot.hi{border-color:var(--gold);background:#fffdf6}
+  .finding{border:1px solid var(--line);border-left:4px solid var(--brand);border-radius:10px;padding:14px;margin:10px 0;background:#fff}
+  .finding.low{border-left-color:#c9c9c9}
+  .finding.medium{border-left-color:var(--gold)}
+  .f-head{display:flex;justify-content:space-between;align-items:center}
+  .conf{font-size:12px;color:var(--ink-soft)}
+  .count{font-size:13px;background:var(--accent);color:var(--brand-dark);border-radius:12px;padding:2px 10px;vertical-align:middle}
+  .lineref{font-size:12px;color:var(--ink-soft)}
+  table{width:100%;border-collapse:collapse;font-size:13.5px;margin-top:10px}
+  th,td{border-bottom:1px solid var(--line);padding:8px 10px;text-align:left}
+  .disclaimer{color:#6f8a91;font-size:12.5px;line-height:1.5;margin-top:24px}
+  .history-item{display:flex;gap:8px;margin:8px 0}
+  .history-item .open{flex:1;text-align:left;background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px 16px;cursor:pointer;font-size:14px}
+  .history-item .open:hover{border-color:var(--brand)}
+  .history-item .del{border:1px solid var(--line);background:#fff;border-radius:10px;width:44px;cursor:pointer;color:var(--bad)}
+  .spinner{width:36px;height:36px;border:4px solid var(--accent);border-top-color:var(--brand);border-radius:50%;
+    animation:spin 1s linear infinite;margin:30px auto}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  @media(max-width:720px){.panes{grid-template-columns:1fr}}
+  @media print{
+    header,.no-print,.banner{display:none !important}
+    body{background:#fff}
+    main{padding:0}
+    .card{border:none;padding:0}
+    @page{size:letter;margin:0.75in}
+  }
+</style>
+<script data-goatcounter="https://YOURCODE.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+</head>
+<body>
+
+<header class="no-print">
+  <div class="wrap nav">
+    <a class="logo" href="/"><span class="mark">✓</span>UseClaimRight</a>
+    <div class="user-bar"><span id="user-email"></span><button id="signout" class="btn ghost sm">Sign out</button></div>
+  </div>
+</header>
+
+<main>
+  <section id="signin" hidden>
+    <div class="card" style="max-width:420px;margin:40px auto;text-align:center">
+      <h1>Sign in</h1>
+      <p class="lead">Your audits are private to your account.</p>
+      <button id="google-signin" class="btn" style="width:100%">Continue with Google</button>
+      <label for="email-input" style="text-align:left">Or get a sign-in link by email</label>
+      <input id="email-input" type="email" placeholder="you@example.com">
+      <button id="email-signin" class="btn ghost" style="width:100%;margin-top:10px">Email me a sign-in link</button>
+      <p id="email-sent" class="muted" hidden>Link sent — check your inbox on this device.</p>
+      <div id="signin-error" class="error" hidden></div>
+    </div>
+  </section>
+
+  <section id="upload" hidden>
+    <h1>Audit a medical bill</h1>
+    <p class="lead">Upload your itemized bill and the matching insurance EOB. Personal details are removed
+      <b>on your device</b> before anything is analyzed — you'll review exactly what gets sent.</p>
+    <div class="card">
+      <p class="banner" style="margin-top:0">📄 <b>Best results with digital PDFs</b> downloaded from your insurance
+        or hospital portal. Photos and scanned copies work too, but reading accuracy may suffer — check the
+        review screen carefully.</p>
+      <label for="bill-file">Itemized bill (PDF or photo)</label>
+      <input id="bill-file" type="file" accept="application/pdf,image/*">
+      <label for="eob-file">Explanation of Benefits — EOB (PDF or photo)</label>
+      <input id="eob-file" type="file" accept="application/pdf,image/*">
+      <div id="upload-error" class="error" hidden></div>
+      <button id="run-audit" class="btn" style="margin-top:18px">Prepare audit →</button>
+    </div>
+    <h2>Past audits</h2>
+    <div id="history-list"></div>
+  </section>
+
+  <section id="processing" hidden>
+    <div class="card" style="text-align:center">
+      <div class="spinner"></div>
+      <p id="processing-status">Working…</p>
+      <p class="muted">Everything up to analysis happens in your browser.</p>
+    </div>
+  </section>
+
+  <section id="review" hidden>
+    <h1>Check the redaction</h1>
+    <p class="lead">Left: what we read from your document (stays on your device). Right: what will be analyzed.
+      Select any text on the right that should be hidden and press “Redact selection”.</p>
+    <div id="ocr-banner" class="banner" hidden>⚠️ <b>This looks like a scan or photo</b> — we've read it with OCR.
+      Numbers and codes may contain errors; please verify carefully below.</div>
+    <div class="tabs">
+      <button id="tab-bill" class="active">Bill</button>
+      <button id="tab-eob">EOB</button>
+    </div>
+    <div class="panes">
+      <div><div class="pane-label">Original (never leaves this device)</div><div id="original-pane" class="pane"></div></div>
+      <div><div class="pane-label">Redacted (this is what gets analyzed)</div><div id="redacted-pane" class="pane"></div></div>
+    </div>
+    <button id="redact-selection" class="btn ghost">Redact selection</button>
+    <div style="margin-top:18px;display:flex;gap:10px">
+      <button id="confirm-review" class="btn">Looks right — analyze</button>
+      <button id="back-to-upload" class="btn ghost">Start over</button>
+    </div>
+    <p class="muted" style="margin-top:10px">When you press analyze, the original text is discarded.
+      Only the redacted version is transmitted and stored.</p>
+  </section>
+
+  <section id="report" hidden>
+    <div class="card">
+      <h1>Audit findings</h1>
+      <div id="report-caveat" class="banner" hidden>⚠️ Source document was a scan; verify quoted amounts
+        against your original before disputing.</div>
+      <div id="report-totals" class="totals"></div>
+      <div id="report-findings"></div>
+      <h2 style="margin-top:24px">Charge occurrence table</h2>
+      <table id="report-occurrences"></table>
+      <p class="disclaimer">UseClaimRight provides self-help assistance, not legal or medical advice. Findings are
+        generated by automated analysis of the documents you provided and may contain errors — verify every quoted
+        amount against your original documents before disputing a charge. Results are not guaranteed.</p>
+      <div class="no-print" style="margin-top:18px;display:flex;gap:10px">
+        <button id="print-report" class="btn">Print / save PDF</button>
+        <button id="new-audit" class="btn ghost">New audit</button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script type="module" src="/js/app.js"></script>
+</body>
+</html>

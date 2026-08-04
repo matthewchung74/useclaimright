@@ -1,0 +1,18 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Audits are written exclusively by the analyze Function via the Admin SDK
+    // (which bypasses these rules). Clients may only read and delete their own.
+    match /users/{uid}/audits/{auditId} {
+      allow read, delete: if request.auth != null && request.auth.uid == uid;
+      allow create, update: if false;
+    }
+    // Rate-limit counters are Function-managed; clients never touch them.
+    match /users/{uid}/meta/{docId} {
+      allow read, write: if false;
+    }
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
