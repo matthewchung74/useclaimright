@@ -7,6 +7,7 @@ import {
   getFirestore, collection, query, orderBy, getDocs, doc, getDoc, deleteDoc,
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-functions.js";
+import { getAnalytics, logEvent } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-analytics.js";
 import { firebaseConfig } from "./firebase-config.js";
 import { extractText } from "./extract.js";
 import { loadNer, deidentify, createRegistry, manualRedact } from "./deid.js";
@@ -28,6 +29,9 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 const functions = getFunctions(app, "us-central1");
 const analyzeFn = httpsCallable(functions, "analyze", { timeout: 300_000 });
+let analytics = null;
+try { analytics = getAnalytics(app); } catch { /* blocked or unsupported — fine */ }
+const track = (name) => { try { analytics && logEvent(analytics, name); } catch {} };
 
 const OCR_CONFIDENCE_THRESHOLD = 75;
 
@@ -129,6 +133,7 @@ $("run-audit").onclick = async () => {
 
     renderReview();
     show("review");
+    track("audit_prepared");
   } catch (e) {
     console.error(e);
     setError("upload-error", `Could not process the documents: ${e.message}`);
@@ -189,6 +194,7 @@ $("confirm-review").onclick = async () => {
     const { data } = await analyzeFn(payload);
     renderReport(data, { ocrLow, model: data.model });
     show("report");
+    track("audit_completed");
     loadHistory();
   } catch (e) {
     console.error(e);

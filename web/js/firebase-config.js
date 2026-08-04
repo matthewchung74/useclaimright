@@ -6,4 +6,5 @@ export const firebaseConfig = {
   storageBucket: "useclaimright.firebasestorage.app",
   messagingSenderId: "223366324716",
   appId: "1:223366324716:web:c000d277d80af403ae60c9",
+  measurementId: "G-WYHQ778H14",
 };
