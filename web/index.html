@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>UseClaimRight — Fight your medical bill. Only pay if we win.</title>
+<title>UseClaimRight — Free medical bill audit. Your documents never leave your device un-redacted.</title>
 <style>
   :root{
     --ink:#0f2f3d; --ink-soft:#3f5a66; --bg:#f4f8f9; --card:#ffffff;
@@ -31,9 +31,9 @@
   .hero{padding:76px 0 60px;text-align:center}
   .eyebrow{display:inline-block;background:var(--accent);color:var(--brand-dark);font-weight:700;font-size:13px;
     padding:6px 14px;border-radius:30px;margin-bottom:22px;letter-spacing:.2px}
-  h1{font-size:47px;line-height:1.08;letter-spacing:-1.2px;max-width:760px;margin:0 auto 20px;font-weight:800}
+  h1{font-size:47px;line-height:1.08;letter-spacing:-1.2px;max-width:800px;margin:0 auto 20px;font-weight:800}
   h1 .hl{color:var(--brand-dark)}
-  .sub{font-size:20px;color:var(--ink-soft);max-width:600px;margin:0 auto 32px}
+  .sub{font-size:20px;color:var(--ink-soft);max-width:640px;margin:0 auto 32px}
   .trust-row{display:flex;gap:26px;justify-content:center;flex-wrap:wrap;margin-top:26px;color:var(--ink-soft);font-size:14px;font-weight:600}
   .trust-row span{display:inline-flex;align-items:center;gap:7px}
   .check{color:var(--good);font-weight:800}
@@ -45,7 +45,7 @@
   /* Sections */
   section.block{padding:64px 0}
   h2{font-size:31px;letter-spacing:-.6px;text-align:center;margin-bottom:12px;font-weight:800}
-  .lead{text-align:center;color:var(--ink-soft);max-width:640px;margin:0 auto 44px;font-size:17px}
+  .lead{text-align:center;color:var(--ink-soft);max-width:680px;margin:0 auto 44px;font-size:17px}
 
   /* Steps */
   .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
@@ -56,8 +56,8 @@
   .step p{color:var(--ink-soft);font-size:15px}
 
   /* Compare */
-  .compare{background:var(--card);border:1px solid var(--line);border-radius:18px;overflow:hidden;max-width:760px;margin:0 auto}
-  .compare .row{display:grid;grid-template-columns:1.4fr 1fr 1fr}
+  .compare{background:var(--card);border:1px solid var(--line);border-radius:18px;overflow:hidden;max-width:820px;margin:0 auto}
+  .compare .row{display:grid;grid-template-columns:1.6fr 1fr 1fr}
   .compare .row>div{padding:15px 18px;border-bottom:1px solid var(--line);font-size:15px}
   .compare .head>div{font-weight:800;background:#fbfdfd}
   .compare .head .us{background:var(--accent);color:var(--brand-dark)}
@@ -68,18 +68,16 @@
   .compare .row:last-child>div{border-bottom:none}
 
   /* Pricing */
-  .price-cards{display:grid;grid-template-columns:1fr 1fr;gap:22px;max-width:720px;margin:0 auto}
-  .pc{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:30px}
-  .pc.hi{border:2px solid var(--brand);position:relative}
+  .price-cards{display:grid;grid-template-columns:1fr;gap:22px;max-width:420px;margin:0 auto}
+  .pc{background:var(--card);border:2px solid var(--brand);border-radius:16px;padding:30px;position:relative}
   .pc h3{font-size:19px;margin-bottom:4px}
   .pc .amt{font-size:38px;font-weight:800;letter-spacing:-1px;margin:8px 0}
-  .pc .amt small{font-size:16px;color:var(--ink-soft);font-weight:600}
   .pc p{color:var(--ink-soft);font-size:15px;margin-bottom:6px}
   .tag{position:absolute;top:-12px;right:20px;background:var(--gold);color:#fff;font-size:12px;font-weight:800;
     padding:4px 12px;border-radius:20px}
 
   /* CTA */
-  .cta{background:linear-gradient(135deg,var(--brand-dark),#0a5555);color:#fff;text-align:center;padding:64px 0;border-radius:0}
+  .cta{background:linear-gradient(135deg,var(--brand-dark),#0a5555);color:#fff;text-align:center;padding:64px 0}
   .cta h2{color:#fff}
   .cta p{color:#cfeeee;max-width:520px;margin:0 auto 28px;font-size:17px}
   .cta .btn{background:#fff;color:var(--brand-dark);box-shadow:0 2px 0 #b9d9d9}
@@ -93,7 +91,7 @@
   .disclaimer{max-width:1040px;margin:20px auto 0;padding:0 24px;color:#6f8a91;font-size:12.5px;line-height:1.5}
 
   @media(max-width:760px){
-    h1{font-size:34px}.steps{grid-template-columns:1fr}.price-cards{grid-template-columns:1fr}
+    h1{font-size:34px}.steps{grid-template-columns:1fr}
     .compare .row{grid-template-columns:1.3fr .8fr .8fr}.sub{font-size:18px}
   }
 </style>
@@ -118,74 +116,68 @@
 </header>
 
 <div class="hero wrap">
-  <span class="eyebrow">Medical bills &amp; insurance denials</span>
-  <h1>ChatGPT drafts one letter. <span class="hl">We win the whole fight.</span></h1>
-  <p class="sub">Send us your hospital bill and insurance paperwork. Our AI finds the overcharges and errors, builds the appeal, and fights it through — and you only pay if we save you money.</p>
-  <a href="#start" class="btn lg">See what you're overpaying — free</a>
+  <span class="eyebrow">Free medical bill audit</span>
+  <h1>AI can read your health records now. <span class="hl">Your bills aren't in them.</span></h1>
+  <p class="sub">The overcharges hide in the documents only you have — the itemized bill and the insurance EOB. Upload both, and our AI cross-checks every line. Your personal details are removed <b>on your device</b> before anything is analyzed.</p>
+  <a href="/app" class="btn lg">Audit my bill — free</a>
   <div class="trust-row">
-    <span><span class="check">✓</span> Free to see your findings</span>
-    <span><span class="check">✓</span> Only pay if we win</span>
-    <span><span class="check">✓</span> Your data encrypted &amp; never sold</span>
+    <span><span class="check">✓</span> Free while in beta</span>
+    <span><span class="check">✓</span> Un-redacted documents never leave your device</span>
+    <span><span class="check">✓</span> Delete your data anytime</span>
   </div>
 </div>
 
 <div class="proof">
-  <div class="wrap">Patients are already using AI to slash bills — one man cut a <b>$195,000</b> hospital bill down to <b>$37,000</b>. We do it end-to-end, so you don't have to.</div>
+  <div class="wrap">One patient cut a <b>$195,000</b> hospital bill down to <b>$37,000</b> by challenging the charges. The hard part is the line-by-line cross-check against your EOB — <b>our tool does that part in minutes.</b></div>
 </div>
 
 <section class="block wrap" id="how">
   <h2>How it works</h2>
-  <p class="lead">No forms to figure out, no jargon. You upload, we do the rest.</p>
+  <p class="lead">Three steps, a few minutes, nothing to install.</p>
   <div class="steps">
-    <div class="step"><div class="n">1</div><h3>Upload your documents</h3><p>Your itemized bill, your insurance EOB, and any denial letter. Two minutes. Blank out your SSN and date of birth first.</p></div>
-    <div class="step"><div class="n">2</div><h3>We reconcile all three</h3><p>Our AI cross-checks what you were charged, what insurance paid, and what your policy actually covers — catching overcharges, duplicate charges, and appealable denials.</p></div>
-    <div class="step"><div class="n">3</div><h3>We fight it through</h3><p>We prepare and pursue the appeal, track the deadlines, and escalate if they deny — until the money comes back. You approve every step.</p></div>
+    <div class="step"><div class="n">1</div><h3>Upload bill + EOB</h3><p>Your itemized bill and the matching Explanation of Benefits. Digital PDFs from your portals work best; photos and scans work too.</p></div>
+    <div class="step"><div class="n">2</div><h3>Approve the redaction</h3><p>Names, dates of birth, record numbers, and other identifiers are replaced with placeholders — in your browser, on your device. You see and approve exactly what gets analyzed. The original never leaves your machine.</p></div>
+    <div class="step"><div class="n">3</div><h3>Read your findings</h3><p>Duplicate charges, billing above the EOB allowed amount, coding errors, cost-share math — each finding with quoted evidence and a dollar amount. Or a clean result: your bill checks out.</p></div>
   </div>
 </section>
 
 <section class="block" style="background:var(--card);border-top:1px solid var(--line);border-bottom:1px solid var(--line)">
   <div class="wrap">
-    <h2>Why not just use ChatGPT yourself?</h2>
-    <p class="lead">You can — for the first draft. But a chatbot stops where the real work begins.</p>
+    <h2>Why not just use ChatGPT?</h2>
+    <p class="lead">Chatbots are great — but they can't see your bills. Even ChatGPT's new health integrations connect to <i>medical records</i>, not billing systems. And pasting an un-redacted bill into a chatbot sends your identity along with it.</p>
     <div class="compare">
       <div class="row head"><div>&nbsp;</div><div>ChatGPT</div><div class="us">UseClaimRight</div></div>
-      <div class="row"><div>Drafts an appeal letter</div><div class="yes">✓</div><div class="us"><span class="yes">✓</span></div></div>
-      <div class="row"><div>Reconciles bill + EOB + your policy</div><div class="no">—</div><div class="us"><span class="yes">✓</span></div></div>
-      <div class="row"><div>Uses your real policy &amp; correct billing codes</div><div class="no">—</div><div class="us"><span class="yes">✓</span></div></div>
-      <div class="row"><div>Files it and tracks the deadline</div><div class="no">—</div><div class="us"><span class="yes">✓</span></div></div>
-      <div class="row"><div>Resubmits &amp; escalates when denied</div><div class="no">—</div><div class="us"><span class="yes">✓</span></div></div>
-      <div class="row"><div>You only pay if it works</div><div class="no">—</div><div class="us"><span class="yes">✓</span></div></div>
+      <div class="row"><div>Answers questions about text you paste in</div><div class="yes">✓</div><div class="us"><span class="yes">✓</span></div></div>
+      <div class="row"><div>Connects to your bills (health-record integrations don't include billing)</div><div class="no">—</div><div class="us"><span class="yes">✓</span></div></div>
+      <div class="row"><div>Cross-checks the bill against your EOB, line by line</div><div class="no">—</div><div class="us"><span class="yes">✓</span></div></div>
+      <div class="row"><div>Removes your identity before analysis — on your device</div><div class="no">—</div><div class="us"><span class="yes">✓</span></div></div>
+      <div class="row"><div>Backs every finding with verbatim quotes from your documents</div><div class="no">—</div><div class="us"><span class="yes">✓</span></div></div>
+      <div class="row"><div>Saves your audit history — deletable anytime</div><div class="no">—</div><div class="us"><span class="yes">✓</span></div></div>
     </div>
   </div>
 </section>
 
 <section class="block wrap" id="pricing">
-  <h2>Simple, fair pricing</h2>
-  <p class="lead">Seeing what's wrong is always free. You decide what to do next.</p>
+  <h2>Pricing</h2>
+  <p class="lead">Simple: it's free.</p>
   <div class="price-cards">
     <div class="pc">
-      <h3>Free Audit</h3>
+      <span class="tag">Beta</span>
+      <h3>Full audit</h3>
       <div class="amt">$0</div>
-      <p>Upload your bill and EOB. We show you every overcharge, error, and appealable denial we find — and the dollar amount at stake.</p>
-      <p style="color:var(--good);font-weight:700">No card required.</p>
-    </div>
-    <div class="pc hi">
-      <span class="tag">Most popular</span>
-      <h3>We Handle It</h3>
-      <div class="amt">$39 <small>flat</small> <span style="font-size:15px;color:var(--ink-soft)">or 20% of savings</span></div>
-      <p>We prepare the full appeal + dispute packet, file it, and pursue it through every level until you get a result. Choose a flat fee or pay only a share of what we recover.</p>
-      <p style="color:var(--good);font-weight:700">No savings, no fee.</p>
+      <p>Upload your bill and EOB, get every finding with evidence and dollar amounts. Up to 10 audits a day while we're in beta.</p>
+      <p style="color:var(--good);font-weight:700">No card. No catch.</p>
     </div>
   </div>
-  <div style="text-align:center;margin-top:36px"><a href="#start" class="btn lg">Start my free audit</a></div>
+  <div style="text-align:center;margin-top:36px"><a href="/app" class="btn lg">Start my free audit</a></div>
 </section>
 
 <section class="cta" id="start">
   <div class="wrap">
-    <h2>Find out what you're overpaying</h2>
-    <p>Upload your bill and insurance paperwork. We'll email you what we find — free, no obligation.</p>
-    <a href="mailto:hello@useclaimright.com?subject=Free%20bill%20audit%20request&amp;body=Hi%20%E2%80%94%20I'd%20like%20a%20free%20audit.%20I'll%20attach%20my%20itemized%20bill%20and%20insurance%20EOB%20(SSN%2FDOB%20blanked%20out)." class="btn lg">Email us your bill &amp; get a free audit</a>
-    <div class="fine">Encrypted upload · We never sell your data · You stay in control of every filing</div>
+    <h2>See what your bill actually says</h2>
+    <p>Most people never check. The ones who do are often glad they did.</p>
+    <a href="/app" class="btn lg">Audit my bill — free</a>
+    <div class="fine">On-device redaction · We never sell your data · Delete your audits anytime</div>
   </div>
 </section>
 
@@ -193,13 +185,11 @@
   <div class="wrap f">
     <div class="logo" style="color:#fff"><span class="mark">✓</span>UseClaimRight</div>
     <div>
-      <a href="privacy.html">Privacy Policy</a> &nbsp;·&nbsp;
-      <a href="mailto:hello@useclaimright.com">hello@useclaimright.com</a>
+      <a href="privacy.html">Privacy Policy</a>
     </div>
   </div>
-  <p class="disclaimer">UseClaimRight helps you prepare and pursue medical-billing disputes and insurance appeals on a self-help basis. We are not a law firm, do not provide legal advice, and do not represent you in legal proceedings. We are not a licensed public adjuster or insurance representative. You review and authorize all documents before they are filed. Results vary and are not guaranteed.</p>
+  <p class="disclaimer">UseClaimRight is a self-help tool that analyzes the documents you provide. We are not a law firm, do not provide legal or medical advice, and do not represent you in disputes or appeals. Findings are generated by automated analysis and may contain errors — verify every quoted amount against your original documents before disputing a charge. Results vary and are not guaranteed.</p>
 </footer>
 
 </body>
 </html>
-
