@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><style>
+  body{font-family:Arial,Helvetica,sans-serif;color:#111;margin:40px;font-size:13px}
+  h1{font-size:19px;margin:0;color:#123c78}
+  .muted{color:#555}
+  .head{display:flex;justify-content:space-between;border-bottom:3px solid #123c78;padding-bottom:12px;margin-bottom:16px}
+  table{width:100%;border-collapse:collapse;margin-top:14px}
+  th,td{border-bottom:1px solid #ccc;padding:7px 8px;text-align:left;font-size:12.5px}
+  th{background:#e8eef8}
+  td.r,th.r{text-align:right}
+  .tot{font-weight:bold;background:#eef6ee}
+  .note{background:#f5f7fa;border:1px solid #ccd;padding:10px;margin-top:16px;font-size:12px}
+  .box{border:1px solid #bbb;padding:10px;margin-top:12px;width:46%}
+</style></head><body>
+<div class="head">
+  <div>
+    <h1>ACME HEALTH INSURANCE</h1>
+    <div class="muted">Explanation of Benefits — THIS IS NOT A BILL</div>
+  </div>
+  <div style="text-align:right">
+    Claim #: CLM-2026-0612-777<br>
+    Processed: 07/10/2026<br>
+    Member ID: AHX-55512345
+  </div>
+</div>
+
+<div class="box">
+  <b>Member:</b> Jane Q. Testpatient<br>
+  <b>DOB:</b> 03/14/1985<br>
+  <b>Group:</b> TESTGRP-01 &nbsp; <b>Plan:</b> Acme Silver PPO
+</div>
+
+<p><b>Provider:</b> St. Verification General Hospital<br>
+<b>Date of service:</b> 06/12/2026</p>
+
+<table>
+  <tr><th>Code</th><th>Service</th><th class="r">Billed</th><th class="r">Allowed</th><th class="r">Plan paid</th><th class="r">Your responsibility</th></tr>
+  <tr><td>80053</td><td>Comprehensive metabolic panel</td><td class="r">$145.50</td><td class="r">$41.20</td><td class="r">$32.96</td><td class="r">$8.24</td></tr>
+  <tr><td>85025</td><td>CBC with differential</td><td class="r">$89.00</td><td class="r">$22.75</td><td class="r">$18.20</td><td class="r">$4.55</td></tr>
+  <tr><td>99284</td><td>Emergency dept visit, level 4</td><td class="r">$1,250.00</td><td class="r">$620.00</td><td class="r">$496.00</td><td class="r">$124.00</td></tr>
+  <tr><td>71046</td><td>Chest X-ray, 2 views</td><td class="r">$410.00</td><td class="r">$138.50</td><td class="r">$110.80</td><td class="r">$27.70</td></tr>
+  <tr><td>J1200</td><td>Diphenhydramine inj., 50 mg</td><td class="r">$75.00</td><td class="r">$19.30</td><td class="r">$15.44</td><td class="r">$3.86</td></tr>
+  <tr class="tot"><td colspan="2">CLAIM TOTALS</td><td class="r">$1,969.50</td><td class="r">$841.75</td><td class="r">$673.40</td><td class="r">$186.35</td></tr>
+</table>
+
+<div class="note">
+  <b>What you may owe the provider: $186.35</b> (deductible $50.00 + coinsurance).
+  Amounts above the allowed amount are provider write-offs under your plan's network contract —
+  the provider may not bill you for them. If your provider bills you more than your responsibility,
+  contact member services at (800) 555-0199.
+</div>
+</body></html>
