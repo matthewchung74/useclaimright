@@ -30,10 +30,19 @@ Hard rules:
 - If the documents are unreadable or clearly not a bill/EOB, return an empty findings array and
   zeroed totals rather than guessing.`;
 
+const BILL_ONLY_NOTE = `NOTE: No EOB was provided for this audit. Audit the BILL ALONE:
+duplicate charges, unbundling, and code/description mismatches only. Do NOT invent
+any EOB comparison — every eobQuote must be an empty string, finding types
+billed_vs_allowed_mismatch / not_in_eob / cost_share_error must not appear, and set
+totals.eobAllowed and totals.patientResponsibility to 0.`;
+
 // Provider adapter contract: runAudit(redactedBill, redactedEob, opts) -> validated-shape object.
 // Swapping providers means adding a sibling file with the same signature.
 export async function runAudit(redactedBill, redactedEob, { modelId, apiKey }) {
   const ai = new GoogleGenAI({ apiKey });
+  const eobSection = redactedEob.trim()
+    ? `===== EOB =====\n${redactedEob}`
+    : BILL_ONLY_NOTE;
   const response = await ai.models.generateContent({
     model: modelId,
     contents: [
@@ -41,7 +50,7 @@ export async function runAudit(redactedBill, redactedEob, { modelId, apiKey }) {
         role: "user",
         parts: [
           {
-            text: `${AUDIT_INSTRUCTIONS}\n\n===== ITEMIZED BILL =====\n${redactedBill}\n\n===== EOB =====\n${redactedEob}`,
+            text: `${AUDIT_INSTRUCTIONS}\n\n===== ITEMIZED BILL =====\n${redactedBill}\n\n${eobSection}`,
           },
         ],
       },
