@@ -2,11 +2,13 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/fireba
 import {
   getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup,
   sendSignInLinkToEmail, isSignInWithEmailLink, signInWithEmailLink, signOut,
+  connectAuthEmulator,
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 import {
   getFirestore, collection, query, orderBy, getDocs, doc, getDoc, deleteDoc,
+  connectFirestoreEmulator,
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
-import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-functions.js";
+import { getFunctions, httpsCallable, connectFunctionsEmulator } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-functions.js";
 import { getAnalytics, logEvent } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-analytics.js";
 import { firebaseConfig } from "./firebase-config.js";
 import { extractText } from "./extract.js";
@@ -28,6 +30,12 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 const functions = getFunctions(app, "us-central1");
+// Local emulator wiring (firebase emulators:start) — dev/testing only.
+if (["localhost", "127.0.0.1"].includes(location.hostname)) {
+  connectAuthEmulator(auth, "http://localhost:9099", { disableWarnings: true });
+  connectFirestoreEmulator(db, "localhost", 8080);
+  connectFunctionsEmulator(functions, "localhost", 5001);
+}
 const analyzeFn = httpsCallable(functions, "analyze", { timeout: 300_000 });
 let analytics = null;
 try { analytics = getAnalytics(app); } catch { /* blocked or unsupported — fine */ }
@@ -93,7 +101,27 @@ function resetState() {
   };
   $("bill-file").value = "";
   $("eob-file").value = "";
+  $("bill-picked").textContent = "";
+  $("eob-picked").textContent = "";
   setError("upload-error", "");
+}
+
+// Dropzone feedback: show the picked filename; style on drag.
+for (const kind of ["bill", "eob"]) {
+  const input = $(`${kind}-file`);
+  const zone = $(`dz-${kind}`);
+  input.onchange = () => {
+    $(`${kind}-picked`).textContent = input.files[0] ? `✓ ${input.files[0].name}` : "";
+  };
+  zone.addEventListener("dragover", (e) => { e.preventDefault(); zone.classList.add("drag"); });
+  zone.addEventListener("dragleave", () => zone.classList.remove("drag"));
+  zone.addEventListener("drop", (e) => {
+    e.preventDefault(); zone.classList.remove("drag");
+    if (e.dataTransfer.files[0]) {
+      input.files = e.dataTransfer.files;
+      input.dispatchEvent(new Event("change"));
+    }
+  });
 }
 
 // ---------- Upload & processing ----------
@@ -151,10 +179,14 @@ function setStatus(msg) {
 
 // ---------- Review (double-check) ----------
 
+const tidy = (s) => (s ?? "").replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
+
 function renderReview() {
   const docState = state[state.activeDoc];
-  $("original-pane").textContent = docState.originalText;
-  $("redacted-pane").textContent = docState.redacted;
+  $("original-pane").textContent = tidy(docState.originalText);
+  // Redacted pane: placeholders rendered as visible chips for human scanning.
+  $("redacted-pane").innerHTML = escapeHtml(tidy(docState.redacted))
+    .replace(/\[([A-Z][A-Z0-9_]*_\d+)\]/g, '<span class="chip">$1</span>');
   $("tab-bill").classList.toggle("active", state.activeDoc === "bill");
   $("tab-eob").classList.toggle("active", state.activeDoc === "eob");
 }
@@ -220,15 +252,19 @@ const TYPE_LABELS = {
 
 const fmt = (n) => (typeof n === "number" ? n.toLocaleString("en-US", { style: "currency", currency: "USD" }) : "—");
 
+let lastReport = null;
+
 function renderReport(data, { ocrLow } = {}) {
   const { findings = [], totals = {}, occurrenceTable = [] } = data;
+  lastReport = { findings, totals, occurrenceTable };
+  $("email-card").hidden = true;
 
   $("report-caveat").hidden = !ocrLow;
 
   $("report-totals").innerHTML = `
     <div class="tot"><span>Billed</span><b>${fmt(totals.billed)}</b></div>
     <div class="tot"><span>EOB allowed</span><b>${fmt(totals.eobAllowed)}</b></div>
-    <div class="tot"><span>Your responsibility (per EOB)</span><b>${fmt(totals.patientResponsibility)}</b></div>
+    <div class="tot"><span>Your responsibility</span><b>${fmt(totals.patientResponsibility)}</b></div>
     <div class="tot hi"><span>Potentially at stake</span><b>${fmt(totals.totalAtStake)}</b></div>`;
 
   const byType = {};
@@ -264,6 +300,83 @@ function escapeHtml(s) {
 
 $("print-report").onclick = () => window.print();
 $("new-audit").onclick = () => { resetState(); show("upload"); };
+
+// ---------- Dispute email generator ----------
+
+const INSURER_ONLY_TYPES = new Set(["cost_share_error"]);
+
+function buildDisputeEmail({ findings, totals }) {
+  const insurerOnly = findings.length > 0 && findings.every((f) => INSURER_ONLY_TYPES.has(f.type));
+  const to = insurerOnly
+    ? "[YOUR INSURANCE COMPANY] Member Services"
+    : "[PROVIDER NAME] Billing Department";
+  const lines = [];
+  lines.push(`To: ${to}`);
+  lines.push(`From: [YOUR NAME]`);
+  lines.push(`Re: Billing review request — Account [YOUR ACCOUNT NUMBER], date of service [DATE OF SERVICE]`);
+  lines.push("");
+  lines.push("To whom it may concern,");
+  lines.push("");
+  lines.push(
+    "I have reviewed my itemized bill against the Explanation of Benefits (EOB) issued by my insurance " +
+    "plan for this claim, and I identified the following discrepancies. I am requesting a written, " +
+    "line-by-line review and a corrected statement before making further payment."
+  );
+  findings.forEach((f, i) => {
+    lines.push("");
+    lines.push(`${i + 1}. ${TYPE_LABELS[f.type] || f.type} — amount in question: ${fmt(f.amountAtStake)}`);
+    lines.push(`   ${f.description}`);
+    if (f.evidence?.billQuote) lines.push(`   Bill states: "${f.evidence.billQuote}"`);
+    if (f.evidence?.eobQuote) lines.push(`   EOB states: "${f.evidence.eobQuote}"`);
+  });
+  lines.push("");
+  if (findings.some((f) => f.type === "billed_vs_allowed_mismatch")) {
+    lines.push(
+      `Per the EOB, my total member responsibility for this claim is ${fmt(totals.patientResponsibility)}. ` +
+      "Amounts above the plan's allowed amount are contractual write-offs under your network agreement and " +
+      "may not be billed to me. Please adjust the balance accordingly."
+    );
+    lines.push("");
+  }
+  lines.push("Please:");
+  lines.push("  1. Provide a written response and an itemized, corrected statement within 30 days;");
+  lines.push("  2. Place any disputed balance on hold and refrain from collections activity while this review is pending.");
+  lines.push("");
+  lines.push("Thank you,");
+  lines.push("[YOUR NAME]");
+  lines.push("[YOUR PHONE] · [YOUR EMAIL]");
+  lines.push("");
+  lines.push("— Prepared with the help of UseClaimRight (self-help tool; not legal advice).");
+  return lines.join("\n");
+}
+
+$("gen-email").onclick = () => {
+  if (!lastReport) return;
+  if (!lastReport.findings.length) {
+    $("email-text").value =
+      "Good news — this audit found no discrepancies between the bill and the EOB, so there's nothing to dispute.";
+  } else {
+    $("email-text").value = buildDisputeEmail(lastReport);
+  }
+  $("email-card").hidden = false;
+  $("email-card").scrollIntoView({ behavior: "smooth" });
+  track("dispute_email_generated");
+};
+
+$("copy-email").onclick = async () => {
+  await navigator.clipboard.writeText($("email-text").value);
+  $("copy-email").textContent = "Copied ✓";
+  setTimeout(() => ($("copy-email").textContent = "Copy"), 1500);
+};
+
+$("download-email").onclick = () => {
+  const blob = new Blob([$("email-text").value], { type: "text/plain" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "dispute-email.txt";
+  a.click();
+  URL.revokeObjectURL(a.href);
+};
 
 // ---------- History ----------
 

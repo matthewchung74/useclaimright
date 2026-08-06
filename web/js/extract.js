@@ -72,12 +72,26 @@ async function extractFromImage(file) {
   return { text, method: "ocr", confidence };
 }
 
+function htmlToText(html) {
+  const doc = new DOMParser().parseFromString(html, "text/html");
+  doc.querySelectorAll("script,style").forEach((el) => el.remove());
+  // innerText preserves visual line breaks reasonably well.
+  return doc.body.innerText.replace(/\n{3,}/g, "\n\n").trim();
+}
+
 export async function extractText(file) {
-  if (file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf")) {
+  const name = file.name.toLowerCase();
+  if (file.type === "application/pdf" || name.endsWith(".pdf")) {
     return extractFromPdf(file);
   }
   if (file.type.startsWith("image/")) {
     return extractFromImage(file);
   }
-  throw new Error(`Unsupported file type: ${file.type || file.name}`);
+  if (file.type === "text/html" || name.endsWith(".html") || name.endsWith(".htm")) {
+    return { text: htmlToText(await file.text()), method: "html", confidence: 100 };
+  }
+  if (file.type === "text/plain" || name.endsWith(".txt")) {
+    return { text: await file.text(), method: "text", confidence: 100 };
+  }
+  throw new Error(`Unsupported file type: ${file.type || file.name}. Use PDF, photo, HTML, or text.`);
 }

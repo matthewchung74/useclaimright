@@ -13,7 +13,7 @@
   *{box-sizing:border-box;margin:0;padding:0}
   body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
     color:var(--ink);background:var(--bg);line-height:1.6;-webkit-font-smoothing:antialiased}
-  .wrap{max-width:900px;margin:0 auto;padding:0 24px}
+  .wrap{max-width:960px;margin:0 auto;padding:0 24px}
   a{color:var(--brand-dark);text-decoration:none}
   header{background:var(--card);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20}
   .nav{display:flex;align-items:center;justify-content:space-between;height:66px}
@@ -26,7 +26,7 @@
   .btn.ghost{background:transparent;color:var(--brand-dark);box-shadow:none;border:1px solid var(--line)}
   .btn.sm{padding:8px 14px;font-size:13px}
   main{padding:40px 0 80px}
-  section{max-width:900px;margin:0 auto;padding:0 24px}
+  section{max-width:960px;margin:0 auto;padding:0 24px}
   h1{font-size:30px;letter-spacing:-.6px;margin-bottom:8px}
   h2{font-size:22px;margin-bottom:8px}
   .lead{color:var(--ink-soft);margin-bottom:24px}
@@ -34,22 +34,41 @@
   .error{background:#fdf0f0;border:1px solid #ecc8c8;color:var(--bad);border-radius:10px;padding:12px 16px;margin:12px 0}
   .banner{background:#fff8ec;border:1px solid #f0dcb0;border-radius:10px;padding:12px 16px;margin:12px 0;color:#6b5320;font-size:14px}
   .muted{color:var(--ink-soft);font-size:14px}
-  input[type=file],input[type=email]{border:1px solid var(--line);border-radius:10px;padding:10px;width:100%;background:#fff;font-size:14px}
+  input[type=email]{border:1px solid var(--line);border-radius:10px;padding:10px;width:100%;background:#fff;font-size:14px}
   label{font-weight:700;font-size:14px;display:block;margin:14px 0 6px}
   .user-bar{display:none;align-items:center;gap:12px;font-size:14px;color:var(--ink-soft)}
   body.authed .user-bar{display:flex}
+
+  /* Dropzones */
+  .dropzones{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:6px}
+  .dz{border:2.5px dashed var(--line);border-radius:16px;background:#fbfdfd;padding:34px 20px;text-align:center;
+    cursor:pointer;transition:.15s;display:block}
+  .dz:hover,.dz.drag{border-color:var(--brand);background:var(--accent)}
+  .dz .ico{font-size:34px;display:block;margin-bottom:8px}
+  .dz b{font-size:16px}
+  .dz .hint{color:var(--ink-soft);font-size:13px;margin-top:6px}
+  .dz .picked{margin-top:10px;font-size:13.5px;font-weight:700;color:var(--good);word-break:break-all}
+  .dz input{display:none}
+  details.explain{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px 18px;margin-top:16px}
+  details.explain summary{font-weight:700;cursor:pointer;color:var(--brand-dark)}
+  details.explain p{margin:10px 0 0;font-size:14px;color:var(--ink-soft)}
+  details.explain li{font-size:14px;color:var(--ink-soft);margin:8px 0 0 20px}
+
   /* review */
   .panes{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:14px 0}
-  .pane{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px;height:420px;overflow:auto;
-    white-space:pre-wrap;font-family:ui-monospace,Menlo,monospace;font-size:12.5px;line-height:1.5}
+  .pane{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px 18px;height:440px;overflow:auto;
+    white-space:pre-wrap;font-size:13.5px;line-height:1.7}
+  .pane .chip{background:#134e4a;color:#a7f3d0;border-radius:6px;padding:1px 7px;font-size:12px;font-weight:700;
+    font-family:ui-monospace,Menlo,monospace;white-space:nowrap}
   .pane-label{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--ink-soft);margin-bottom:6px}
   .tabs{display:flex;gap:8px;margin-bottom:10px}
   .tabs button{border:1px solid var(--line);background:#fff;border-radius:8px;padding:8px 16px;font-weight:700;cursor:pointer}
   .tabs button.active{background:var(--accent);border-color:var(--brand);color:var(--brand-dark)}
+
   /* report */
   .totals{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin:16px 0}
   .tot{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px}
-  .tot span{display:block;font-size:12px;color:var(--ink-soft)}
+  .tot span{display:block;font-size:12px;color:var(--ink-soft);min-height:2.4em}
   .tot b{font-size:20px}
   .tot.hi{border-color:var(--gold);background:#fffdf6}
   .finding{border:1px solid var(--line);border-left:4px solid var(--brand);border-radius:10px;padding:14px;margin:10px 0;background:#fff}
@@ -69,12 +88,15 @@
   .spinner{width:36px;height:36px;border:4px solid var(--accent);border-top-color:var(--brand);border-radius:50%;
     animation:spin 1s linear infinite;margin:30px auto}
   @keyframes spin{to{transform:rotate(360deg)}}
-  @media(max-width:720px){.panes{grid-template-columns:1fr}}
+  #email-card textarea{width:100%;height:320px;border:1px solid var(--line);border-radius:10px;padding:14px;
+    font-family:ui-monospace,Menlo,monospace;font-size:12.5px;line-height:1.5}
+  @media(max-width:720px){.panes{grid-template-columns:1fr}.dropzones{grid-template-columns:1fr}}
   @media print{
     header,.no-print,.banner{display:none !important}
     body{background:#fff}
     main{padding:0}
     .card{border:none;padding:0}
+    #email-card{display:none !important}
     @page{size:letter;margin:0.75in}
   }
 </style>
@@ -104,20 +126,42 @@
 
   <section id="upload" hidden>
     <h1>Audit a medical bill</h1>
-    <p class="lead">Upload your itemized bill and the matching insurance EOB. Personal details are removed
-      <b>on your device</b> before anything is analyzed — you'll review exactly what gets sent.</p>
+    <p class="lead">Personal details are removed <b>on your device</b> before anything is analyzed — you'll review exactly what gets sent.</p>
     <div class="card">
-      <p class="banner" style="margin-top:0">📄 <b>Best results with digital PDFs</b> downloaded from your insurance
-        or hospital portal. Photos and scanned copies work too, but reading accuracy may suffer — check the
-        review screen carefully.</p>
-      <label for="bill-file">Itemized bill (PDF or photo)</label>
-      <input id="bill-file" type="file" accept="application/pdf,image/*">
-      <label for="eob-file">Explanation of Benefits — EOB (PDF or photo)</label>
-      <input id="eob-file" type="file" accept="application/pdf,image/*">
+      <div class="dropzones">
+        <label class="dz" id="dz-bill">
+          <span class="ico">🧾</span>
+          <b>Itemized bill</b>
+          <div class="hint">Drop it here or click to choose<br>PDF, photo, HTML, or text · up to 20MB</div>
+          <div class="picked" id="bill-picked"></div>
+          <input id="bill-file" type="file" accept="application/pdf,image/*,text/html,.html,.htm,text/plain,.txt">
+        </label>
+        <label class="dz" id="dz-eob">
+          <span class="ico">📋</span>
+          <b>EOB from your insurance</b>
+          <div class="hint">Drop it here or click to choose<br>PDF, photo, HTML, or text · up to 20MB</div>
+          <div class="picked" id="eob-picked"></div>
+          <input id="eob-file" type="file" accept="application/pdf,image/*,text/html,.html,.htm,text/plain,.txt">
+        </label>
+      </div>
+
+      <details class="explain">
+        <summary>What's an EOB, and where do I find it?</summary>
+        <p>An <b>Explanation of Benefits (EOB)</b> is the statement your <b>insurance company</b> sends after processing a claim. It says "THIS IS NOT A BILL" and lists, for each service: what the provider billed, what your plan <i>allowed</i>, what the plan paid, and what <b>you</b> actually owe. It's the answer key we check your bill against.</p>
+        <ul>
+          <li><b>Insurer website or app:</b> sign in → <i>Claims</i> → open the claim for your visit date → <i>View / Download EOB</i> (a PDF).</li>
+          <li><b>Mail:</b> insurers also mail EOBs — a photo of the paper copy works.</li>
+          <li><b>Don't confuse it with the bill:</b> the bill comes from the <i>hospital or doctor</i> and asks for money; the EOB comes from <i>insurance</i> and says what you should owe.</li>
+        </ul>
+        <p><b>The itemized bill</b> comes from your provider: their portal → <i>Billing</i> → request or download the <i>itemized statement</i> (line-by-line charges with codes — not just a total).</p>
+      </details>
+
+      <p class="banner">📄 <b>Best results with digital PDFs</b> downloaded from your portals. Photos and scans work, but reading accuracy may suffer — check the review screen carefully.</p>
       <div id="upload-error" class="error" hidden></div>
-      <button id="run-audit" class="btn" style="margin-top:18px">Prepare audit →</button>
+      <button id="run-audit" class="btn" style="margin-top:8px">Prepare audit →</button>
     </div>
-    <h2>Past audits</h2>
+
+    <h2>Your past audits</h2>
     <div id="history-list"></div>
   </section>
 
@@ -131,8 +175,9 @@
 
   <section id="review" hidden>
     <h1>Check the redaction</h1>
-    <p class="lead">Left: what we read from your document (stays on your device). Right: what will be analyzed.
-      Select any text on the right that should be hidden and press “Redact selection”.</p>
+    <p class="lead">Left: what we read from your document (stays on your device). Right: what will be analyzed — personal
+      details replaced with <span class="chip" style="background:#134e4a;color:#a7f3d0;border-radius:6px;padding:1px 7px;font-size:12px;font-weight:700">[TAGS]</span>.
+      Select anything on the right that should also be hidden and press “Redact selection”.</p>
     <div id="ocr-banner" class="banner" hidden>⚠️ <b>This looks like a scan or photo</b> — we've read it with OCR.
       Numbers and codes may contain errors; please verify carefully below.</div>
     <div class="tabs">
@@ -164,9 +209,21 @@
       <p class="disclaimer">UseClaimRight provides self-help assistance, not legal or medical advice. Findings are
         generated by automated analysis of the documents you provided and may contain errors — verify every quoted
         amount against your original documents before disputing a charge. Results are not guaranteed.</p>
-      <div class="no-print" style="margin-top:18px;display:flex;gap:10px">
-        <button id="print-report" class="btn">Print / save PDF</button>
+      <div class="no-print" style="margin-top:18px;display:flex;gap:10px;flex-wrap:wrap">
+        <button id="gen-email" class="btn">Generate dispute email</button>
+        <button id="print-report" class="btn ghost">Print / save PDF</button>
         <button id="new-audit" class="btn ghost">New audit</button>
+      </div>
+    </div>
+
+    <div class="card no-print" id="email-card" hidden>
+      <h2>Dispute email draft</h2>
+      <p class="muted" style="margin-bottom:10px">Built from your findings. <b>Replace the [BRACKETED] placeholders
+        with your real details before sending</b> — we never had them. Send it yourself from your own email.</p>
+      <textarea id="email-text" spellcheck="false"></textarea>
+      <div style="margin-top:12px;display:flex;gap:10px">
+        <button id="copy-email" class="btn">Copy</button>
+        <button id="download-email" class="btn ghost">Download .txt</button>
       </div>
     </div>
   </section>
