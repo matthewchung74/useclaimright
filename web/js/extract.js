@@ -28,10 +28,20 @@ async function ocrCanvas(canvas) {
   return { text: data.text, confidence: data.confidence };
 }
 
+async function renderPageToDataUrl(page, scale = 1.5) {
+  const viewport = page.getViewport({ scale });
+  const canvas = document.createElement("canvas");
+  canvas.width = viewport.width;
+  canvas.height = viewport.height;
+  await page.render({ canvasContext: canvas.getContext("2d"), viewport }).promise;
+  return canvas;
+}
+
 async function extractFromPdf(file) {
   const buf = await file.arrayBuffer();
   const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
   const pages = [];
+  const previews = []; // rendered page images — shown locally, never transmitted
   let totalChars = 0;
 
   for (let i = 1; i <= pdf.numPages; i++) {
@@ -40,26 +50,23 @@ async function extractFromPdf(file) {
     const text = content.items.map((it) => it.str).join(" ");
     pages.push({ page, text });
     totalChars += text.length;
+    previews.push((await renderPageToDataUrl(page)).toDataURL("image/jpeg", 0.85));
   }
 
   if (totalChars / pdf.numPages >= MIN_CHARS_PER_PAGE) {
-    return { text: pages.map((p) => p.text).join("\n\n"), method: "pdf", confidence: 100 };
+    return { text: pages.map((p) => p.text).join("\n\n"), method: "pdf", confidence: 100, previews };
   }
 
   // No usable text layer — render each page and OCR it.
   let ocrText = "";
   let confSum = 0;
   for (const { page } of pages) {
-    const viewport = page.getViewport({ scale: 2 });
-    const canvas = document.createElement("canvas");
-    canvas.width = viewport.width;
-    canvas.height = viewport.height;
-    await page.render({ canvasContext: canvas.getContext("2d"), viewport }).promise;
+    const canvas = await renderPageToDataUrl(page, 2);
     const { text, confidence } = await ocrCanvas(canvas);
     ocrText += text + "\n\n";
     confSum += confidence;
   }
-  return { text: ocrText, method: "ocr", confidence: confSum / pdf.numPages };
+  return { text: ocrText, method: "ocr", confidence: confSum / pdf.numPages, previews };
 }
 
 async function extractFromImage(file) {
@@ -68,8 +75,9 @@ async function extractFromImage(file) {
   canvas.width = bitmap.width;
   canvas.height = bitmap.height;
   canvas.getContext("2d").drawImage(bitmap, 0, 0);
+  const previews = [canvas.toDataURL("image/jpeg", 0.85)];
   const { text, confidence } = await ocrCanvas(canvas);
-  return { text, method: "ocr", confidence };
+  return { text, method: "ocr", confidence, previews };
 }
 
 function htmlToText(html) {
@@ -88,10 +96,10 @@ export async function extractText(file) {
     return extractFromImage(file);
   }
   if (file.type === "text/html" || name.endsWith(".html") || name.endsWith(".htm")) {
-    return { text: htmlToText(await file.text()), method: "html", confidence: 100 };
+    return { text: htmlToText(await file.text()), method: "html", confidence: 100, previews: [] };
   }
   if (file.type === "text/plain" || name.endsWith(".txt")) {
-    return { text: await file.text(), method: "text", confidence: 100 };
+    return { text: await file.text(), method: "text", confidence: 100, previews: [] };
   }
   throw new Error(`Unsupported file type: ${file.type || file.name}. Use PDF, photo, HTML, or text.`);
 }

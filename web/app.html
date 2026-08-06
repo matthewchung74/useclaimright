@@ -53,6 +53,11 @@
   details.explain summary{font-weight:700;cursor:pointer;color:var(--brand-dark)}
   details.explain p{margin:10px 0 0;font-size:14px;color:var(--ink-soft)}
   details.explain li{font-size:14px;color:var(--ink-soft);margin:8px 0 0 20px}
+  .step-row{display:flex;gap:12px;align-items:flex-start;margin-bottom:10px}
+  .step-n{flex:0 0 30px;width:30px;height:30px;border-radius:50%;background:var(--accent);color:var(--brand-dark);
+    font-weight:800;display:flex;align-items:center;justify-content:center;margin-top:2px}
+  .pane img{max-width:100%;display:block;margin-bottom:10px;border:1px solid var(--line);border-radius:6px}
+  .dz.disabled{opacity:.45;pointer-events:none}
 
   /* review */
   .panes{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:14px 0}
@@ -128,20 +133,29 @@
     <h1>Audit a medical bill</h1>
     <p class="lead">Personal details are removed <b>on your device</b> before anything is analyzed — you'll review exactly what gets sent.</p>
     <div class="card">
-      <div class="dropzones">
+      <div class="step-row"><span class="step-n">1</span><div><b>Add the EOB from your insurance</b><div class="muted">The EOB is the answer key — it says what your plan allowed and what you actually owe.</div></div></div>
+      <div class="dropzones" style="grid-template-columns:1fr">
+        <label class="dz" id="dz-eob">
+          <span class="ico">📋</span>
+          <b>EOB (Explanation of Benefits)</b>
+          <div class="hint">Drop it here or click to choose<br>PDF, photo, HTML, or text · up to 20MB</div>
+          <div class="picked" id="eob-picked"></div>
+          <input id="eob-file" type="file" accept="application/pdf,image/*,text/html,.html,.htm,text/plain,.txt">
+        </label>
+      </div>
+      <label class="muted" style="display:flex;gap:8px;align-items:center;font-weight:600;margin-top:8px">
+        <input type="checkbox" id="no-eob" style="width:auto"> I don't have an EOB — audit the bill alone
+      </label>
+      <p class="muted" id="no-eob-note" hidden style="margin-top:6px">Without the EOB we can still catch duplicate charges and coding issues on the bill itself — but the strongest check, comparing what you were billed against what insurance says you owe, needs the EOB.</p>
+
+      <div class="step-row" style="margin-top:22px"><span class="step-n">2</span><div><b>Add your itemized bill</b><div class="muted">From the hospital or doctor — the line-by-line version with codes, not just a total.</div></div></div>
+      <div class="dropzones" style="grid-template-columns:1fr">
         <label class="dz" id="dz-bill">
           <span class="ico">🧾</span>
           <b>Itemized bill</b>
           <div class="hint">Drop it here or click to choose<br>PDF, photo, HTML, or text · up to 20MB</div>
           <div class="picked" id="bill-picked"></div>
           <input id="bill-file" type="file" accept="application/pdf,image/*,text/html,.html,.htm,text/plain,.txt">
-        </label>
-        <label class="dz" id="dz-eob">
-          <span class="ico">📋</span>
-          <b>EOB from your insurance</b>
-          <div class="hint">Drop it here or click to choose<br>PDF, photo, HTML, or text · up to 20MB</div>
-          <div class="picked" id="eob-picked"></div>
-          <input id="eob-file" type="file" accept="application/pdf,image/*,text/html,.html,.htm,text/plain,.txt">
         </label>
       </div>
 
@@ -158,7 +172,8 @@
 
       <p class="banner">📄 <b>Best results with digital PDFs</b> downloaded from your portals. Photos and scans work, but reading accuracy may suffer — check the review screen carefully.</p>
       <div id="upload-error" class="error" hidden></div>
-      <button id="run-audit" class="btn" style="margin-top:8px">Prepare audit →</button>
+      <div class="step-row" style="margin-top:10px"><span class="step-n">3</span><div><b>Prepare the audit</b><div class="muted">Next you'll see exactly what gets analyzed — with your personal details already hidden.</div></div></div>
+      <button id="run-audit" class="btn" style="margin-top:10px">Prepare audit →</button>
     </div>
 
     <h2>Your past audits</h2>
@@ -174,10 +189,15 @@
   </section>
 
   <section id="review" hidden>
-    <h1>Check the redaction</h1>
-    <p class="lead">Left: what we read from your document (stays on your device). Right: what will be analyzed — personal
-      details replaced with <span class="chip" style="background:#134e4a;color:#a7f3d0;border-radius:6px;padding:1px 7px;font-size:12px;font-weight:700">[TAGS]</span>.
-      Select anything on the right that should also be hidden and press “Redact selection”.</p>
+    <h1>We hid your personal info — double-check it</h1>
+    <div class="banner" style="background:var(--accent);border-color:var(--brand);color:var(--brand-dark)">
+      <b>What just happened:</b> before anything gets analyzed, we found the personal details in your documents —
+      your name, birth date, ID numbers, address — and replaced each one with an anonymous tag like
+      <span class="chip" style="background:#134e4a;color:#a7f3d0;border-radius:6px;padding:1px 7px;font-size:12px;font-weight:700">NAME_1</span>.
+      This happened <b>on your device</b>. Only the version on the right is ever sent for analysis, so your identity stays with you.
+    </div>
+    <p class="lead" style="margin-top:14px"><b>Your job:</b> glance over the right side. If you spot anything personal that
+      we missed, select it and press “Hide selection”. The left side shows your actual document for comparison — it never leaves this device.</p>
     <div id="ocr-banner" class="banner" hidden>⚠️ <b>This looks like a scan or photo</b> — we've read it with OCR.
       Numbers and codes may contain errors; please verify carefully below.</div>
     <div class="tabs">
@@ -185,10 +205,10 @@
       <button id="tab-eob">EOB</button>
     </div>
     <div class="panes">
-      <div><div class="pane-label">Original (never leaves this device)</div><div id="original-pane" class="pane"></div></div>
-      <div><div class="pane-label">Redacted (this is what gets analyzed)</div><div id="redacted-pane" class="pane"></div></div>
+      <div><div class="pane-label">Your document (never leaves this device)</div><div id="original-pane" class="pane"></div></div>
+      <div><div class="pane-label">What gets analyzed (personal info hidden)</div><div id="redacted-pane" class="pane"></div></div>
     </div>
-    <button id="redact-selection" class="btn ghost">Redact selection</button>
+    <button id="redact-selection" class="btn ghost">Hide selection</button>
     <div style="margin-top:18px;display:flex;gap:10px">
       <button id="confirm-review" class="btn">Looks right — analyze</button>
       <button id="back-to-upload" class="btn ghost">Start over</button>

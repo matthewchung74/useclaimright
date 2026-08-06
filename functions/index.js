@@ -47,9 +47,9 @@ export const analyze = onCall(
     const uid = request.auth.uid;
     const { redactedBill, redactedEob, ocrConfidence } = request.data || {};
 
-    if (typeof redactedBill !== "string" || typeof redactedEob !== "string" ||
-        !redactedBill.trim() || !redactedEob.trim()) {
-      throw new HttpsError("invalid-argument", "Both redacted documents are required.");
+    if (typeof redactedBill !== "string" || !redactedBill.trim() ||
+        typeof redactedEob !== "string") {
+      throw new HttpsError("invalid-argument", "The redacted bill is required.");
     }
     if (redactedBill.length > MAX_DOC_CHARS || redactedEob.length > MAX_DOC_CHARS) {
       throw new HttpsError("invalid-argument", "Document too large.");

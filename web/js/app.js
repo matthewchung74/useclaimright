@@ -106,6 +106,14 @@ function resetState() {
   setError("upload-error", "");
 }
 
+// "No EOB" mode: bill-only audit with reduced scope.
+$("no-eob").onchange = () => {
+  const skip = $("no-eob").checked;
+  $("no-eob-note").hidden = !skip;
+  $("dz-eob").classList.toggle("disabled", skip);
+  if (skip) { $("eob-file").value = ""; $("eob-picked").textContent = ""; }
+};
+
 // Dropzone feedback: show the picked filename; style on drag.
 for (const kind of ["bill", "eob"]) {
   const input = $(`${kind}-file`);
@@ -129,10 +137,14 @@ for (const kind of ["bill", "eob"]) {
 $("run-audit").onclick = async () => {
   const billFile = $("bill-file").files[0];
   const eobFile = $("eob-file").files[0];
-  if (!billFile || !eobFile) {
-    return setError("upload-error", "Both the itemized bill and the EOB are required.");
+  const skipEob = $("no-eob").checked;
+  if (!billFile) {
+    return setError("upload-error", "The itemized bill is required.");
   }
-  if (billFile.size > 20e6 || eobFile.size > 20e6) {
+  if (!eobFile && !skipEob) {
+    return setError("upload-error", "Add your EOB (step 1), or check “I don't have an EOB”.");
+  }
+  if (billFile.size > 20e6 || (eobFile && eobFile.size > 20e6)) {
     return setError("upload-error", "Files must be under 20MB.");
   }
 
@@ -141,24 +153,31 @@ $("run-audit").onclick = async () => {
 
   try {
     setStatus("Reading your documents…");
-    const [bill, eob] = [await extractText(billFile), await extractText(eobFile)];
+    const bill = await extractText(billFile);
+    const eob = skipEob ? null : await extractText(eobFile);
 
-    const ocrUsed = bill.method === "ocr" || eob.method === "ocr";
+    const ocrUsed = bill.method === "ocr" || eob?.method === "ocr";
     $("ocr-banner").hidden = !ocrUsed;
 
-    setStatus("Loading the de-identification model (first run downloads ~90MB, cached after)…");
+    setStatus("Loading the privacy model (first run downloads ~90MB, cached after)…");
     const ner = await loadNer((p) => {
       if (p.status === "progress" && p.total) {
-        setStatus(`Downloading de-identification model… ${Math.round((p.loaded / p.total) * 100)}%`);
+        setStatus(`Downloading privacy model… ${Math.round((p.loaded / p.total) * 100)}%`);
       }
     });
 
-    setStatus("Removing personal information on your device…");
-    state.bill = { originalText: bill.text, method: bill.method, confidence: bill.confidence };
-    state.eob = { originalText: eob.text, method: eob.method, confidence: eob.confidence };
+    setStatus("Hiding your personal information — on your device…");
+    state.bill = { originalText: bill.text, previews: bill.previews, method: bill.method, confidence: bill.confidence };
     state.bill.redacted = (await deidentify(bill.text, ner, state.registry)).redacted;
-    state.eob.redacted = (await deidentify(eob.text, ner, state.registry)).redacted;
+    if (eob) {
+      state.eob = { originalText: eob.text, previews: eob.previews, method: eob.method, confidence: eob.confidence };
+      state.eob.redacted = (await deidentify(eob.text, ner, state.registry)).redacted;
+    } else {
+      state.eob = null;
+    }
 
+    state.activeDoc = state.eob ? "eob" : "bill";
+    $("tab-eob").style.display = state.eob ? "" : "none";
     renderReview();
     show("review");
     track("audit_prepared");
@@ -183,7 +202,20 @@ const tidy = (s) => (s ?? "").replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\
 
 function renderReview() {
   const docState = state[state.activeDoc];
-  $("original-pane").textContent = tidy(docState.originalText);
+  // Original pane: show the ACTUAL document (rendered pages) when we have it —
+  // far easier to read than extracted text. Falls back to text for HTML/txt.
+  const orig = $("original-pane");
+  if (docState.previews?.length) {
+    orig.textContent = "";
+    for (const src of docState.previews) {
+      const img = document.createElement("img");
+      img.src = src;
+      img.alt = "Your document (local preview)";
+      orig.appendChild(img);
+    }
+  } else {
+    orig.textContent = tidy(docState.originalText);
+  }
   // Redacted pane: placeholders rendered as visible chips for human scanning.
   $("redacted-pane").innerHTML = escapeHtml(tidy(docState.redacted))
     .replace(/\[([A-Z][A-Z0-9_]*_\d+)\]/g, '<span class="chip">$1</span>');
@@ -201,21 +233,22 @@ $("redact-selection").onclick = () => {
   docState.redacted = manualRedact(docState.redacted, sel, state.registry);
   // Also apply to the other document so shared strings stay consistent.
   const other = state.activeDoc === "bill" ? state.eob : state.bill;
-  other.redacted = manualRedact(other.redacted, sel, state.registry);
+  if (other) other.redacted = manualRedact(other.redacted, sel, state.registry);
   renderReview();
 };
 
 $("confirm-review").onclick = async () => {
   const payload = {
     redactedBill: state.bill.redacted,
-    redactedEob: state.eob.redacted,
-    ocrConfidence: Math.min(state.bill.confidence, state.eob.confidence),
+    redactedEob: state.eob ? state.eob.redacted : "",
+    ocrConfidence: Math.min(state.bill.confidence, state.eob ? state.eob.confidence : 100),
   };
   const ocrLow = payload.ocrConfidence < OCR_CONFIDENCE_THRESHOLD;
 
   // Discard originals — this is the moment they cease to exist.
   state.bill.originalText = null;
-  state.eob.originalText = null;
+  state.bill.previews = null;
+  if (state.eob) { state.eob.originalText = null; state.eob.previews = null; }
   $("original-pane").textContent = "";
   $("bill-file").value = "";
   $("eob-file").value = "";
