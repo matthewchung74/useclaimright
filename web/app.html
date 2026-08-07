@@ -53,6 +53,23 @@
   details.explain summary{font-weight:700;cursor:pointer;color:var(--brand-dark)}
   details.explain p{margin:10px 0 0;font-size:14px;color:var(--ink-soft)}
   details.explain li{font-size:14px;color:var(--ink-soft);margin:8px 0 0 20px}
+  /* usage tracker */
+  .usage-card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin:10px 0}
+  .usage-head{display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .usage-head b{font-size:15px}
+  .usage-count{font-weight:800;font-size:15px}
+  .progress{height:10px;background:var(--accent);border-radius:6px;margin:10px 0;overflow:hidden}
+  .progress .bar{height:100%;background:var(--brand);border-radius:6px;transition:width .3s}
+  .usage-card.near .bar{background:var(--gold)}
+  .usage-card.at .bar,.usage-card.over .bar{background:var(--bad)}
+  .usage-note{font-size:13px;font-weight:700}
+  .usage-card.near .usage-note{color:#8a6112}
+  .usage-card.at .usage-note,.usage-card.over .usage-note{color:var(--bad)}
+  .contrib{font-size:13px;color:var(--ink-soft);margin:4px 0 0 2px}
+  .usage-del{border:1px solid var(--line);background:#fff;border-radius:8px;padding:4px 10px;cursor:pointer;color:var(--bad);font-size:12px}
+  #tracker-form select,#tracker-form input{border:1px solid var(--line);border-radius:10px;padding:9px;background:#fff;font-size:14px;width:100%}
+  .tf-grid{display:grid;grid-template-columns:2fr 2fr 1fr 1.4fr auto;gap:10px;align-items:end;margin-top:8px}
+  @media(max-width:720px){.tf-grid{grid-template-columns:1fr 1fr}}
   .step-row{display:flex;gap:12px;align-items:flex-start;margin-bottom:10px}
   .step-n{flex:0 0 30px;width:30px;height:30px;border-radius:50%;background:var(--accent);color:var(--brand-dark);
     font-weight:800;display:flex;align-items:center;justify-content:center;margin-top:2px}
@@ -176,7 +193,33 @@
       <button id="run-audit" class="btn" style="margin-top:10px">Prepare audit →</button>
     </div>
 
-    <h2>Your past audits</h2>
+    <h2>Coverage usage</h2>
+    <p class="muted" style="margin-bottom:10px">Track plan limits ("6 therapy visits per year") across all your audits, and watch your deductible progress. Counts come from the audits you've run.</p>
+    <div id="suggestion-banner" class="banner" hidden></div>
+    <div id="deductible-card"></div>
+    <div id="usage-list"></div>
+    <details class="explain" id="tracker-form-wrap">
+      <summary>Track a limit</summary>
+      <form id="tracker-form">
+        <div class="tf-grid">
+          <div><label for="tf-preset">Type</label>
+            <select id="tf-preset">
+              <option value="psych">Psychotherapy (90832, 90834, 90837)</option>
+              <option value="pt">Physical therapy (97110, 97112, 97530)</option>
+              <option value="chiro">Chiropractic (98940, 98941, 98942)</option>
+              <option value="acu">Acupuncture (97810, 97811, 97813, 97814)</option>
+              <option value="custom">Custom…</option>
+            </select></div>
+          <div><label for="tf-codes">Service codes</label><input id="tf-codes" placeholder="90832, 90834, 90837"></div>
+          <div><label for="tf-limit">Visits / yr</label><input id="tf-limit" type="number" min="1" placeholder="6"></div>
+          <div><label for="tf-month">Plan year starts</label>
+            <select id="tf-month"><option value="1">January</option><option value="2">February</option><option value="3">March</option><option value="4">April</option><option value="5">May</option><option value="6">June</option><option value="7">July</option><option value="8">August</option><option value="9">September</option><option value="10">October</option><option value="11">November</option><option value="12">December</option></select></div>
+          <button type="submit" class="btn">Track</button>
+        </div>
+      </form>
+    </details>
+
+    <h2 style="margin-top:28px">Your past audits</h2>
     <div id="history-list"></div>
   </section>
 
@@ -222,6 +265,7 @@
       <h1>Audit findings</h1>
       <div id="report-caveat" class="banner" hidden>⚠️ Source document was a scan; verify quoted amounts
         against your original before disputing.</div>
+      <div id="report-usage"></div>
       <div id="report-totals" class="totals"></div>
       <div id="report-findings"></div>
       <h2 style="margin-top:24px">Charge occurrence table</h2>

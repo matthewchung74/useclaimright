@@ -1,0 +1,74 @@
+{
+  "tracker": {
+    "label": "Psychotherapy",
+    "codes": [
+      "90832",
+      "90834",
+      "90837"
+    ],
+    "limit": 6,
+    "planYearStartMonth": 1
+  },
+  "steps": [
+    {
+      "pair": "t1",
+      "date": "2026-01-15",
+      "code": "90837",
+      "afterCount": 1,
+      "afterLevel": "ok",
+      "deductibleToDate": 120
+    },
+    {
+      "pair": "t2",
+      "date": "2026-02-12",
+      "code": "90837",
+      "afterCount": 2,
+      "afterLevel": "ok",
+      "deductibleToDate": 240
+    },
+    {
+      "pair": "t3",
+      "date": "2026-03-11",
+      "code": "90837",
+      "afterCount": 3,
+      "afterLevel": "ok",
+      "deductibleToDate": 360
+    },
+    {
+      "pair": "t4",
+      "date": "2026-04-15",
+      "code": "90837",
+      "afterCount": 4,
+      "afterLevel": "ok",
+      "deductibleToDate": 480
+    },
+    {
+      "pair": "t5",
+      "date": "2026-05-13",
+      "code": "90837",
+      "afterCount": 5,
+      "afterLevel": "near",
+      "deductibleToDate": 600
+    },
+    {
+      "pair": "t6",
+      "date": "2026-06-10",
+      "code": "90837",
+      "afterCount": 6,
+      "afterLevel": "at",
+      "deductibleToDate": 720
+    }
+  ],
+  "ptControl": {
+    "pair": "p1",
+    "code": "97110",
+    "therapyCountUnchanged": true
+  },
+  "final": {
+    "therapyCount": 6,
+    "level": "at",
+    "deductibleToDate": 720,
+    "deductibleLimit": 1500,
+    "suggestionCode": "90837"
+  }
+}

@@ -7,6 +7,13 @@ const ajv = new Ajv({ allErrors: true });
 const validate = ajv.compile(findingsSchema);
 
 const validResult = {
+  serviceDates: ["2026-06-12"],
+  provider: "St. Verification General Hospital",
+  payerRemarks: [],
+  accumulators: {
+    deductibleToDate: null, deductibleLimit: null, oopToDate: null, oopLimit: null,
+    deductibleAppliedThisClaim: null,
+  },
   findings: [
     {
       type: "duplicate_charge",
@@ -19,7 +26,7 @@ const validResult = {
   ],
   totals: { billed: 2300, eobAllowed: 900, patientResponsibility: 250, totalAtStake: 145.5 },
   occurrenceTable: [
-    { code: "80053", description: "Comprehensive metabolic panel", count: 2, unitCharges: [145.5, 145.5] },
+    { code: "80053", description: "Comprehensive metabolic panel", count: 2, unitCharges: [145.5, 145.5], dates: ["2026-06-12"] },
   ],
 };
 
@@ -53,9 +60,20 @@ test("extra top-level properties are rejected", () => {
 
 test("empty findings with zeroed totals is valid (unreadable-document case)", () => {
   const empty = {
+    serviceDates: [],
+    provider: "",
+    payerRemarks: [],
+    accumulators: { deductibleToDate: null, deductibleLimit: null, oopToDate: null, oopLimit: null, deductibleAppliedThisClaim: null },
     findings: [],
     totals: { billed: 0, eobAllowed: 0, patientResponsibility: 0, totalAtStake: 0 },
     occurrenceTable: [],
   };
   assert.equal(validate(empty), true, ajv.errorsText(validate.errors));
+});
+
+test("stated accumulators validate as numbers", () => {
+  const withAcc = structuredClone(validResult);
+  withAcc.accumulators = { deductibleToDate: 720, deductibleLimit: 1500, oopToDate: 900, oopLimit: 6000, deductibleAppliedThisClaim: 120 };
+  withAcc.payerRemarks = ["BENEFIT MAXIMUM REACHED: your plan covers 6 outpatient mental health visits per calendar year."];
+  assert.equal(validate(withAcc), true, ajv.errorsText(validate.errors));
 });

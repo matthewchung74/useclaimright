@@ -7,6 +7,11 @@ service cloud.firestore {
       allow read, delete: if request.auth != null && request.auth.uid == uid;
       allow create, update: if false;
     }
+    // Trackers are user preference data (label, codes, limit, plan-year start).
+    // Owner-managed entirely client-side; no integrity concerns.
+    match /users/{uid}/trackers/{trackerId} {
+      allow read, write, delete: if request.auth != null && request.auth.uid == uid;
+    }
     // Rate-limit counters are Function-managed; clients never touch them.
     match /users/{uid}/meta/{docId} {
       allow read, write: if false;
