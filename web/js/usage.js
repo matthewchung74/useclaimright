@@ -11,9 +11,8 @@ export function planYearWindow(startMonth, todayISO) {
   const [y, mo] = todayISO.split("-").map(Number);
   const startYear = mo >= m ? y : y - 1;
   const start = `${startYear}-${String(m).padStart(2, "0")}-01`;
-  // end = day before the same date next year
-  const endDate = new Date(Date.UTC(startYear + 1, m - 1, 1) - 86400000);
-  const end = endDate.toISOString().slice(0, 10);
+  // end = day before the same date next year (day 0 = last day of prior month)
+  const end = new Date(Date.UTC(startYear + 1, m - 1, 0)).toISOString().slice(0, 10);
   return { start, end };
 }
 
@@ -36,15 +35,15 @@ export function visitsUsed(audits, tracker, window) {
         dates = a.createdAtDate ? [a.createdAtDate] : [];
         approximate = true;
       }
-      const inWin = [...new Set(dates)].filter((d) => inWindow(d, window));
+      const uniq = [...new Set(dates)];
+      const inWin = uniq.filter((d) => inWindow(d, window));
       if (!inWin.length) continue; // entirely outside the plan year
-      const allInWin = inWin.length === new Set(dates).size;
+      const allInWin = inWin.length === uniq.length;
       // Full-window rows contribute the larger of billed count vs distinct dates
       // (double-billed visits count twice, flagged approximate). Partially-in-window
       // rows contribute only their in-window dates.
       const n = allInWin ? Math.max(row.count || 0, inWin.length) : inWin.length;
-      if ((row.count || 0) > inWin.length) approximate = true;
-      if (!allInWin) approximate = true;
+      if (!allInWin || (row.count || 0) > inWin.length) approximate = true;
       contributions.push({
         auditId: a.id,
         code: row.code,
