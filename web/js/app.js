@@ -16,6 +16,7 @@ import { getAnalytics, logEvent } from "https://www.gstatic.com/firebasejs/10.14
 import { firebaseConfig } from "./firebase-config.js";
 import { extractText } from "./extract.js";
 import { loadNer, deidentify, createRegistry, manualRedact } from "./deid.js";
+import { classifyFile, pairFiles } from "./batch.js";
 
 const $ = (id) => document.getElementById(id);
 const show = (id) => {
@@ -107,6 +108,11 @@ function resetState() {
   $("bill-picked").textContent = "";
   $("eob-picked").textContent = "";
   setError("upload-error", "");
+  batchFiles = [];
+  batchQueue = null;
+  batchIndex = 0;
+  renderBatchPanel();
+  setBatchLabels(null);
 }
 
 // "No EOB" mode: bill-only audit with reduced scope.
@@ -118,10 +124,17 @@ $("no-eob").onchange = () => {
 };
 
 // Dropzone feedback: show the picked filename; style on drag.
+// A selection of more than one file — or any selection while a batch is
+// already building — switches to batch mode.
 for (const kind of ["bill", "eob"]) {
   const input = $(`${kind}-file`);
   const zone = $(`dz-${kind}`);
   input.onchange = () => {
+    if (input.files.length > 1 || (input.files.length && batchFiles.length)) {
+      addToBatch([...input.files]);
+      input.value = "";
+      return;
+    }
     $(`${kind}-picked`).textContent = input.files[0] ? `✓ ${input.files[0].name}` : "";
   };
   zone.addEventListener("dragover", (e) => { e.preventDefault(); zone.classList.add("drag"); });
@@ -135,6 +148,105 @@ for (const kind of ["bill", "eob"]) {
   });
 }
 
+// ---------- Batch mode ----------
+
+let batchFiles = []; // [{file, name, role}] shown in the pairing panel
+let batchQueue = null; // [{bill: File, eob: File|null}] while a batch runs
+let batchIndex = 0;
+
+function addToBatch(files) {
+  for (const file of files) {
+    if (batchFiles.some((b) => b.name === file.name && b.file.size === file.size)) continue;
+    batchFiles.push({ file, name: file.name, role: classifyFile(file.name) });
+  }
+  $("bill-file").value = ""; $("eob-file").value = "";
+  $("bill-picked").textContent = ""; $("eob-picked").textContent = "";
+  setError("upload-error", "");
+  renderBatchPanel();
+}
+
+function renderBatchPanel() {
+  const panel = $("batch-panel");
+  if (!batchFiles.length) { panel.hidden = true; return; }
+  panel.hidden = false;
+
+  const { pairs, billOnly, orphanEobs } = pairFiles(batchFiles);
+  const sideOf = (entry) =>
+    pairs.some((p) => p.eob === entry) || orphanEobs.includes(entry) ? "eob" : "bill";
+
+  const list = $("batch-list");
+  list.innerHTML = "";
+  for (const entry of batchFiles) {
+    const row = document.createElement("div");
+    row.className = "batch-row";
+    row.innerHTML = `<span class="fname">${escapeHtml(entry.name)}</span>
+      <select><option value="bill">Bill</option><option value="eob">EOB</option></select>
+      <button class="rm" title="Remove">✕</button>`;
+    row.querySelector("select").value = sideOf(entry);
+    row.querySelector("select").onchange = (e) => { entry.role = e.target.value; renderBatchPanel(); };
+    row.querySelector(".rm").onclick = () => {
+      batchFiles = batchFiles.filter((b) => b !== entry);
+      renderBatchPanel();
+    };
+    list.appendChild(row);
+  }
+
+  const audits = pairs.length + billOnly.length;
+  $("batch-summary").innerHTML = [
+    `<b>${audits} audit${audits === 1 ? "" : "s"}</b>: ${pairs.length} bill+EOB pair${pairs.length === 1 ? "" : "s"}${billOnly.length ? `, ${billOnly.length} bill-only (no matching EOB)` : ""}.`,
+    orphanEobs.length ? `⚠️ ${orphanEobs.length} EOB${orphanEobs.length === 1 ? " has" : "s have"} no matching bill and won't be audited.` : "",
+    audits > 10 ? "⚠️ The server allows 10 audits per day — anything beyond that will fail until tomorrow." : "",
+  ].filter(Boolean).join("<br>");
+  $("batch-start").textContent = `Start ${audits} audit${audits === 1 ? "" : "s"}`;
+  $("batch-start").disabled = !audits;
+}
+
+$("batch-clear").onclick = () => { batchFiles = []; renderBatchPanel(); };
+
+$("batch-start").onclick = () => {
+  const { pairs, billOnly } = pairFiles(batchFiles);
+  batchQueue = [
+    ...pairs.map((p) => ({ bill: p.bill.file, eob: p.eob.file })),
+    ...billOnly.map((b) => ({ bill: b.file, eob: null })),
+  ];
+  if (!batchQueue.length) return;
+  batchIndex = 0;
+  $("batch-panel").hidden = true;
+  track("batch_started");
+  runBatchItem();
+};
+
+function runBatchItem() {
+  const item = batchQueue[batchIndex];
+  setBatchLabels(`Batch: audit ${batchIndex + 1} of ${batchQueue.length} — ${item.bill.name}`);
+  prepareAudit(item.bill, item.eob);
+}
+
+function setBatchLabels(text) {
+  for (const id of ["batch-progress-review", "batch-progress-report"]) {
+    $(id).textContent = text || "";
+    $(id).hidden = !text;
+  }
+  if (!text) $("batch-next").hidden = true;
+}
+
+// After an error mid-batch, put the unprocessed remainder back in the panel.
+function batchBackToPanel() {
+  if (!batchQueue) return;
+  batchFiles = batchQueue.slice(batchIndex).flatMap((it) => [
+    { file: it.bill, name: it.bill.name, role: "bill" },
+    ...(it.eob ? [{ file: it.eob, name: it.eob.name, role: "eob" }] : []),
+  ]);
+  batchQueue = null;
+  setBatchLabels(null);
+  renderBatchPanel();
+}
+
+$("batch-next").onclick = () => {
+  batchIndex++;
+  runBatchItem();
+};
+
 // ---------- Upload & processing ----------
 
 $("run-audit").onclick = async () => {
@@ -147,9 +259,15 @@ $("run-audit").onclick = async () => {
   if (!eobFile && !skipEob) {
     return setError("upload-error", "Add your EOB (step 1), or check “I don't have an EOB”.");
   }
+  await prepareAudit(billFile, skipEob ? null : eobFile);
+};
+
+async function prepareAudit(billFile, eobFile) {
+  if (!batchQueue) setBatchLabels(null);
   if (billFile.size > 20e6 || (eobFile && eobFile.size > 20e6)) {
     return setError("upload-error", "Files must be under 20MB.");
   }
+  const skipEob = !eobFile;
 
   resetStatePreservingFiles();
   show("processing");
@@ -188,8 +306,9 @@ $("run-audit").onclick = async () => {
     console.error(e);
     setError("upload-error", `Could not process the documents: ${e.message}`);
     show("upload");
+    batchBackToPanel();
   }
-};
+}
 
 function resetStatePreservingFiles() {
   state = { registry: createRegistry(), bill: null, eob: null, activeDoc: "bill" };
@@ -265,11 +384,23 @@ $("confirm-review").onclick = async () => {
     track("audit_completed");
     await loadHistory(); // refreshes allAudits (incl. this audit) + usage cards
     renderReportUsage(data);
+    if (batchQueue) {
+      const last = batchIndex >= batchQueue.length - 1;
+      $("batch-next").hidden = last;
+      if (last) {
+        setBatchLabels(`Batch complete — all ${batchQueue.length} audits are saved under “Your past audits”.`);
+        batchQueue = null;
+        track("batch_completed");
+      } else {
+        $("batch-next").textContent = `Continue: audit ${batchIndex + 2} of ${batchQueue.length} →`;
+      }
+    }
   } catch (e) {
     console.error(e);
     setError("upload-error",
       e.code === "functions/resource-exhausted" ? e.message : "Analysis failed — please try again.");
     show("upload");
+    batchBackToPanel();
   }
 };
 
