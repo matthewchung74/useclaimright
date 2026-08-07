@@ -72,10 +72,35 @@ T_DATES.forEach((date, i) => {
   });
 });
 
+// Consolidated EOB: ONE statement covering the first three therapy claims —
+// the "many bills, one EOB" case. Named t-eob so its stem ("t") is a prefix
+// of t1/t2/t3 and batch pairing auto-shares it.
+function consolidatedEob({ dates, code, desc, charge, allowed, provider }) {
+  const rows = dates.map((d, i) => `<tr><td>${d}</td><td>${code}</td><td>${desc}</td>
+<td class="r">$${charge.toFixed(2)}</td><td class="r">$${allowed.toFixed(2)}</td>
+<td class="r">$${allowed.toFixed(2)}</td><td class="r">$0.00</td><td class="r">$${allowed.toFixed(2)}</td></tr>`).join("");
+  return `<!DOCTYPE html><html><head><meta charset="utf-8">${css}</head><body>
+<div class="head"><div><h1 style="color:#123c78">ACME HEALTH INSURANCE</h1>
+<div class="muted">Consolidated Explanation of Benefits — THIS IS NOT A BILL</div></div>
+<div style="text-align:right">Statement #: CLM-SER-CONS-01<br>Processed: ${dates[dates.length - 1]}<br>Member ID: AHX-55512345</div></div>
+<div class="box"><b>Member:</b> Jane Q. Testpatient<br><b>DOB:</b> 03/14/1985<br><b>Plan:</b> Acme Silver PPO</div>
+<p><b>Provider:</b> ${provider}<br>This statement covers ${dates.length} claims processed this period.</p>
+<table><tr><th>Date of service</th><th>Code</th><th>Service</th><th class="r">Billed</th><th class="r">Allowed</th><th class="r">Applied to deductible</th><th class="r">Plan paid</th><th class="r">Your responsibility</th></tr>
+${rows}</table>
+<div class="note"><b>Deductible met to date: $${(allowed * dates.length).toFixed(2)} of $1,500.00</b></div>
+<div class="note">What you may owe the provider: $${(allowed * dates.length).toFixed(2)} across these claims. Amounts above the allowed amount are provider write-offs under your plan's network contract.</div>
+</body></html>`;
+}
+writeFileSync(`${OUT}t-eob.html`, consolidatedEob({ dates: T_DATES.slice(0, 3), ...THERAPY }));
+expected.consolidated = {
+  file: "t-eob", covers: ["t1", "t2", "t3"], deductibleToDate: 360, deductibleLimit: 1500,
+  perClaim: { billed: 175, allowed: 120, responsibility: 120 },
+};
+
 writeFileSync(`${OUT}p1-bill.html`, bill({ n: 101, date: "2026-03-20", ...PT }));
 writeFileSync(`${OUT}p1-eob.html`, eob({ n: 101, date: "2026-03-20", ...PT, dedToDate: null, remark: null }));
 expected.ptControl = { pair: "p1", code: PT.code, therapyCountUnchanged: true };
 expected.final = { therapyCount: 6, level: "at", deductibleToDate: 720, deductibleLimit: 1500, suggestionCode: "90837" };
 
 writeFileSync(new URL("./series-expected.json", import.meta.url).pathname, JSON.stringify(expected, null, 2));
-console.log("Wrote 14 HTML fixtures + series-expected.json");
+console.log("Wrote 15 HTML fixtures + series-expected.json");

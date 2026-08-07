@@ -4,7 +4,13 @@ import { findingsSchema } from "../schema.js";
 const AUDIT_INSTRUCTIONS = `You are a medical billing auditor. You receive the de-identified text of
 a patient's itemized medical bill and the matching insurance Explanation of Benefits (EOB).
 Personal identifiers have been replaced with placeholders like [NAME_1], [DOB], [MRN] — treat them
-as opaque tokens. Provider, hospital, and insurer names are real.
+as opaque tokens numbered PER DOCUMENT: [NAME_1] in the bill and [NAME_1] in the EOB do not
+necessarily refer to the same value. Provider, hospital, and insurer names are real.
+
+The EOB may be a CONSOLIDATED statement covering several claims, dates, providers, or family
+members. Compare the bill only against the EOB claim lines that match its provider, service dates,
+and codes; ignore unrelated claims. A bill service is not_in_eob only when no claim line anywhere
+in the EOB corresponds to it. Accumulators still come from the EOB's stated totals.
 
 Your job, in order:
 1. Extract every charge line from the bill: code (CPT/HCPCS/revenue code if present), description,

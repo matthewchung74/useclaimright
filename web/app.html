@@ -165,6 +165,14 @@
           <input id="eob-file" type="file" multiple accept="application/pdf,image/*,text/html,.html,.htm,text/plain,.txt">
         </label>
       </div>
+      <div id="saved-eob-wrap" style="margin-top:10px" hidden>
+        <label for="saved-eob" class="muted" style="font-weight:600">…or use an EOB you saved earlier</label>
+        <select id="saved-eob" style="margin-top:4px"><option value="">— choose a saved EOB —</option></select>
+        <details class="explain" style="margin-top:8px"><summary>My saved EOBs</summary>
+          <p>Saved in redacted form only — we never keep the original. Good for consolidated EOBs that cover several bills.</p>
+          <div id="saved-eob-list"></div>
+        </details>
+      </div>
       <label class="muted" style="display:flex;gap:8px;align-items:center;font-weight:600;margin-top:8px">
         <input type="checkbox" id="no-eob" style="width:auto"> I don't have an EOB — audit the bill alone
       </label>
@@ -270,6 +278,10 @@
       <div><div class="pane-label">What gets analyzed (personal info hidden)</div><div id="redacted-pane" class="pane"></div></div>
     </div>
     <button id="redact-selection" class="btn ghost">Hide selection</button>
+    <label id="save-eob-wrap" class="muted" style="display:flex;gap:8px;align-items:center;font-weight:600;margin-top:14px" hidden>
+      <input type="checkbox" id="save-eob" checked style="width:auto">
+      Save this EOB (redacted) to my account, so future bills can be audited against it
+    </label>
     <div style="margin-top:18px;display:flex;gap:10px">
       <button id="confirm-review" class="btn">Looks right — analyze</button>
       <button id="back-to-upload" class="btn ghost">Start over</button>

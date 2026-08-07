@@ -12,6 +12,11 @@ service cloud.firestore {
     match /users/{uid}/trackers/{trackerId} {
       allow read, write, delete: if request.auth != null && request.auth.uid == uid;
     }
+    // Saved EOBs hold ONLY the redacted text (originals never leave the
+    // device), for reuse against future bills. Owner-managed like trackers.
+    match /users/{uid}/eobs/{eobId} {
+      allow read, write, delete: if request.auth != null && request.auth.uid == uid;
+    }
     // Rate-limit counters are Function-managed; clients never touch them.
     match /users/{uid}/meta/{docId} {
       allow read, write: if false;
