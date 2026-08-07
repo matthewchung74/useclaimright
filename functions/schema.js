@@ -12,11 +12,29 @@ export const FINDING_TYPES = [
   "charity_care_eligible",
 ];
 
+const nullableNumber = { type: ["number", "null"] };
+
 export const findingsSchema = {
   type: "object",
   additionalProperties: false,
-  required: ["findings", "totals", "occurrenceTable"],
+  required: ["findings", "totals", "occurrenceTable", "serviceDates", "provider", "payerRemarks", "accumulators"],
   properties: {
+    // v2 fields — extracted verbatim from the documents, never inferred.
+    serviceDates: { type: "array", items: { type: "string" } }, // ISO YYYY-MM-DD
+    provider: { type: "string" },
+    payerRemarks: { type: "array", items: { type: "string" } },
+    accumulators: {
+      type: "object",
+      additionalProperties: false,
+      required: ["deductibleToDate", "deductibleLimit", "oopToDate", "oopLimit", "deductibleAppliedThisClaim"],
+      properties: {
+        deductibleToDate: nullableNumber,
+        deductibleLimit: nullableNumber,
+        oopToDate: nullableNumber,
+        oopLimit: nullableNumber,
+        deductibleAppliedThisClaim: nullableNumber,
+      },
+    },
     findings: {
       type: "array",
       items: {
@@ -57,12 +75,13 @@ export const findingsSchema = {
       items: {
         type: "object",
         additionalProperties: false,
-        required: ["code", "description", "count", "unitCharges"],
+        required: ["code", "description", "count", "unitCharges", "dates"],
         properties: {
           code: { type: "string" },
           description: { type: "string" },
           count: { type: "integer" },
           unitCharges: { type: "array", items: { type: "number" } },
+          dates: { type: "array", items: { type: "string" } }, // dates of service for this code, when determinable
         },
       },
     },

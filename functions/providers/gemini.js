@@ -21,6 +21,15 @@ Your job, in order:
    - cost_share_error: deductible/copay/coinsurance math on the EOB does not add up
    - charity_care_eligible: signals the provider is a nonprofit hospital (501r financial assistance may apply)
 
+Also extract, verbatim from the documents (NEVER inferred or guessed):
+- serviceDates: every distinct date of service, ISO format YYYY-MM-DD. Statement/processing dates are NOT dates of service.
+- provider: the billing provider or facility name.
+- payerRemarks: remark or note lines mentioning benefit maximums, visit limits, coverage denials,
+  or accumulator status — copied word-for-word. Empty array when none.
+- accumulators (from the EOB): deductibleToDate, deductibleLimit, oopToDate, oopLimit,
+  deductibleAppliedThisClaim. Each null unless the document states it as a number.
+- occurrenceTable rows include dates: the dates of service for that specific code when determinable, else [].
+
 Hard rules:
 - Every finding MUST include verbatim evidence quotes from the bill and the EOB (use "" for the EOB
   quote only when the finding type is not_in_eob and nothing corresponds).

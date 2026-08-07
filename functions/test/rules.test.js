@@ -60,5 +60,23 @@ if (!EMULATOR) {
     await assertFails(alice.doc("users/alice/meta/usage").set({ count: 0 }));
   });
 
+  test("owner can create, read, and delete their trackers", async () => {
+    await assertSucceeds(alice.doc("users/alice/trackers/th").set({ label: "Psychotherapy", codes: ["90837"], limit: 6, planYearStartMonth: 1 }));
+    await assertSucceeds(alice.doc("users/alice/trackers/th").get());
+    await assertSucceeds(alice.doc("users/alice/trackers/th").delete());
+  });
+
+  test("another user cannot read or write my trackers", async () => {
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      await ctx.firestore().doc("users/alice/trackers/th2").set({ label: "PT", codes: ["97110"], limit: 20 });
+    });
+    await assertFails(mallory.doc("users/alice/trackers/th2").get());
+    await assertFails(mallory.doc("users/alice/trackers/th2").set({ limit: 999 }));
+  });
+
+  test("unauthenticated cannot read trackers", async () => {
+    await assertFails(anon.doc("users/alice/trackers/th2").get());
+  });
+
   test.after(async () => { await env.cleanup(); });
 }

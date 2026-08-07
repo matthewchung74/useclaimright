@@ -5,9 +5,12 @@ import {
   connectAuthEmulator,
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 import {
-  getFirestore, collection, query, orderBy, getDocs, doc, getDoc, deleteDoc,
-  connectFirestoreEmulator,
+  getFirestore, collection, query, orderBy, getDocs, doc, getDoc, deleteDoc, addDoc,
+  serverTimestamp, connectFirestoreEmulator,
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+import {
+  planYearWindow, visitsUsed, latestAccumulators, suggestedTrackers, warningLevel,
+} from "./usage.js";
 import { getFunctions, httpsCallable, connectFunctionsEmulator } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-functions.js";
 import { getAnalytics, logEvent } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-analytics.js";
 import { firebaseConfig } from "./firebase-config.js";
@@ -260,7 +263,8 @@ $("confirm-review").onclick = async () => {
     renderReport(data, { ocrLow, model: data.model });
     show("report");
     track("audit_completed");
-    loadHistory();
+    await loadHistory(); // refreshes allAudits (incl. this audit) + usage cards
+    renderReportUsage(data);
   } catch (e) {
     console.error(e);
     setError("upload-error",
@@ -411,7 +415,12 @@ $("download-email").onclick = () => {
   URL.revokeObjectURL(a.href);
 };
 
-// ---------- History ----------
+// ---------- History + usage data ----------
+
+let allAudits = [];   // normalized for usage.js
+let allTrackers = []; // {id, label, codes, limit, planYearStartMonth}
+
+const todayISO = () => new Date().toISOString().slice(0, 10);
 
 async function loadHistory() {
   const user = auth.currentUser;
@@ -422,17 +431,30 @@ async function loadHistory() {
   $("history-list").innerHTML = snap.empty
     ? '<p class="muted">No audits yet — run your first above.</p>'
     : "";
+  allAudits = [];
   snap.forEach((d) => {
     const a = d.data();
+    allAudits.push({
+      id: d.id,
+      serviceDates: a.serviceDates || [],
+      occurrenceTable: a.occurrenceTable || [],
+      accumulators: a.accumulators || null,
+      payerRemarks: a.payerRemarks || [],
+      provider: a.provider || "",
+      createdAtDate: a.createdAt?.toDate ? a.createdAt.toDate().toISOString().slice(0, 10) : "",
+    });
     const el = document.createElement("div");
     el.className = "history-item";
-    const when = a.createdAt?.toDate ? a.createdAt.toDate().toLocaleDateString() : "";
+    const when = (a.serviceDates && a.serviceDates[0]) ||
+      (a.createdAt?.toDate ? a.createdAt.toDate().toLocaleDateString() : "");
+    const prov = a.provider ? ` · ${escapeHtml(a.provider)}` : "";
     el.innerHTML = `
-      <button class="open">${when} · ${a.findings?.length ?? 0} findings · ${fmt(a.totals?.totalAtStake)}</button>
+      <button class="open">${escapeHtml(when)}${prov} · ${a.findings?.length ?? 0} findings · ${fmt(a.totals?.totalAtStake)}</button>
       <button class="del" title="Delete this audit">✕</button>`;
     el.querySelector(".open").onclick = async () => {
       const full = await getDoc(doc(db, `users/${user.uid}/audits/${d.id}`));
       renderReport(full.data(), { ocrLow: (full.data().ocrConfidence ?? 100) < OCR_CONFIDENCE_THRESHOLD });
+      renderReportUsage(full.data());
       show("report");
     };
     el.querySelector(".del").onclick = async () => {
@@ -443,6 +465,147 @@ async function loadHistory() {
     };
     $("history-list").appendChild(el);
   });
+  await loadTrackers();
+  renderUsage();
+}
+
+async function loadTrackers() {
+  const user = auth.currentUser;
+  if (!user) return;
+  const snap = await getDocs(collection(db, `users/${user.uid}/trackers`));
+  allTrackers = [];
+  snap.forEach((d) => allTrackers.push({ id: d.id, ...d.data() }));
+}
+
+// ---------- Usage tracker UI ----------
+
+const LEVEL_NOTES = {
+  near: "One covered visit left this plan year.",
+  at: "Limit reached — further visits may be your responsibility.",
+  over: "Over the limit — visits beyond it are likely your responsibility.",
+};
+
+function renderUsage() {
+  const list = $("usage-list");
+  list.innerHTML = "";
+  for (const t of allTrackers) {
+    const w = planYearWindow(t.planYearStartMonth || 1, todayISO());
+    const { count, contributions } = visitsUsed(allAudits, t, w);
+    const level = warningLevel(count, t.limit);
+    const card = document.createElement("div");
+    card.className = `usage-card ${level}`;
+    const pct = Math.min(100, t.limit > 0 ? (count / t.limit) * 100 : 0);
+    card.innerHTML = `
+      <div class="usage-head">
+        <b>${escapeHtml(t.label)}</b>
+        <span style="display:flex;gap:10px;align-items:center">
+          <span class="usage-count">${count} / ${t.limit}</span>
+          <button class="usage-del" title="Stop tracking">✕</button>
+        </span>
+      </div>
+      <div class="progress"><div class="bar" style="width:${pct}%"></div></div>
+      ${LEVEL_NOTES[level] ? `<div class="usage-note">${LEVEL_NOTES[level]}</div>` : ""}
+      <details><summary class="muted">${contributions.length} contributing audit(s) · plan year ${w.start} → ${w.end}</summary>
+        ${contributions.map((c) => `<div class="contrib">${c.dates.map(escapeHtml).join(", ")} · ${escapeHtml(c.code)}${c.provider ? " · " + escapeHtml(c.provider) : ""}${c.count > 1 ? ` · ×${c.count}` : ""}${c.approximate ? " · ~approximate" : ""}</div>`).join("") || '<div class="contrib">None yet in this plan year.</div>'}
+      </details>`;
+    card.querySelector(".usage-del").onclick = async () => {
+      if (confirm(`Stop tracking "${t.label}"?`)) {
+        await deleteDoc(doc(db, `users/${auth.currentUser.uid}/trackers/${t.id}`));
+        loadTrackers().then(renderUsage);
+      }
+    };
+    list.appendChild(card);
+  }
+  if (!allTrackers.length) {
+    list.innerHTML = '<p class="muted">Nothing tracked yet — add a limit below.</p>';
+  }
+
+  // Deductible card
+  const dw = planYearWindow(allTrackers[0]?.planYearStartMonth || 1, todayISO());
+  const { snapshot, asOf, summedApplied, disagreement } = latestAccumulators(allAudits, dw);
+  const dc = $("deductible-card");
+  if (snapshot && typeof snapshot.deductibleToDate === "number") {
+    const lim = typeof snapshot.deductibleLimit === "number" ? ` of ${fmt(snapshot.deductibleLimit)}` : "";
+    dc.innerHTML = `<div class="usage-card">
+      <div class="usage-head"><b>Deductible</b><span class="usage-count">${fmt(snapshot.deductibleToDate)}${lim}</span></div>
+      ${typeof snapshot.deductibleLimit === "number" ? `<div class="progress"><div class="bar" style="width:${Math.min(100, (snapshot.deductibleToDate / snapshot.deductibleLimit) * 100)}%"></div></div>` : ""}
+      <div class="muted">As stated on your most recent EOB (${escapeHtml(asOf)}).${disagreement ? ` Note: your EOBs' per-claim amounts sum to ${fmt(summedApplied)} — the insurer's running total disagrees; worth a look.` : ""}</div>
+    </div>`;
+  } else {
+    dc.innerHTML = "";
+  }
+
+  // Suggestion banner
+  const suggestions = suggestedTrackers(allAudits, allTrackers);
+  const sb = $("suggestion-banner");
+  if (suggestions.length) {
+    const s = suggestions[0];
+    sb.hidden = false;
+    sb.innerHTML = `💡 Your insurer mentioned a benefit limit for <b>${escapeHtml(s.code)}${s.description ? " — " + escapeHtml(s.description) : ""}</b>
+      (“${escapeHtml(s.remark.slice(0, 120))}${s.remark.length > 120 ? "…" : ""}”). <button id="suggest-track" class="btn sm" style="margin-left:8px">Track it</button>`;
+    $("suggest-track").onclick = () => {
+      $("tracker-form-wrap").open = true;
+      $("tf-preset").value = "custom";
+      $("tf-codes").value = s.code;
+      $("tf-limit").focus();
+      $("tracker-form-wrap").scrollIntoView({ behavior: "smooth" });
+    };
+  } else {
+    sb.hidden = true;
+    sb.innerHTML = "";
+  }
+}
+
+const PRESETS = {
+  psych: { label: "Psychotherapy", codes: "90832, 90834, 90837" },
+  pt: { label: "Physical therapy", codes: "97110, 97112, 97530" },
+  chiro: { label: "Chiropractic", codes: "98940, 98941, 98942" },
+  acu: { label: "Acupuncture", codes: "97810, 97811, 97813, 97814" },
+  custom: { label: "", codes: "" },
+};
+
+$("tf-preset").onchange = () => {
+  const p = PRESETS[$("tf-preset").value];
+  if (p.codes) $("tf-codes").value = p.codes;
+};
+$("tf-codes").value = PRESETS.psych.codes;
+
+$("tracker-form").onsubmit = async (e) => {
+  e.preventDefault();
+  const preset = PRESETS[$("tf-preset").value];
+  const codes = $("tf-codes").value.split(/[,\s]+/).map((c) => c.trim()).filter(Boolean);
+  const limit = parseInt($("tf-limit").value, 10);
+  if (!codes.length || !Number.isFinite(limit) || limit < 1) return;
+  const label = preset.label || `Codes ${codes.join(", ")}`;
+  await addDoc(collection(db, `users/${auth.currentUser.uid}/trackers`), {
+    label, codes, limit,
+    planYearStartMonth: parseInt($("tf-month").value, 10) || 1,
+    createdAt: serverTimestamp(),
+  });
+  $("tf-limit").value = "";
+  $("tracker-form-wrap").open = false;
+  await loadTrackers();
+  renderUsage();
+  track("tracker_created");
+};
+
+// Report integration: "visit N of L" line for the audit being viewed.
+function renderReportUsage(data) {
+  const el = $("report-usage");
+  el.innerHTML = "";
+  if (!allTrackers.length || !data?.occurrenceTable) return;
+  const codes = new Set(data.occurrenceTable.map((r) => String(r.code).toUpperCase()));
+  for (const t of allTrackers) {
+    if (!(t.codes || []).some((c) => codes.has(String(c).toUpperCase()))) continue;
+    const w = planYearWindow(t.planYearStartMonth || 1, todayISO());
+    const { count } = visitsUsed(allAudits, t, w);
+    const level = warningLevel(count, t.limit);
+    const cls = level === "ok" ? "" : level;
+    el.innerHTML += `<div class="usage-card ${cls}" style="margin:12px 0">
+      <div class="usage-head"><b>${escapeHtml(t.label)}: visit ${count} of ${t.limit} this plan year</b></div>
+      ${LEVEL_NOTES[level] ? `<div class="usage-note">${LEVEL_NOTES[level]}</div>` : ""}</div>`;
+    if (level !== "ok") track("tracker_warning_shown");
+  }
 }
 
 resetState();
