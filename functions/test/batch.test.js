@@ -59,6 +59,16 @@ test("explicit role overrides filename classification", () => {
   assert.equal(pairs[0].eob.name, "t1-bill.pdf");
 });
 
+test("one consolidated EOB is shared by every bill in its group", () => {
+  const { pairs, billOnly, orphanEobs } = pairFiles([
+    f("visit-bill-1.pdf"), f("visit-bill-2.pdf"), f("visit-bill-3.pdf"), f("visit-eob.pdf"),
+  ]);
+  assert.equal(pairs.length, 3);
+  assert.equal(billOnly.length, 0);
+  assert.equal(orphanEobs.length, 0);
+  for (const p of pairs) assert.equal(p.eob.name, "visit-eob.pdf");
+});
+
 test("same-stem group with several of each zips by name order", () => {
   const { pairs } = pairFiles([
     f("visit-bill-1.pdf"), f("visit-bill-2.pdf"),

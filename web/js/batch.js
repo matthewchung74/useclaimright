@@ -56,9 +56,27 @@ export function pairFiles(files) {
     (g.bills.length <= g.eobs.length ? g.bills : g.eobs).push(u);
   }
 
+  // A lone EOB whose stem is a prefix of bill-carrying groups is a
+  // consolidated statement: share it into each of those groups.
+  for (const [stem, g] of groups) {
+    if (!stem || g.eobs.length !== 1 || g.bills.length) continue;
+    const targets = [...groups.entries()]
+      .filter(([s2, g2]) => s2 !== stem && s2.startsWith(stem) && g2.bills.length > g2.eobs.length);
+    if (targets.length) {
+      for (const [, g2] of targets) g2.eobs.push(g.eobs[0]);
+      g.eobs = [];
+    }
+  }
+
   const pairs = [], billOnly = [], orphanEobs = [];
   for (const g of groups.values()) {
     g.bills.sort(byName); g.eobs.sort(byName);
+    if (g.eobs.length === 1 && g.bills.length > 1) {
+      // Consolidated EOB: one statement covering several claims — every bill
+      // in the group audits against the same EOB.
+      for (const b of g.bills) pairs.push({ bill: b, eob: g.eobs[0] });
+      continue;
+    }
     const n = Math.max(g.bills.length, g.eobs.length);
     for (let i = 0; i < n; i++) {
       if (g.bills[i] && g.eobs[i]) pairs.push({ bill: g.bills[i], eob: g.eobs[i] });

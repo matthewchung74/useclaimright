@@ -59,6 +59,21 @@
       "deductibleToDate": 720
     }
   ],
+  "consolidated": {
+    "file": "t-eob",
+    "covers": [
+      "t1",
+      "t2",
+      "t3"
+    ],
+    "deductibleToDate": 360,
+    "deductibleLimit": 1500,
+    "perClaim": {
+      "billed": 175,
+      "allowed": 120,
+      "responsibility": 120
+    }
+  },
   "ptControl": {
     "pair": "p1",
     "code": "97110",
