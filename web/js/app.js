@@ -109,6 +109,7 @@ function resetState() {
   $("eob-picked").textContent = "";
   $("saved-eob").value = "";
   setError("upload-error", "");
+  defaultEobSelection();
   batchFiles = [];
   batchQueue = null;
   batchIndex = 0;
@@ -136,6 +137,7 @@ for (const kind of ["bill", "eob"]) {
       input.value = "";
       return;
     }
+    if (kind === "eob" && input.files[0]) $("saved-eob").value = ""; // fresh file wins
     $(`${kind}-picked`).textContent = input.files[0] ? `✓ ${input.files[0].name}` : "";
   };
   zone.addEventListener("dragover", (e) => { e.preventDefault(); zone.classList.add("drag"); });
@@ -675,6 +677,7 @@ async function loadEobs() {
   sel.innerHTML = '<option value="">— choose a saved EOB —</option>' +
     savedEobs.map((e) => `<option value="${e.id}">${escapeHtml(e.label)}</option>`).join("");
   if (savedEobs.some((e) => e.id === prev)) sel.value = prev;
+  defaultEobSelection();
 
   const list = $("saved-eob-list");
   list.innerHTML = "";
@@ -690,6 +693,14 @@ async function loadEobs() {
     };
     list.appendChild(row);
   }
+}
+
+// With a library on file, the EOB step answers itself: pre-select the most
+// recent saved EOB so a new bill can be audited with zero extra clicks.
+function defaultEobSelection() {
+  if (!savedEobs.length || $("saved-eob").value || $("eob-file").files[0] || $("no-eob").checked) return;
+  $("saved-eob").value = savedEobs[0].id;
+  $("eob-picked").textContent = `✓ using saved: ${savedEobs[0].label} — change below if this isn't the right one`;
 }
 
 $("saved-eob").onchange = () => {
