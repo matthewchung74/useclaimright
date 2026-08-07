@@ -16,7 +16,7 @@ import { getAnalytics, logEvent } from "https://www.gstatic.com/firebasejs/10.14
 import { firebaseConfig } from "./firebase-config.js";
 import { extractText } from "./extract.js";
 import { loadNer, deidentify, createRegistry, manualRedact } from "./deid.js";
-import { classifyFile, pairFiles } from "./batch.js";
+import { pairFiles } from "./batch.js";
 
 const $ = (id) => document.getElementById(id);
 const show = (id) => {
@@ -113,6 +113,7 @@ function resetState() {
   batchFiles = [];
   batchQueue = null;
   batchIndex = 0;
+  eobCache.clear();
   renderBatchPanel();
   setBatchLabels(null);
 }
@@ -157,10 +158,13 @@ let batchFiles = []; // [{file, name, role}] shown in the pairing panel
 let batchQueue = null; // [{bill: File, eob: File|null}] while a batch runs
 let batchIndex = 0;
 
+const sameFile = (a, b) => a.name === b.name && a.file.size === b.file.size;
+
 function addToBatch(files) {
   for (const file of files) {
-    if (batchFiles.some((b) => b.name === file.name && b.file.size === file.size)) continue;
-    batchFiles.push({ file, name: file.name, role: classifyFile(file.name) });
+    const entry = { file, name: file.name }; // role set only by user override
+    if (batchFiles.some((b) => sameFile(b, entry))) continue;
+    batchFiles.push(entry);
   }
   $("bill-file").value = ""; $("eob-file").value = "";
   $("bill-picked").textContent = ""; $("eob-picked").textContent = "";
@@ -174,33 +178,40 @@ function renderBatchPanel() {
   panel.hidden = false;
 
   const { pairs, billOnly, orphanEobs } = pairFiles(batchFiles);
-  const sideOf = (entry) =>
-    pairs.some((p) => p.eob === entry) || orphanEobs.includes(entry) ? "eob" : "bill";
+  const eobSet = new Set([...pairs.map((p) => p.eob), ...orphanEobs]);
+  const billOnlySet = new Set(billOnly);
 
   // EOBs a lone bill can be manually audited against: any EOB file in the
-  // batch (consolidated statements are reusable) or any saved EOB.
-  const eobEntries = [...new Set([...pairs.map((p) => p.eob), ...orphanEobs])];
+  // batch (consolidated statements are reusable) or any saved EOB. Option
+  // values are indices into this choices array; the pick stored on the entry
+  // is the structured choice itself, so filenames never round-trip through
+  // attribute strings.
+  const assignChoices = [
+    ...[...eobSet].map((e) => ({ label: `vs ${e.name}`, eob: e.file })),
+    ...savedEobs.map((e) => ({ label: `vs saved: ${e.label}`, savedEob: e })),
+  ];
   const assignOptions =
     '<option value="">Bill-only (no EOB)</option>' +
-    eobEntries.map((e) => `<option value="file:${escapeHtml(e.name)}">vs ${escapeHtml(e.name)}</option>`).join("") +
-    savedEobs.map((e) => `<option value="saved:${e.id}">vs saved: ${escapeHtml(e.label)}</option>`).join("");
+    assignChoices.map((c, i) => `<option value="${i}">${escapeHtml(c.label)}</option>`).join("");
 
   const list = $("batch-list");
   list.innerHTML = "";
   for (const entry of batchFiles) {
-    const isLoneBill = billOnly.includes(entry);
+    const isLoneBill = billOnlySet.has(entry);
     const row = document.createElement("div");
     row.className = "batch-row";
     row.innerHTML = `<span class="fname">${escapeHtml(entry.name)}</span>
       ${isLoneBill ? `<select class="assign">${assignOptions}</select>` : ""}
       <select class="role"><option value="bill">Bill</option><option value="eob">EOB</option></select>
       <button class="rm" title="Remove">✕</button>`;
-    row.querySelector(".role").value = sideOf(entry);
+    row.querySelector(".role").value = eobSet.has(entry) ? "eob" : "bill";
     row.querySelector(".role").onchange = (e) => { entry.role = e.target.value; renderBatchPanel(); };
     if (isLoneBill) {
       const assign = row.querySelector(".assign");
-      if ([...assign.options].some((o) => o.value === entry.eobPick)) assign.value = entry.eobPick;
-      assign.onchange = () => { entry.eobPick = assign.value; };
+      const picked = assignChoices.findIndex((c) =>
+        entry.eobPick && (c.eob === entry.eobPick.eob && c.savedEob === entry.eobPick.savedEob));
+      if (picked >= 0) assign.value = String(picked);
+      assign.onchange = () => { entry.eobPick = assignChoices[Number(assign.value)] || null; };
     }
     row.querySelector(".rm").onclick = () => {
       batchFiles = batchFiles.filter((b) => b !== entry);
@@ -223,20 +234,9 @@ $("batch-clear").onclick = () => { batchFiles = []; renderBatchPanel(); };
 
 $("batch-start").onclick = () => {
   const { pairs, billOnly } = pairFiles(batchFiles);
-  const resolvePick = (pick) => {
-    if (pick?.startsWith("file:")) {
-      const name = pick.slice(5);
-      return batchFiles.find((b) => b.name === name)?.file ?? null;
-    }
-    if (pick?.startsWith("saved:")) {
-      const e = savedEobs.find((s) => s.id === pick.slice(6));
-      return e ? { saved: e } : null;
-    }
-    return null;
-  };
   batchQueue = [
-    ...pairs.map((p) => ({ bill: p.bill.file, eob: p.eob.file })),
-    ...billOnly.map((b) => ({ bill: b.file, eob: resolvePick(b.eobPick) })),
+    ...pairs.map((p) => ({ bill: p.bill.file, eob: p.eob.file, savedEob: null })),
+    ...billOnly.map((b) => ({ bill: b.file, eob: b.eobPick?.eob ?? null, savedEob: b.eobPick?.savedEob ?? null })),
   ];
   if (!batchQueue.length) return;
   batchIndex = 0;
@@ -248,7 +248,7 @@ $("batch-start").onclick = () => {
 function runBatchItem() {
   const item = batchQueue[batchIndex];
   setBatchLabels(`Batch: audit ${batchIndex + 1} of ${batchQueue.length} — ${item.bill.name}`);
-  prepareAudit(item.bill, item.eob);
+  prepareAudit(item.bill, item.eob, item.savedEob);
 }
 
 function setBatchLabels(text) {
@@ -262,15 +262,20 @@ function setBatchLabels(text) {
 // After an error mid-batch, put the unprocessed remainder back in the panel.
 function batchBackToPanel() {
   if (!batchQueue) return;
-  const rebuilt = batchQueue.slice(batchIndex).flatMap((it) => {
+  const rebuilt = [];
+  const add = (entry) => {
+    if (!rebuilt.some((o) => sameFile(o, entry))) rebuilt.push(entry);
+  };
+  for (const it of batchQueue.slice(batchIndex)) {
     const bill = { file: it.bill, name: it.bill.name, role: "bill" };
-    if (it.eob?.saved) { bill.eobPick = `saved:${it.eob.saved.id}`; return [bill]; }
-    if (it.eob) return [bill, { file: it.eob, name: it.eob.name, role: "eob" }];
-    return [bill];
-  });
-  // A shared (consolidated) EOB appears in several queue items — keep one copy.
-  batchFiles = rebuilt.filter((e, i) =>
-    rebuilt.findIndex((o) => o.name === e.name && o.file.size === e.file.size) === i);
+    // Keep the pick so a manual "vs X" assignment survives the round-trip
+    // (harmless on auto-paired bills — the select only shows on lone ones).
+    if (it.savedEob) bill.eobPick = { savedEob: it.savedEob };
+    else if (it.eob) bill.eobPick = { eob: it.eob };
+    add(bill);
+    if (it.eob) add({ file: it.eob, name: it.eob.name, role: "eob" });
+  }
+  batchFiles = rebuilt;
   batchQueue = null;
   setBatchLabels(null);
   renderBatchPanel();
@@ -296,14 +301,18 @@ $("run-audit").onclick = async () => {
   if (!eobFile && !savedEob && !skipEob) {
     return setError("upload-error", "Add your EOB (step 1), pick a saved one, or check “I don't have an EOB”.");
   }
-  await prepareAudit(billFile, skipEob ? null : (eobFile || { saved: savedEob }));
+  await prepareAudit(billFile, skipEob ? null : eobFile, skipEob ? null : savedEob);
 };
 
-// eobSource: a File, {saved: savedEobEntry} for a library EOB, or null for bill-only.
-async function prepareAudit(billFile, eobSource) {
+// A consolidated EOB shared across a batch is extracted and redacted once —
+// OCR + NER are the expensive client steps. Keyed by the File object; cleared
+// with the rest of the batch state in resetState.
+const eobCache = new Map();
+
+// eobFile: freshly uploaded File; savedEob: library entry (already redacted).
+// At most one is non-null; both null means bill-only.
+async function prepareAudit(billFile, eobFile, savedEob = null) {
   if (!batchQueue) setBatchLabels(null);
-  const eobFile = eobSource && !eobSource.saved ? eobSource : null;
-  const savedEob = eobSource?.saved || null;
   if (billFile.size > 20e6 || (eobFile && eobFile.size > 20e6)) {
     return setError("upload-error", "Files must be under 20MB.");
   }
@@ -314,10 +323,7 @@ async function prepareAudit(billFile, eobSource) {
   try {
     setStatus("Reading your documents…");
     const bill = await extractText(billFile);
-    const eob = eobFile ? await extractText(eobFile) : null;
-
-    const ocrUsed = bill.method === "ocr" || eob?.method === "ocr";
-    $("ocr-banner").hidden = !ocrUsed;
+    const eob = eobFile && !eobCache.has(eobFile) ? await extractText(eobFile) : null;
 
     setStatus("Loading the privacy model (first run downloads ~90MB, cached after)…");
     const ner = await loadNer((p) => {
@@ -331,18 +337,22 @@ async function prepareAudit(billFile, eobSource) {
     state.bill.redacted = (await deidentify(bill.text, ner, state.registry)).redacted;
     if (savedEob) {
       // Library EOB: already redacted in a previous session; original never stored.
-      state.eob = { originalText: null, previews: null, method: "saved", confidence: 100, redacted: savedEob.redactedText };
+      state.eob = { originalText: null, previews: null, saved: true, confidence: 100, redacted: savedEob.redactedText };
+    } else if (eobFile && eobCache.has(eobFile)) {
+      state.eob = { ...eobCache.get(eobFile) }; // copy: manual redactions stay per-audit
     } else if (eob) {
       state.eob = { originalText: eob.text, previews: eob.previews, method: eob.method, confidence: eob.confidence };
       state.eob.redacted = (await deidentify(eob.text, ner, state.registry)).redacted;
+      eobCache.set(eobFile, { ...state.eob });
     } else {
       state.eob = null;
     }
 
+    $("ocr-banner").hidden = !(bill.method === "ocr" || state.eob?.method === "ocr");
     state.activeDoc = state.eob ? "eob" : "bill";
     $("tab-eob").style.display = state.eob ? "" : "none";
     $("save-eob").checked = true;
-    $("save-eob-wrap").hidden = !state.eob || state.eob.method === "saved";
+    $("save-eob-wrap").hidden = !state.eob || state.eob.saved;
     renderReview();
     show("review");
     track("audit_prepared");
@@ -371,7 +381,7 @@ function renderReview() {
   // Original pane: show the ACTUAL document (rendered pages) when we have it —
   // far easier to read than extracted text. Falls back to text for HTML/txt.
   const orig = $("original-pane");
-  if (docState.method === "saved") {
+  if (docState.saved) {
     orig.textContent = "This is a saved EOB — it was redacted when you first uploaded it, and the original was never stored. Review the redacted version on the right.";
   } else if (docState.previews?.length) {
     orig.textContent = "";
@@ -428,7 +438,7 @@ $("confirm-review").onclick = async () => {
     renderReport(data, { ocrLow, model: data.model });
     show("report");
     track("audit_completed");
-    if (state.eob && state.eob.method !== "saved" && $("save-eob").checked) {
+    if (state.eob && !state.eob.saved && $("save-eob").checked) {
       await maybeSaveEob(state.eob.redacted, data);
     }
     await loadHistory(); // refreshes allAudits (incl. this audit) + usage cards
@@ -600,20 +610,25 @@ $("download-email").onclick = () => {
 let allAudits = [];   // normalized for usage.js
 let allTrackers = []; // {id, label, codes, limit, planYearStartMonth}
 
-const todayISO = () => new Date().toISOString().slice(0, 10);
+const isoDate = (d) => d.toISOString().slice(0, 10);
+const todayISO = () => isoDate(new Date());
 
 async function loadHistory() {
   const user = auth.currentUser;
   if (!user) return;
-  const snap = await getDocs(
-    query(collection(db, `users/${user.uid}/audits`), orderBy("createdAt", "desc"))
-  );
+  // Audits, trackers, and the EOB library are independent — fetch in parallel.
+  const [snap] = await Promise.all([
+    getDocs(query(collection(db, `users/${user.uid}/audits`), orderBy("createdAt", "desc"))),
+    loadTrackers(),
+    loadEobs(),
+  ]);
   $("history-list").innerHTML = snap.empty
     ? '<p class="muted">No audits yet — run your first above.</p>'
     : "";
   allAudits = [];
   snap.forEach((d) => {
     const a = d.data();
+    const created = a.createdAt?.toDate?.();
     allAudits.push({
       id: d.id,
       serviceDates: a.serviceDates || [],
@@ -621,12 +636,12 @@ async function loadHistory() {
       accumulators: a.accumulators || null,
       payerRemarks: a.payerRemarks || [],
       provider: a.provider || "",
-      createdAtDate: a.createdAt?.toDate ? a.createdAt.toDate().toISOString().slice(0, 10) : "",
+      createdAtDate: created ? isoDate(created) : "",
     });
     const el = document.createElement("div");
     el.className = "history-item";
     const when = (a.serviceDates && a.serviceDates[0]) ||
-      (a.createdAt?.toDate ? a.createdAt.toDate().toLocaleDateString() : "");
+      (created ? created.toLocaleDateString() : "");
     const prov = a.provider ? ` · ${escapeHtml(a.provider)}` : "";
     el.innerHTML = `
       <button class="open">${escapeHtml(when)}${prov} · ${a.findings?.length ?? 0} findings · ${fmt(a.totals?.totalAtStake)}</button>
@@ -645,8 +660,6 @@ async function loadHistory() {
     };
     $("history-list").appendChild(el);
   });
-  await loadTrackers();
-  await loadEobs();
   renderUsage();
 }
 
@@ -720,7 +733,7 @@ async function maybeSaveEob(redactedText, data) {
   await addDoc(collection(db, `users/${auth.currentUser.uid}/eobs`), {
     label, redactedText, createdAt: serverTimestamp(),
   });
-  await loadEobs();
+  // No refresh here: the loadHistory() that follows every audit reloads the library.
   track("eob_saved");
 }
 
@@ -732,13 +745,19 @@ const LEVEL_NOTES = {
   over: "Over the limit — visits beyond it are likely your responsibility.",
 };
 
+// One place computes a tracker's plan-year window, visit count, and warning
+// level — the usage cards and the report line must never disagree.
+function trackerStatus(t) {
+  const w = planYearWindow(t.planYearStartMonth || 1, todayISO());
+  const { count, contributions } = visitsUsed(allAudits, t, w);
+  return { w, count, contributions, level: warningLevel(count, t.limit) };
+}
+
 function renderUsage() {
   const list = $("usage-list");
   list.innerHTML = "";
   for (const t of allTrackers) {
-    const w = planYearWindow(t.planYearStartMonth || 1, todayISO());
-    const { count, contributions } = visitsUsed(allAudits, t, w);
-    const level = warningLevel(count, t.limit);
+    const { w, count, contributions, level } = trackerStatus(t);
     const card = document.createElement("div");
     card.className = `usage-card ${level}`;
     const pct = Math.min(100, t.limit > 0 ? (count / t.limit) * 100 : 0);
@@ -841,18 +860,18 @@ function renderReportUsage(data) {
   const el = $("report-usage");
   el.innerHTML = "";
   if (!allTrackers.length || !data?.occurrenceTable) return;
-  const codes = new Set(data.occurrenceTable.map((r) => String(r.code).toUpperCase()));
+  const norm = (c) => String(c).trim().toUpperCase(); // match visitsUsed's normalization
+  const codes = new Set(data.occurrenceTable.map((r) => norm(r.code)));
+  const html = [];
   for (const t of allTrackers) {
-    if (!(t.codes || []).some((c) => codes.has(String(c).toUpperCase()))) continue;
-    const w = planYearWindow(t.planYearStartMonth || 1, todayISO());
-    const { count } = visitsUsed(allAudits, t, w);
-    const level = warningLevel(count, t.limit);
-    const cls = level === "ok" ? "" : level;
-    el.innerHTML += `<div class="usage-card ${cls}" style="margin:12px 0">
+    if (!(t.codes || []).some((c) => codes.has(norm(c)))) continue;
+    const { count, level } = trackerStatus(t);
+    html.push(`<div class="usage-card ${level}" style="margin:12px 0">
       <div class="usage-head"><b>${escapeHtml(t.label)}: visit ${count} of ${t.limit} this plan year</b></div>
-      ${LEVEL_NOTES[level] ? `<div class="usage-note">${LEVEL_NOTES[level]}</div>` : ""}</div>`;
+      ${LEVEL_NOTES[level] ? `<div class="usage-note">${LEVEL_NOTES[level]}</div>` : ""}</div>`);
     if (level !== "ok") track("tracker_warning_shown");
   }
+  el.innerHTML = html.join("");
 }
 
 resetState();

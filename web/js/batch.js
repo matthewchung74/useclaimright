@@ -1,8 +1,14 @@
 // Pure pairing logic for batch mode. No DOM, no globals — unit-testable in Node.
 // Input: [{name}] (File objects work — only .name is read for classification).
 
-const EOB_TOKENS = /\b(eob|eobs|explanation|benefits?|remittance|claim)\b/;
-const BILL_TOKENS = /\b(bill|bills|statement|invoice|itemized|charges)\b/;
+// Single source for the role vocabulary: classification and stem-stripping
+// must agree, or a classified file's stem keeps its token and never pairs.
+const EOB_WORDS = ["eob", "eobs", "explanation", "benefits?", "remittance", "claim"];
+const BILL_WORDS = ["bill", "bills", "statement", "invoice", "itemized", "charges"];
+const wordRe = (words, flags = "") => new RegExp(`\\b(${words.join("|")})\\b`, flags);
+const EOB_TOKENS = wordRe(EOB_WORDS);
+const BILL_TOKENS = wordRe(BILL_WORDS);
+const STRIP_TOKENS = wordRe([...EOB_WORDS, ...BILL_WORDS, "of"], "g");
 
 // Separators (-, _, .) defeat \b against digits/letters, so normalize first.
 const norm = (name) => name.toLowerCase().replace(/\.[a-z0-9]+$/, "").replace(/[-_.\s]+/g, " ").trim();
@@ -19,10 +25,7 @@ export function classifyFile(name) {
 // Shared prefix key: normalized name minus classification tokens.
 // "t3-bill.pdf" and "t3-eob.pdf" → "t3".
 export function stemOf(name) {
-  return norm(name)
-    .replace(/\b(eob|eobs|bill|bills|explanation|of|benefits?|statement|invoice|itemized|remittance|claim|charges)\b/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
+  return norm(name).replace(STRIP_TOKENS, "").replace(/\s+/g, " ").trim();
 }
 
 // Group by stem, pair one bill with one eob per group (zipped by name order
