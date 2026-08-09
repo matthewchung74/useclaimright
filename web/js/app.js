@@ -6,7 +6,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 import {
   getFirestore, collection, query, orderBy, getDocs, doc, getDoc, deleteDoc, addDoc,
-  serverTimestamp, connectFirestoreEmulator,
+  updateDoc, serverTimestamp, connectFirestoreEmulator,
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 import {
   planYearWindow, visitsUsed, latestAccumulators, suggestedTrackers, warningLevel,
@@ -945,7 +945,7 @@ async function runSbcExtraction(force = false) {
       show("upload"); setBatchLabels(null); return;
     }
     await loadPlan();
-    // applySbcConfiguration() — wired in a later task
+    await applySbcConfiguration();
     setBatchLabels(null);
     show("upload");
     track("plan_added");
@@ -956,6 +956,23 @@ async function runSbcExtraction(force = false) {
       ? e.message : "Plan extraction failed — please try again.");
     show("upload"); setBatchLabels(null);
   }
+}
+
+// After a successful SBC extraction: create/update sbc-sourced trackers.
+async function applySbcConfiguration() {
+  const s = activePlan?.structured;
+  if (!s) return;
+  const month = planYearStartMonthFrom(s.planYearStart);
+  const { create, update } = mergeSbcTrackers(allTrackers, s.limits || [], month);
+  const uid = auth.currentUser.uid;
+  for (const t of create) {
+    await addDoc(collection(db, `users/${uid}/trackers`), { ...t, createdAt: serverTimestamp() });
+  }
+  for (const u of update) {
+    await updateDoc(doc(db, `users/${uid}/trackers/${u.id}`), u.changes);
+  }
+  if (create.length || update.length) { await loadTrackers(); }
+  renderUsage();
 }
 
 // ---------- Usage tracker UI ----------
@@ -984,7 +1001,7 @@ function renderUsage() {
     const pct = Math.min(100, t.limit > 0 ? (count / t.limit) * 100 : 0);
     card.innerHTML = `
       <div class="usage-head">
-        <b>${escapeHtml(t.label)}</b>
+        <b>${escapeHtml(t.label)}</b>${t.source === "sbc" && !t.confirmed ? ' <span class="count" title="Codes were suggested from your SBC — open the tracker and confirm them">from your SBC — check the codes</span>' : ""}
         <span style="display:flex;gap:10px;align-items:center">
           <span class="usage-count">${count} / ${t.limit}</span>
           <button class="usage-del" title="Stop tracking">✕</button>
@@ -1001,22 +1018,37 @@ function renderUsage() {
         loadTrackers().then(renderUsage);
       }
     };
+    if (t.source === "sbc" && !t.confirmed) {
+      card.querySelector("details").addEventListener("toggle", () => {
+        updateDoc(doc(db, `users/${auth.currentUser.uid}/trackers/${t.id}`), { confirmed: true });
+      }, { once: true });
+    }
     list.appendChild(card);
   }
   if (!allTrackers.length) {
     list.innerHTML = '<p class="muted">Nothing tracked yet — add a limit below.</p>';
   }
 
-  // Deductible card
+  // Deductible card — the SBC owns the limit, the EOB owns progress (see plan.js deductibleTarget).
   const dw = planYearWindow(allTrackers[0]?.planYearStartMonth || 1, todayISO());
   const { snapshot, asOf, summedApplied, disagreement } = latestAccumulators(allAudits, dw);
+  const target = deductibleTarget(activePlan?.structured ?? null, snapshot);
   const dc = $("deductible-card");
-  if (snapshot && typeof snapshot.deductibleToDate === "number") {
-    const lim = typeof snapshot.deductibleLimit === "number" ? ` of ${fmt(snapshot.deductibleLimit)}` : "";
+  if (typeof snapshot?.deductibleToDate === "number" || target.limit !== null) {
+    const applied = typeof snapshot?.deductibleToDate === "number" ? snapshot.deductibleToDate : (summedApplied ?? 0);
+    const lim = target.limit !== null ? ` of ${fmt(target.limit)}` : "";
+    let sourcing;
+    if (target.source === "sbc" && snapshot) {
+      sourcing = `Target from your plan (SBC). As stated on your most recent EOB (${escapeHtml(asOf)}).`;
+    } else if (target.source === "sbc") {
+      sourcing = "Target from your plan (SBC).";
+    } else {
+      sourcing = `As stated on your most recent EOB (${escapeHtml(asOf)}).`;
+    }
     dc.innerHTML = `<div class="usage-card">
-      <div class="usage-head"><b>Deductible</b><span class="usage-count">${fmt(snapshot.deductibleToDate)}${lim}</span></div>
-      ${typeof snapshot.deductibleLimit === "number" ? `<div class="progress"><div class="bar" style="width:${Math.min(100, (snapshot.deductibleToDate / snapshot.deductibleLimit) * 100)}%"></div></div>` : ""}
-      <div class="muted">As stated on your most recent EOB (${escapeHtml(asOf)}).${disagreement ? ` Note: your EOBs' per-claim amounts sum to ${fmt(summedApplied)} — the insurer's running total disagrees; worth a look.` : ""}</div>
+      <div class="usage-head"><b>Deductible</b><span class="usage-count">${fmt(applied)}${lim}</span></div>
+      ${target.limit !== null ? `<div class="progress"><div class="bar" style="width:${Math.min(100, (applied / target.limit) * 100)}%"></div></div>` : ""}
+      <div class="muted">${sourcing}${disagreement ? ` Note: your EOBs' per-claim amounts sum to ${fmt(summedApplied)} — the insurer's running total disagrees; worth a look.` : ""}${target.conflict ? ` Note: your EOB states a different annual deductible (${fmt(snapshot.deductibleLimit)}) than your SBC (${fmt(target.limit)}) — worth a look.` : ""}</div>
     </div>`;
   } else {
     dc.innerHTML = "";
