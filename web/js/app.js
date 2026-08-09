@@ -1020,6 +1020,7 @@ function renderUsage() {
     };
     if (t.source === "sbc" && !t.confirmed) {
       card.querySelector("details").addEventListener("toggle", () => {
+        t.confirmed = true;
         updateDoc(doc(db, `users/${auth.currentUser.uid}/trackers/${t.id}`), { confirmed: true });
       }, { once: true });
     }
