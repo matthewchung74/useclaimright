@@ -399,7 +399,7 @@ async function runBatch() {
     batchQueue = null;
     batchDocs = null;
     setBatchLabels(`Batch complete — all ${total} audits are saved under “Your past audits”.`);
-    renderReport(last.data, { ocrLow: last.ocrLow, model: last.data.model });
+    renderReport(last.data, { ocrLow: last.ocrLow, model: last.data.model, planApplied: last.data.planApplied, planReason: last.data.planReason });
     show("report");
     track("batch_completed");
     await loadHistory(); // refreshes allAudits (incl. these audits) + usage cards
@@ -515,7 +515,7 @@ $("confirm-review").onclick = async () => {
   setStatus("Analyzing your bill against the EOB…");
   try {
     const { data } = await analyzeFn(payload);
-    renderReport(data, { ocrLow, model: data.model });
+    renderReport(data, { ocrLow, model: data.model, planApplied: data.planApplied, planReason: data.planReason });
     show("report");
     track("audit_completed");
     if (state.eob && !state.eob.saved && $("save-eob").checked) {
@@ -544,13 +544,19 @@ const TYPE_LABELS = {
   not_in_eob: "On the bill, missing from the EOB",
   cost_share_error: "Cost-sharing math error",
   charity_care_eligible: "Financial assistance may apply",
+  copay_mismatch: "Copay doesn't match your plan",
+  coinsurance_mismatch: "Coinsurance math doesn't match",
+  deductible_misapplied: "Deductible applied where plan says none",
+  not_covered_per_plan: "Coverage question worth asking",
 };
 
 const fmt = (n) => (typeof n === "number" ? n.toLocaleString("en-US", { style: "currency", currency: "USD" }) : "—");
 
 let lastReport = null;
 
-function renderReport(data, { ocrLow } = {}) {
+const PLAN_TYPES = new Set(["copay_mismatch", "coinsurance_mismatch", "deductible_misapplied", "not_covered_per_plan"]);
+
+function renderReport(data, { ocrLow, model, planApplied, planReason } = {}) {
   const { findings = [], totals = {}, occurrenceTable = [] } = data;
   lastReport = { findings, totals, occurrenceTable };
   $("email-card").hidden = true;
@@ -569,7 +575,14 @@ function renderReport(data, { ocrLow } = {}) {
   $("report-findings").innerHTML = findings.length
     ? Object.entries(byType).map(([type, list]) => `
         <h3>${TYPE_LABELS[type] || type} <span class="count">${list.length}</span></h3>
-        ${list.map((f) => `
+        ${list.map((f) => PLAN_TYPES.has(f.type) ? `
+          <div class="finding ${f.confidence}">
+            <div class="f-head"><b>${fmt(f.amountAtStake)}</b><span class="conf">${f.confidence} confidence</span></div>
+            <div class="xq"><span class="src">SBC</span>“${escapeHtml(f.evidence.sbcQuote)}”</div>
+            <div class="xq"><span class="src">${f.evidence.billQuote ? "Bill" : "EOB"}</span>“${escapeHtml(f.evidence.billQuote || f.evidence.eobQuote)}”</div>
+            <p>${escapeHtml(f.description)} — <mark>${fmt(f.amountAtStake)} you may not owe</mark>.</p>
+            <p class="lineref">${escapeHtml(f.lineRef)}</p>
+          </div>` : `
           <div class="finding ${f.confidence}">
             <div class="f-head"><b>${fmt(f.amountAtStake)}</b><span class="conf">${f.confidence} confidence</span></div>
             <p>${escapeHtml(f.description)}</p>
@@ -587,6 +600,16 @@ function renderReport(data, { ocrLow } = {}) {
         `<tr><td>${escapeHtml(r.code)}</td><td>${escapeHtml(r.description)}</td><td>${r.count}</td><td>${r.unitCharges.map(fmt).join(", ")}</td></tr>`
       ).join("")
     : "";
+
+  const note = $("plan-note");
+  if (planApplied === false && planReason) {
+    note.hidden = false;
+    note.innerHTML = planReason === "no_plan"
+      ? `Not checked against your plan — add your Summary of Benefits under Coverage usage to enable plan checks.`
+      : planReason === "out_of_period"
+        ? `Not checked against your plan — this bill's service dates fall outside your plan year${activePlan?.structured?.planYearEnd ? ` (ended ${escapeHtml(activePlan.structured.planYearEnd)})` : ""}.`
+        : `Not checked against your plan — no service dates could be read from this bill.`;
+  } else { note.hidden = true; note.innerHTML = ""; }
 }
 
 function escapeHtml(s) {
