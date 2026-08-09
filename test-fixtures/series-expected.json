@@ -113,10 +113,9 @@
     "plantedMismatch": {
       "pairsWith": "p1",
       "expectTypes": [
-        "copay_mismatch",
-        "deductible_misapplied"
+        "copay_mismatch"
       ],
-      "planted": "$60 copay/visit vs $120 applied to deductible"
+      "planted": "$60 copay/visit (SBC rehab row) vs $95.00 member responsibility on p1-eob — expected delta ~$35"
     }
   }
 }

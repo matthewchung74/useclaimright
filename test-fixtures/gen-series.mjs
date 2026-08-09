@@ -139,7 +139,11 @@ expected.sbc = {
     { label: "Outpatient mental health services", visitsPerYear: 6 },
     { label: "Rehabilitation services (physical, occupational therapy)", visitsPerYear: 20 },
   ],
-  plantedMismatch: { pairsWith: "p1", expectTypes: ["copay_mismatch", "deductible_misapplied"], planted: "$60 copay/visit vs $120 applied to deductible" },
+  plantedMismatch: {
+    pairsWith: "p1",
+    expectTypes: ["copay_mismatch"],
+    planted: "$60 copay/visit (SBC rehab row) vs $95.00 member responsibility on p1-eob — expected delta ~$35",
+  },
 };
 
 writeFileSync(new URL("./series-expected.json", import.meta.url).pathname, JSON.stringify(expected, null, 2));
