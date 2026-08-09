@@ -81,7 +81,7 @@ Audited `web/js/usage.js`, `functions/providers/gemini.js`, `functions/schema.js
 ## Testing & fixtures
 
 - New fixture `test-fixtures/fake-sbc.html/pdf` (via gen-series.mjs; answer key in series-expected.json): Acme Silver PPO, standardized SBC format, $1,500 deductible, $6,000 OOP max, period 2026-01-01→12-31, "outpatient mental health: $0 after deductible, 6 visits/year", planted hook "specialist visit — $60 copay".
-- Test paths: SBC upload → plan card + auto 6-visit tracker; fake-bill audit → copay-mismatch with $115 delta; p1-bill (2026-03-20) → cross-check applies; out-of-period bill → "not checked" line.
+- Test paths: SBC upload → plan card + auto trackers (6/yr mental health, 20/yr rehab); p1-bill + p1-eob (PT, 2026-03-20, in-period) → copay_mismatch/deductible_misapplied against the planted "Rehabilitation services — $60 copay/visit, deductible does not apply" row (~$60 delta); t1 pair → no false plan mismatch (mental-health row consistent with its EOB); out-of-period bill → "not checked" line.
 - Unit tests (node:test): plan schema + new finding types validation; pure functions for plan-year applicability and sbc-tracker merge rule. Gemini extraction covered by live fixture round-trip, as audits are today.
 
 can we organize the test-fixtures by dir and use case, with diff use cases per user and more than 1 user edge case testing. 
