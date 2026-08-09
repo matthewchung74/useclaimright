@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import Ajv from "ajv";
 import { FINDING_TYPES, findingsSchema } from "../schema.js";
 import { planApplies, mergeSbcTrackers, deductibleTarget, planYearStartMonthFrom } from "../../web/js/plan.js";
+import { planSchema, buildDigest, replaceDecision, planTermsBlock, applyPlanGate } from "../plan.js";
 
 const ajv = new Ajv({ allErrors: true });
 
@@ -91,4 +92,95 @@ test("planYearStartMonthFrom: extracts month, defaults to 1", () => {
   assert.equal(planYearStartMonthFrom("2026-07-01"), 7);
   assert.equal(planYearStartMonthFrom(null), 1);
   assert.equal(planYearStartMonthFrom("garbage"), 1);
+});
+
+const STRUCTURED = {
+  planName: "Acme Silver PPO", planYearStart: "2026-01-01", planYearEnd: "2026-12-31",
+  deductible: { individual: 1500, family: 3000 }, oopMax: { individual: 6000, family: 12000 },
+  limits: [{ label: "Outpatient mental health", codesHint: ["90837"], visitsPerYear: 6 }],
+  costShares: [{ category: "Rehabilitation services", verbatim: "Rehabilitation services — $60 copay/visit, deductible does not apply", copay: 60, coinsurancePct: null, deductibleApplies: false }],
+};
+
+test("planSchema validates the structured shape; rejects extra properties", () => {
+  const validate = new Ajv({ allErrors: true }).compile(planSchema);
+  assert.equal(validate(STRUCTURED), true, new Ajv().errorsText(validate?.errors));
+  assert.equal(validate({ ...STRUCTURED, bogus: 1 }), false);
+});
+
+const ALL_NULL = {
+  planName: null, planYearStart: null, planYearEnd: null,
+  deductible: { individual: null, family: null }, oopMax: { individual: null, family: null },
+  limits: [], costShares: [],
+};
+
+test("planSchema ACCEPTS an all-null plan — the not-an-SBC gate depends on this", () => {
+  // A junk upload makes the model return nulls; validation must pass so the
+  // callable can reject with the clean "doesn't look like an SBC" message
+  // instead of a confusing "invalid output" error.
+  const validate = new Ajv({ allErrors: true }).compile(planSchema);
+  assert.equal(validate(ALL_NULL), true);
+});
+
+test("buildDigest survives an all-null plan without crashing", () => {
+  const d = buildDigest(ALL_NULL);
+  assert.equal(typeof d, "string");
+  assert.ok(d.includes("not stated"));
+});
+
+test("buildDigest is deterministic, contains verbatim rows and key numbers, caps at 2000 chars", () => {
+  const d1 = buildDigest(STRUCTURED), d2 = buildDigest(STRUCTURED);
+  assert.equal(d1, d2);
+  assert.ok(d1.includes("Acme Silver PPO"));
+  assert.ok(d1.includes("$60 copay/visit"));
+  assert.ok(d1.includes("1500"));
+  assert.ok(d1.length <= 2000);
+  const bloated = { ...STRUCTURED, costShares: Array.from({ length: 100 }, (_, i) => ({ category: `C${i}`, verbatim: "x".repeat(80), copay: null, coinsurancePct: null, deductibleApplies: null })) };
+  assert.ok(buildDigest(bloated).length <= 2000);
+});
+
+test("replaceDecision: store fresh/newer/forced; confirm on older", () => {
+  assert.equal(replaceDecision(null, STRUCTURED, false), "store");
+  const older = { ...STRUCTURED, planYearStart: "2025-01-01", planYearEnd: "2025-12-31" };
+  assert.equal(replaceDecision(STRUCTURED, older, false), "confirm_older");
+  assert.equal(replaceDecision(STRUCTURED, older, true), "store");
+  assert.equal(replaceDecision(older, STRUCTURED, false), "store"); // newer replaces older freely
+  assert.equal(replaceDecision(STRUCTURED, { ...STRUCTURED, planYearStart: null }, false), "store"); // unknown period: store (upload-time warning is the client's job)
+});
+
+test("planTermsBlock fences the digest and forbids inference", () => {
+  const b = planTermsBlock("DIGEST");
+  assert.ok(b.includes("PLAN TERMS"));
+  assert.ok(b.includes("DIGEST"));
+  assert.ok(/only when the plan term is explicit/i.test(b));
+});
+
+test("applyPlanGate: applies in-window (inclusive bounds), strips straggler plan findings when not applied, clamps totals", () => {
+  const mk = (dates, findings = [], totalAtStake = 0) => ({
+    serviceDates: dates,
+    findings,
+    totals: { billed: 0, eobAllowed: 0, patientResponsibility: 0, totalAtStake },
+  });
+  const planFinding = { type: "copay_mismatch", amountAtStake: 60 };
+  const normalFinding = { type: "duplicate_charge", amountAtStake: 145.5 };
+
+  // applies: boundary date, nothing stripped
+  let r = applyPlanGate(mk(["2026-12-31"], [planFinding, normalFinding], 205.5), STRUCTURED);
+  assert.equal(r.planApplied, true);
+  assert.equal(r.planReason, null);
+  assert.equal(r.result.findings.length, 2);
+
+  // out of period: plan findings stripped, totalAtStake reduced
+  r = applyPlanGate(mk(["2025-06-01"], [planFinding, normalFinding], 205.5), STRUCTURED);
+  assert.equal(r.planApplied, false);
+  assert.equal(r.planReason, "out_of_period");
+  assert.deepEqual(r.result.findings, [normalFinding]);
+  assert.equal(r.result.totals.totalAtStake, 145.5);
+
+  // clamp: stragglers larger than the stated total never go negative
+  r = applyPlanGate(mk(["2025-06-01"], [{ type: "deductible_misapplied", amountAtStake: 999 }], 10), STRUCTURED);
+  assert.equal(r.result.totals.totalAtStake, 0);
+
+  // no plan / no dates
+  assert.equal(applyPlanGate(mk(["2026-03-01"]), null).planReason, "no_plan");
+  assert.equal(applyPlanGate(mk([]), STRUCTURED).planReason, "no_dates");
 });
