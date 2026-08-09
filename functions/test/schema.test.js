@@ -21,7 +21,7 @@ const validResult = {
       description: "CPT 80053 billed twice on the same date of service.",
       amountAtStake: 145.5,
       confidence: "high",
-      evidence: { billQuote: "80053 COMPREHENSIVE METABOLIC PANEL 145.50", eobQuote: "80053 allowed 41.20" },
+      evidence: { billQuote: "80053 COMPREHENSIVE METABOLIC PANEL 145.50", eobQuote: "80053 allowed 41.20", sbcQuote: "" },
     },
   ],
   totals: { billed: 2300, eobAllowed: 900, patientResponsibility: 250, totalAtStake: 145.5 },

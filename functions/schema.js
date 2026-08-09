@@ -10,6 +10,11 @@ export const FINDING_TYPES = [
   "not_in_eob",
   "cost_share_error",
   "charity_care_eligible",
+  // v3 — plan (SBC) cross-check findings
+  "copay_mismatch",
+  "coinsurance_mismatch",
+  "deductible_misapplied",
+  "not_covered_per_plan",
 ];
 
 const nullableNumber = { type: ["number", "null"] };
@@ -50,10 +55,11 @@ export const findingsSchema = {
           evidence: {
             type: "object",
             additionalProperties: false,
-            required: ["billQuote", "eobQuote"],
+            required: ["billQuote", "eobQuote", "sbcQuote"],
             properties: {
               billQuote: { type: "string" },
               eobQuote: { type: "string" },
+              sbcQuote: { type: "string" }, // "" unless the finding cites the plan
             },
           },
         },
