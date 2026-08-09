@@ -90,8 +90,9 @@ Each plan states the **use case** it verifies, the exact **data** (fixture files
 **Data:** `test-fixtures/series/p1-bill.pdf` + `p1-eob.pdf`. Run BEFORE uploading the SBC (or delete the plan first).
 
 1. Audit the p1 pair.
-   ✓ "No discrepancies found." (or empty findings); totals consistent ($95 responsibility).
+   ✓ ONE finding: "Billed above EOB allowed amount" ($115, high confidence) — the fixture bills demand the full charge ($210) while the EOB member responsibility is $95, a genuine discrepancy the audit should catch. No OTHER findings.
    ✓ Report footer (gray, above the disclaimer): "**Not checked against your plan** — add your Summary of Benefits under Coverage usage to enable plan checks."
+   *(Verified live 2026-08-09.)*
 
 **Cost:** 1 audit.
 
@@ -134,7 +135,8 @@ Each plan states the **use case** it verifies, the exact **data** (fixture files
    — mono quote `SBC "Rehabilitation services … $60 copay/visit, deductible does not apply"`
    — mono quote of the bill/EOB line
    — sentence ending in a **yellow-highlighted** "$35.00 you may not owe" (approximate; delta = $95 − $60).
-   ✓ Delta included in "Worth disputing". ✓ NO "not checked" footer.
+   ✓ The billed-above-allowed finding ($115) also appears; "Worth disputing" sums both ($150). ✓ Tracker line "visit 2 of 20". ✓ NO "not checked" footer.
+   *(Verified live 2026-08-09.)*
 2. Click **Generate dispute email**. ✓ The draft includes `My plan (SBC) states: "…$60 copay…"`.
 
 **Cost:** 1 audit.
