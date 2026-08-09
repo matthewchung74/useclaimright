@@ -93,5 +93,17 @@ if (!EMULATOR) {
     await assertFails(anon.doc("users/alice/eobs/e2").get());
   });
 
+  // Plan doc: written exclusively by the extractPlan Function (Admin SDK).
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    await ctx.firestore().doc("users/alice/plan/active").set({ structured: {}, digest: "" });
+  });
+  test("plan: owner can read and delete; nobody can write", async () => {
+    await assertSucceeds(alice.doc("users/alice/plan/active").get());
+    await assertFails(alice.doc("users/alice/plan/active").set({ structured: {} }));
+    await assertFails(mallory.doc("users/alice/plan/active").get());
+    await assertFails(anon.doc("users/alice/plan/active").get());
+    await assertSucceeds(alice.doc("users/alice/plan/active").delete());
+  });
+
   test.after(async () => { await env.cleanup(); });
 }
