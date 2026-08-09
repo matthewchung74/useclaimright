@@ -1,5 +1,6 @@
 import { GoogleGenAI } from "@google/genai";
 import { findingsSchema } from "../schema.js";
+import { planSchema, PLAN_EXTRACT_INSTRUCTIONS, planTermsBlock } from "../plan.js";
 
 const AUDIT_INSTRUCTIONS = `You are a medical billing auditor. You receive the de-identified text of
 a patient's itemized medical bill and the matching insurance Explanation of Benefits (EOB).
@@ -53,11 +54,12 @@ totals.eobAllowed and totals.patientResponsibility to 0.`;
 
 // Provider adapter contract: runAudit(redactedBill, redactedEob, opts) -> validated-shape object.
 // Swapping providers means adding a sibling file with the same signature.
-export async function runAudit(redactedBill, redactedEob, { modelId, apiKey }) {
+export async function runAudit(redactedBill, redactedEob, { modelId, apiKey }, planDigest = null) {
   const ai = new GoogleGenAI({ apiKey });
   const eobSection = redactedEob.trim()
     ? `===== EOB =====\n${redactedEob}`
     : BILL_ONLY_NOTE;
+  const instructions = AUDIT_INSTRUCTIONS + (planDigest ? planTermsBlock(planDigest) : "");
   const response = await ai.models.generateContent({
     model: modelId,
     contents: [
@@ -65,7 +67,7 @@ export async function runAudit(redactedBill, redactedEob, { modelId, apiKey }) {
         role: "user",
         parts: [
           {
-            text: `${AUDIT_INSTRUCTIONS}\n\n===== ITEMIZED BILL =====\n${redactedBill}\n\n${eobSection}`,
+            text: `${instructions}\n\n===== ITEMIZED BILL =====\n${redactedBill}\n\n${eobSection}`,
           },
         ],
       },
@@ -73,6 +75,26 @@ export async function runAudit(redactedBill, redactedEob, { modelId, apiKey }) {
     config: {
       responseMimeType: "application/json",
       responseJsonSchema: findingsSchema,
+      temperature: 0,
+    },
+  });
+  return JSON.parse(response.text);
+}
+
+// Same adapter contract as runAudit: returns the parsed structured plan.
+export async function runPlanExtract(redactedSbc, { modelId, apiKey }) {
+  const ai = new GoogleGenAI({ apiKey });
+  const response = await ai.models.generateContent({
+    model: modelId,
+    contents: [
+      {
+        role: "user",
+        parts: [{ text: `${PLAN_EXTRACT_INSTRUCTIONS}\n\n===== SUMMARY OF BENEFITS =====\n${redactedSbc}` }],
+      },
+    ],
+    config: {
+      responseMimeType: "application/json",
+      responseJsonSchema: planSchema,
       temperature: 0,
     },
   });
