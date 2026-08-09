@@ -15,6 +15,12 @@ One new callable `extractPlan` parses the SBC once into (a) a structured, Ajv-va
 
 Rejected: a separate cross-check Gemini pass per audit (2x cost, merge complexity); purely deterministic cross-check (dies on SBC-category → CPT-code mapping).
 
+## Plan freshness, duplicates, and older uploads
+
+- **Out of date:** at upload, if the extracted `planYearEnd` is before today, warn before storing: "This SBC's coverage period ended {date} — if you have your current one, upload that instead. Keep this one anyway?" At runtime, once today passes `planYearEnd`, the "Your plan" card shows an amber renewal nudge: "Your plan year ended {date} — upload your new SBC." (Audit-time correctness is already guarded separately by the service-date window.)
+- **Same SBC uploaded again:** detected client-side for free — if the newly redacted text is byte-identical to the stored `redactedText`, skip the `extractPlan` call entirely and tell the user "this plan is already on file" (no rate-limit consumption, no tracker churn, `createdAt` preserved).
+- **Older SBC uploaded:** if the new document's `planYearStart` is earlier than the stored plan's, do not silently replace. The Function returns both coverage periods and stores nothing; the client confirms — "The plan on file covers {newer period}; this document covers {older period}. Replace anyway?" — and re-calls with an explicit `force` flag on yes.
+
 ## Data model
 
 `users/{uid}/plan/active` (fixed ID = single active plan; overwritten atomically on successful re-extraction; written only by the Function, owner read/delete):
@@ -34,6 +40,13 @@ Plan-year awareness: cross-check applies only when audit service dates fall with
 - Prompt: extract coverage period, deductible/OOP, visit limits, cost-share rows verbatim-or-null; never infer unprinted numbers; SBC standardized format ("Important Questions" table, "Common Medical Events" grid) named explicitly. `codesHint` proposed from model knowledge, flagged in UI as "from your SBC — check the codes" until user touches the tracker once.
 - Client on response: render plan card; create/update `source:"sbc"` trackers (skip when a manual tracker's codes overlap); deductible card uses SBC target when no in-window EOB accumulator has stated one (EOB "met to date" stays authoritative when present — it is newer information).
 
+## EOB-vs-SBC semantics audit (existing code, verified 2026-08-08)
+
+Audited `web/js/usage.js`, `functions/providers/gemini.js`, `functions/schema.js`, and all coverage-related UI copy for places that treat the EOB as a source of plan terms. Result: **no incorrect logic found.** Accumulators and `payerRemarks` are extracted verbatim-or-null from what the EOB actually prints (EOBs legitimately carry "met to date" lines and limit remarks); plan limits are exclusively user-entered trackers; the audit prompt forbids inferring unprinted values. Two precedence notes this feature must implement:
+
+- **Deductible/OOP *limit* precedence:** today the "$X of $Y" target comes only from EOB-printed accumulator lines. With an SBC on file, the SBC is authoritative for the *limit* (Y); the EOB stays authoritative for *progress* (X). If an EOB-printed limit disagrees with the SBC's by more than $1, show both (same pattern as the existing accumulator cross-check line).
+- **"Coverage usage" heading:** currently shows usage against user-entered limits, not actual coverage; once the "Your plan" card lands in this section the heading becomes accurate. No change needed.
+
 ## Audit-time cross-check
 
 - `analyze` reads `users/{uid}/plan/active` server-side (client payload unchanged; server authoritative). No plan / out-of-period → audit runs exactly as today, response carries `planApplied: false` + reason.
@@ -49,6 +62,15 @@ Plan-year awareness: cross-check applies only when audit service dates fall with
 - **Not-applicable note**: one muted line, e.g. "Not checked against your plan: coverage period ended 2025-12-31."
 - **Scope boundary**: the whole-app Evidence Desk restyle (fonts, highlighter app-wide, receipt summary) is a separate follow-up task; this feature builds its new surfaces DESIGN.md-compliant but does not reskin existing screens.
 
+### UI designer review (2026-08-08) — incorporated
+
+- **Card construction:** build "Your plan" on `.usage-card` (12px radius), not `.card` — it must group with the deductible/tracker cards it feeds. Place it **first** in Coverage usage, above the deductible card: plan is the source, deductible/trackers its outputs; the ordering is the information design. Header: plan name bold 15px left, coverage period right in mono 13px muted. Figures grid: `repeat(auto-fit,minmax(150px,1fr))`, 12px muted label over mono 15px tabular value per cell. Wallet metaphor carried by structure (mono grid + `border-top:3px solid var(--brand)` hairline), no fills or gradients. Actions in a quiet right-aligned footer row ("Replace" = ghost sm button, "View full plan" = 13px link) — never in the header. Empty state reuses `.dz` at reduced scale inside the same card shell.
+- **Cross-check finding structure:** `.finding` card, quotes NOT collapsed in `<details>` — the confrontation is the finding. Two `.xq` rows (mono 13px, 3px teal left rule, `SBC`/`BILL` source labels styled like `.pane-label`), then a delta sentence where only the dollar amount carries `<mark>` with `#E8F25C` (1px 4px padding, 3px radius). Highlighter marks the delta only, never the quotes.
+- **Gold/highlighter coexistence rule:** roles must never overlap in scale — gold stays at chrome level (card borders), `#E8F25C` exists only as an inline text mark. No highlighter borders or fills, and no soft `#F5F8BD`, until the app-wide restyle retires gold.
+- **"Not checked" line:** report footer (after findings, before disclaimer), never the top — leading with a caveat undercuts "it found money." Out-of-period: "Not checked against your plan — this bill's service dates fall outside your plan year (ended {date})." No plan: "Not checked against your plan — add your Summary of Benefits under Coverage usage to enable plan checks" (the only variant that may carry a link).
+- **Empty-state prominence:** medium — one card in Coverage usage, no banners in the audit flow. Includes a `details.explain` mirroring the EOB explainer: "What's an SBC, and where do I find it?" (insurer website → plan documents → 'Summary of Benefits and Coverage' PDF; enrollment packet; or ask HR).
+- **Risk mitigations:** (a) the SBC drop target carries the hint "This is about your plan — not a bill or EOB" to prevent misfiling; (b) do NOT load Newsreader/Plex Mono for these surfaces alone — use `ui-monospace,Menlo` (already used by `.chip`) and honor DESIGN.md structurally until the full restyle swaps fonts; (c) highlighter stays out of `.tot.hi`.
+
 ## Error handling & security
 
 - Firestore rules: add `users/{uid}/plan/{doc}` — owner read/delete, Function sole writer.
@@ -61,6 +83,8 @@ Plan-year awareness: cross-check applies only when audit service dates fall with
 - New fixture `test-fixtures/fake-sbc.html/pdf` (via gen-series.mjs; answer key in series-expected.json): Acme Silver PPO, standardized SBC format, $1,500 deductible, $6,000 OOP max, period 2026-01-01→12-31, "outpatient mental health: $0 after deductible, 6 visits/year", planted hook "specialist visit — $60 copay".
 - Test paths: SBC upload → plan card + auto 6-visit tracker; fake-bill audit → copay-mismatch with $115 delta; p1-bill (2026-03-20) → cross-check applies; out-of-period bill → "not checked" line.
 - Unit tests (node:test): plan schema + new finding types validation; pure functions for plan-year applicability and sbc-tracker merge rule. Gemini extraction covered by live fixture round-trip, as audits are today.
+
+can we organize the test-fixtures by dir and use case, with diff use cases per user and more than 1 user edge case testing. 
 
 ## Out of scope (explicit)
 
