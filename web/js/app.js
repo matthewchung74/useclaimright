@@ -740,7 +740,7 @@ async function loadHistory() {
       <button class="del" title="Delete this audit">✕</button>`;
     el.querySelector(".open").onclick = async () => {
       const full = await getDoc(doc(db, `users/${user.uid}/audits/${d.id}`));
-      renderReport(full.data(), { ocrLow: (full.data().ocrConfidence ?? 100) < OCR_CONFIDENCE_THRESHOLD });
+      renderReport(full.data(), { ocrLow: (full.data().ocrConfidence ?? 100) < OCR_CONFIDENCE_THRESHOLD, planApplied: full.data().planApplied, planReason: full.data().planReason });
       renderReportUsage(full.data());
       show("report");
     };
