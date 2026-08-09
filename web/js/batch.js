@@ -93,4 +93,24 @@ export function pairFiles(files) {
   return { pairs, billOnly, orphanEobs };
 }
 
+// Unique documents behind a batch queue, in first-appearance order: every
+// bill, each fresh EOB File once (consolidated EOBs are shared across pairs),
+// each saved-library EOB once (by id). Feeds the review-all screen, where
+// every document is redacted and reviewed exactly once before the run.
+export function uniqueDocs(queue) {
+  const docs = [], seenEobs = new Set(), seenSaved = new Set();
+  for (const it of queue) {
+    docs.push({ file: it.bill, kind: "bill" });
+    if (it.eob && !seenEobs.has(it.eob)) {
+      seenEobs.add(it.eob);
+      docs.push({ file: it.eob, kind: "eob" });
+    }
+    if (it.savedEob && !seenSaved.has(it.savedEob.id)) {
+      seenSaved.add(it.savedEob.id);
+      docs.push({ savedEob: it.savedEob, kind: "eob" });
+    }
+  }
+  return docs;
+}
+
 const byName = (a, b) => a.name.localeCompare(b.name);

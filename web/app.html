@@ -70,8 +70,11 @@
   .usage-del{border:1px solid var(--line);background:#fff;border-radius:8px;padding:4px 10px;cursor:pointer;color:var(--bad);font-size:12px}
   .batch-row{display:flex;gap:8px;align-items:center;background:#fff;border:1px solid var(--line);border-radius:8px;padding:6px 10px;margin:6px 0;font-size:14px}
   .batch-row .fname{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .batch-row select{width:auto;padding:3px 6px;font-size:13px}
   .batch-row .rm{border:none;background:none;cursor:pointer;color:var(--bad);font-size:14px}
+  #saved-eob{width:100%;appearance:none;-webkit-appearance:none;border:1px solid var(--line);border-radius:10px;
+    background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%233f5a66' stroke-width='1.5' fill='none'/%3E%3C/svg%3E") no-repeat right 12px center;
+    padding:9px 30px 9px 10px;font-size:14px;color:var(--ink);cursor:pointer}
+  #bill-list .batch-row .fname,#eob-list .batch-row .fname{color:var(--good);font-weight:700}
   #tracker-form select,#tracker-form input{border:1px solid var(--line);border-radius:10px;padding:9px;background:#fff;font-size:14px;width:100%}
   .tf-grid{display:grid;grid-template-columns:2fr 2fr 1fr 1.4fr auto;gap:10px;align-items:end;margin-top:8px}
   @media(max-width:720px){.tf-grid{grid-template-columns:1fr 1fr}}
@@ -90,7 +93,7 @@
   .pane-label{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--ink-soft);margin-bottom:6px}
   .tabs{display:flex;gap:8px;margin-bottom:10px}
   .tabs button{border:1px solid var(--line);background:#fff;border-radius:8px;padding:8px 16px;font-weight:700;cursor:pointer}
-  .tabs button.active{background:var(--accent);border-color:var(--brand);color:var(--brand-dark)}
+  .tabs button.active{background:var(--brand);border-color:var(--brand);color:#fff}
 
   /* report */
   .totals{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin:16px 0}
@@ -165,6 +168,7 @@
           <input id="eob-file" type="file" multiple accept="application/pdf,image/*,text/html,.html,.htm,text/plain,.txt">
         </label>
       </div>
+      <div id="eob-list"></div>
       <div id="saved-eob-wrap" style="margin-top:10px" hidden>
         <label for="saved-eob" class="muted" style="font-weight:600">Your most recent saved EOB is pre-selected — new bills audit against it unless you upload a different one</label>
         <select id="saved-eob" style="margin-top:4px"><option value="">— choose a saved EOB —</option></select>
@@ -178,28 +182,17 @@
       </label>
       <p class="muted" id="no-eob-note" hidden style="margin-top:6px">Without the EOB we can still catch duplicate charges and coding issues on the bill itself — but the strongest check, comparing what you were billed against what insurance says you owe, needs the EOB.</p>
 
-      <div class="step-row" style="margin-top:22px"><span class="step-n">2</span><div><b>Add your itemized bill</b><div class="muted">From the hospital or doctor — the line-by-line version with codes, not just a total.</div></div></div>
+      <div class="step-row" style="margin-top:22px"><span class="step-n">2</span><div><b>Add your itemized bill</b><div class="muted">From the hospital or doctor — the line-by-line version with codes, not just a total. Several bills? Add them all — each becomes its own audit.</div></div></div>
       <div class="dropzones" style="grid-template-columns:1fr">
         <label class="dz" id="dz-bill">
           <span class="ico">🧾</span>
           <b>Itemized bill</b>
           <div class="hint">Drop it here or click to choose<br>PDF, photo, HTML, or text · up to 20MB</div>
-          <div class="picked" id="bill-picked"></div>
           <input id="bill-file" type="file" multiple accept="application/pdf,image/*,text/html,.html,.htm,text/plain,.txt">
         </label>
       </div>
-      <p class="muted" style="margin-top:8px">Have several bills? Drop them all at once — with their EOBs — and we'll pair them up and run the audits one after another.</p>
-
-      <div id="batch-panel" class="card" style="background:var(--accent);margin-top:14px" hidden>
-        <b>Multiple documents — here's how we paired them</b>
-        <p class="muted" style="margin:6px 0 10px">Fix any file we labeled wrong, or remove it. Each pair (or lone bill) becomes one audit.</p>
-        <div id="batch-list"></div>
-        <div id="batch-summary" class="muted" style="margin-top:10px"></div>
-        <div style="margin-top:12px;display:flex;gap:10px">
-          <button id="batch-start" class="btn">Start audits</button>
-          <button id="batch-clear" class="btn ghost">Clear</button>
-        </div>
-      </div>
+      <div id="bill-list"></div>
+      <p class="muted" style="margin-top:8px">With several documents we pair each bill to its EOB by filename, review all redactions once, then run the audits back to back.</p>
 
       <details class="explain">
         <summary>What's an EOB, and where do I find it?</summary>
@@ -215,6 +208,7 @@
       <p class="banner">📄 <b>Best results with digital PDFs</b> downloaded from your portals. Photos and scans work, but reading accuracy may suffer — check the review screen carefully.</p>
       <div id="upload-error" class="error" hidden></div>
       <div class="step-row" style="margin-top:10px"><span class="step-n">3</span><div><b>Prepare the audit</b><div class="muted">Next you'll see exactly what gets analyzed — with your personal details already hidden.</div></div></div>
+      <div id="audit-summary" class="muted" hidden></div>
       <button id="run-audit" class="btn" style="margin-top:10px">Prepare audit →</button>
     </div>
 
@@ -273,6 +267,7 @@
       <button id="tab-bill" class="active">Bill</button>
       <button id="tab-eob">EOB</button>
     </div>
+    <div id="review-doc" class="muted" style="font-weight:700;margin:2px 0 8px" hidden></div>
     <div class="panes">
       <div><div class="pane-label">Your document (never leaves this device)</div><div id="original-pane" class="pane"></div></div>
       <div><div class="pane-label">What gets analyzed (personal info hidden)</div><div id="redacted-pane" class="pane"></div></div>
@@ -305,7 +300,6 @@
         generated by automated analysis of the documents you provided and may contain errors — verify every quoted
         amount against your original documents before disputing a charge. Results are not guaranteed.</p>
       <div class="no-print" style="margin-top:18px;display:flex;gap:10px;flex-wrap:wrap">
-        <button id="batch-next" class="btn" hidden>Continue →</button>
         <button id="gen-email" class="btn">Generate dispute email</button>
         <button id="print-report" class="btn ghost">Print / save PDF</button>
         <button id="new-audit" class="btn ghost">New audit</button>

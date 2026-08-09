@@ -16,7 +16,7 @@ import { getAnalytics, logEvent } from "https://www.gstatic.com/firebasejs/10.14
 import { firebaseConfig } from "./firebase-config.js";
 import { extractText } from "./extract.js";
 import { loadNer, deidentify, createRegistry, manualRedact } from "./deid.js";
-import { pairFiles } from "./batch.js";
+import { pairFiles, classifyFile, uniqueDocs } from "./batch.js";
 
 const $ = (id) => document.getElementById(id);
 const show = (id) => {
@@ -105,7 +105,6 @@ function resetState() {
   };
   $("bill-file").value = "";
   $("eob-file").value = "";
-  $("bill-picked").textContent = "";
   $("eob-picked").textContent = "";
   $("saved-eob").value = "";
   setError("upload-error", "");
@@ -113,8 +112,9 @@ function resetState() {
   batchFiles = [];
   batchQueue = null;
   batchIndex = 0;
-  eobCache.clear();
-  renderBatchPanel();
+  batchDocs = null;
+  batchDocIndex = 0;
+  renderFiles();
   setBatchLabels(null);
 }
 
@@ -123,132 +123,85 @@ $("no-eob").onchange = () => {
   const skip = $("no-eob").checked;
   $("no-eob-note").hidden = !skip;
   $("dz-eob").classList.toggle("disabled", skip);
-  if (skip) { $("eob-file").value = ""; $("eob-picked").textContent = ""; }
+  if (skip) {
+    batchFiles = batchFiles.filter((b) => b.role !== "eob");
+    $("eob-picked").textContent = "";
+    renderFiles();
+  }
 };
 
-// Dropzone feedback: show the picked filename; style on drag.
-// A selection of more than one file — or any selection while a batch is
-// already building — switches to batch mode.
+// Every file lands in one list, shown under the zone that matches its role.
+// The filename decides bill vs EOB when it clearly says so (so "drop them all
+// at once" works on either zone); otherwise the zone it landed in decides.
 for (const kind of ["bill", "eob"]) {
   const input = $(`${kind}-file`);
   const zone = $(`dz-${kind}`);
   input.onchange = () => {
-    if (input.files.length > 1 || (input.files.length && batchFiles.length)) {
-      addToBatch([...input.files]);
-      input.value = "";
-      return;
-    }
-    if (kind === "eob" && input.files[0]) $("saved-eob").value = ""; // fresh file wins
-    $(`${kind}-picked`).textContent = input.files[0] ? `✓ ${input.files[0].name}` : "";
+    addFiles([...input.files], kind);
+    input.value = "";
   };
   zone.addEventListener("dragover", (e) => { e.preventDefault(); zone.classList.add("drag"); });
   zone.addEventListener("dragleave", () => zone.classList.remove("drag"));
   zone.addEventListener("drop", (e) => {
     e.preventDefault(); zone.classList.remove("drag");
-    if (e.dataTransfer.files[0]) {
-      input.files = e.dataTransfer.files;
-      input.dispatchEvent(new Event("change"));
-    }
+    if (e.dataTransfer.files[0]) addFiles([...e.dataTransfer.files], kind);
   });
 }
 
-// ---------- Batch mode ----------
+// ---------- Files & pairing ----------
 
-let batchFiles = []; // [{file, name, role}] shown in the pairing panel
-let batchQueue = null; // [{bill: File, eob: File|null}] while a batch runs
+let batchFiles = []; // [{file, name, role}] everything uploaded, either zone
+let batchQueue = null; // [{bill: File, eob: File|null, savedEob}] while a batch runs
 let batchIndex = 0;
+let batchDocs = null; // unique docs for the review-all screen (one tab each)
+let batchDocIndex = 0;
 
 const sameFile = (a, b) => a.name === b.name && a.file.size === b.file.size;
 
-function addToBatch(files) {
+function addFiles(files, zoneKind) {
+  let addedEob = false;
   for (const file of files) {
-    const entry = { file, name: file.name }; // role set only by user override
+    const named = classifyFile(file.name);
+    const entry = { file, name: file.name, role: named === "unknown" ? zoneKind : named };
     if (batchFiles.some((b) => sameFile(b, entry))) continue;
     batchFiles.push(entry);
+    if (entry.role === "eob") addedEob = true;
   }
-  $("bill-file").value = ""; $("eob-file").value = "";
-  $("bill-picked").textContent = ""; $("eob-picked").textContent = "";
+  if (addedEob) { // fresh file wins over a saved-library selection
+    $("saved-eob").value = "";
+    $("eob-picked").textContent = "";
+  }
   setError("upload-error", "");
-  renderBatchPanel();
+  renderFiles();
 }
 
-function renderBatchPanel() {
-  const panel = $("batch-panel");
-  if (!batchFiles.length) { panel.hidden = true; return; }
-  panel.hidden = false;
-
+function renderFiles() {
   const { pairs, billOnly, orphanEobs } = pairFiles(batchFiles);
-  const eobSet = new Set([...pairs.map((p) => p.eob), ...orphanEobs]);
-  const billOnlySet = new Set(billOnly);
-
-  // EOBs a lone bill can be manually audited against: any EOB file in the
-  // batch (consolidated statements are reusable) or any saved EOB. Option
-  // values are indices into this choices array; the pick stored on the entry
-  // is the structured choice itself, so filenames never round-trip through
-  // attribute strings.
-  const assignChoices = [
-    ...[...eobSet].map((e) => ({ label: `vs ${e.name}`, eob: e.file })),
-    ...savedEobs.map((e) => ({ label: `vs saved: ${e.label}`, savedEob: e })),
-  ];
-  const assignOptions =
-    '<option value="">Bill-only (no EOB)</option>' +
-    assignChoices.map((c, i) => `<option value="${i}">${escapeHtml(c.label)}</option>`).join("");
-
-  const list = $("batch-list");
-  list.innerHTML = "";
-  for (const entry of batchFiles) {
-    const isLoneBill = billOnlySet.has(entry);
-    const row = document.createElement("div");
-    row.className = "batch-row";
-    row.innerHTML = `<span class="fname">${escapeHtml(entry.name)}</span>
-      ${isLoneBill ? `<select class="assign">${assignOptions}</select>` : ""}
-      <select class="role"><option value="bill">Bill</option><option value="eob">EOB</option></select>
-      <button class="rm" title="Remove">✕</button>`;
-    row.querySelector(".role").value = eobSet.has(entry) ? "eob" : "bill";
-    row.querySelector(".role").onchange = (e) => { entry.role = e.target.value; renderBatchPanel(); };
-    if (isLoneBill) {
-      const assign = row.querySelector(".assign");
-      const picked = assignChoices.findIndex((c) =>
-        entry.eobPick && (c.eob === entry.eobPick.eob && c.savedEob === entry.eobPick.savedEob));
-      if (picked >= 0) assign.value = String(picked);
-      assign.onchange = () => { entry.eobPick = assignChoices[Number(assign.value)] || null; };
+  for (const kind of ["bill", "eob"]) {
+    const list = $(`${kind}-list`);
+    list.innerHTML = "";
+    for (const entry of batchFiles.filter((b) => b.role === kind)) {
+      const row = document.createElement("div");
+      row.className = "batch-row";
+      row.innerHTML = `<span class="fname">✓ ${escapeHtml(entry.name)}</span><button class="rm" title="Remove">✕</button>`;
+      row.querySelector(".rm").onclick = () => {
+        batchFiles = batchFiles.filter((b) => b !== entry);
+        renderFiles();
+      };
+      list.appendChild(row);
     }
-    row.querySelector(".rm").onclick = () => {
-      batchFiles = batchFiles.filter((b) => b !== entry);
-      renderBatchPanel();
-    };
-    list.appendChild(row);
   }
-
   const audits = pairs.length + billOnly.length;
-  $("batch-summary").innerHTML = [
-    `<b>${audits} audit${audits === 1 ? "" : "s"}</b>: ${pairs.length} bill+EOB pair${pairs.length === 1 ? "" : "s"}${billOnly.length ? `, ${billOnly.length} bill-only (no matching EOB)` : ""}.`,
-    orphanEobs.length ? `⚠️ ${orphanEobs.length} EOB${orphanEobs.length === 1 ? " has" : "s have"} no matching bill and won't be audited.` : "",
-    audits > 10 ? "⚠️ The server allows 10 audits per day — anything beyond that will fail until tomorrow." : "",
-  ].filter(Boolean).join("<br>");
-  $("batch-start").textContent = `Start ${audits} audit${audits === 1 ? "" : "s"}`;
-  $("batch-start").disabled = !audits;
-}
-
-$("batch-clear").onclick = () => { batchFiles = []; renderBatchPanel(); };
-
-$("batch-start").onclick = () => {
-  const { pairs, billOnly } = pairFiles(batchFiles);
-  batchQueue = [
-    ...pairs.map((p) => ({ bill: p.bill.file, eob: p.eob.file, savedEob: null })),
-    ...billOnly.map((b) => ({ bill: b.file, eob: b.eobPick?.eob ?? null, savedEob: b.eobPick?.savedEob ?? null })),
-  ];
-  if (!batchQueue.length) return;
-  batchIndex = 0;
-  $("batch-panel").hidden = true;
-  track("batch_started");
-  runBatchItem();
-};
-
-function runBatchItem() {
-  const item = batchQueue[batchIndex];
-  setBatchLabels(`Batch: audit ${batchIndex + 1} of ${batchQueue.length} — ${item.bill.name}`);
-  prepareAudit(item.bill, item.eob, item.savedEob);
+  const summary = $("audit-summary");
+  summary.hidden = batchFiles.length < 2;
+  if (!summary.hidden) {
+    summary.innerHTML = [
+      `<b>${audits} audit${audits === 1 ? "" : "s"}</b>: ${pairs.length} bill+EOB pair${pairs.length === 1 ? "" : "s"}${billOnly.length ? `, ${billOnly.length} bill-only (no matching EOB)` : ""}.`,
+      orphanEobs.length ? `⚠️ ${orphanEobs.length} EOB${orphanEobs.length === 1 ? " has" : "s have"} no matching bill and won't be audited.` : "",
+      audits > 10 ? "⚠️ The server allows 10 audits per day — anything beyond that will fail until tomorrow." : "",
+    ].filter(Boolean).join("<br>");
+  }
+  $("run-audit").textContent = audits > 1 ? `Start ${audits} audits →` : "Prepare audit →";
 }
 
 function setBatchLabels(text) {
@@ -256,10 +209,10 @@ function setBatchLabels(text) {
     $(id).textContent = text || "";
     $(id).hidden = !text;
   }
-  if (!text) $("batch-next").hidden = true;
 }
 
-// After an error mid-batch, put the unprocessed remainder back in the panel.
+// After an error mid-batch, put the unprocessed remainder back in the lists.
+// (A saved-EOB assignment is re-derived from the select on the next start.)
 function batchBackToPanel() {
   if (!batchQueue) return;
   const rebuilt = [];
@@ -267,52 +220,48 @@ function batchBackToPanel() {
     if (!rebuilt.some((o) => sameFile(o, entry))) rebuilt.push(entry);
   };
   for (const it of batchQueue.slice(batchIndex)) {
-    const bill = { file: it.bill, name: it.bill.name, role: "bill" };
-    // Keep the pick so a manual "vs X" assignment survives the round-trip
-    // (harmless on auto-paired bills — the select only shows on lone ones).
-    if (it.savedEob) bill.eobPick = { savedEob: it.savedEob };
-    else if (it.eob) bill.eobPick = { eob: it.eob };
-    add(bill);
+    add({ file: it.bill, name: it.bill.name, role: "bill" });
     if (it.eob) add({ file: it.eob, name: it.eob.name, role: "eob" });
   }
   batchFiles = rebuilt;
   batchQueue = null;
   setBatchLabels(null);
-  renderBatchPanel();
+  renderFiles();
 }
-
-$("batch-next").onclick = () => {
-  batchIndex++;
-  runBatchItem();
-};
 
 // ---------- Upload & processing ----------
 
 $("run-audit").onclick = async () => {
-  const billFile = $("bill-file").files[0];
-  const eobFile = $("eob-file").files[0];
-  const savedEob = !eobFile && $("saved-eob").value
+  const { pairs, billOnly } = pairFiles(batchFiles);
+  const skipEob = $("no-eob").checked;
+  const savedEob = !skipEob && $("saved-eob").value
     ? savedEobs.find((e) => e.id === $("saved-eob").value)
     : null;
-  const skipEob = $("no-eob").checked;
-  if (!billFile) {
+  const audits = pairs.length + billOnly.length;
+  if (!audits) {
     return setError("upload-error", "The itemized bill is required.");
   }
-  if (!eobFile && !savedEob && !skipEob) {
-    return setError("upload-error", "Add your EOB (step 1), pick a saved one, or check “I don't have an EOB”.");
+  if (audits === 1) {
+    const billFile = (pairs[0]?.bill ?? billOnly[0]).file;
+    const eobFile = pairs[0]?.eob.file ?? null;
+    if (!eobFile && !savedEob && !skipEob) {
+      return setError("upload-error", "Add your EOB (step 1), pick a saved one, or check “I don't have an EOB”.");
+    }
+    return prepareAudit(billFile, eobFile, eobFile ? null : savedEob);
   }
-  await prepareAudit(billFile, skipEob ? null : eobFile, skipEob ? null : savedEob);
+  batchQueue = [
+    ...pairs.map((p) => ({ bill: p.bill.file, eob: p.eob.file, savedEob: null })),
+    ...billOnly.map((b) => ({ bill: b.file, eob: null, savedEob })),
+  ];
+  batchIndex = 0;
+  track("batch_started");
+  prepareBatch();
 };
-
-// A consolidated EOB shared across a batch is extracted and redacted once —
-// OCR + NER are the expensive client steps. Keyed by the File object; cleared
-// with the rest of the batch state in resetState.
-const eobCache = new Map();
 
 // eobFile: freshly uploaded File; savedEob: library entry (already redacted).
 // At most one is non-null; both null means bill-only.
 async function prepareAudit(billFile, eobFile, savedEob = null) {
-  if (!batchQueue) setBatchLabels(null);
+  setBatchLabels(null);
   if (billFile.size > 20e6 || (eobFile && eobFile.size > 20e6)) {
     return setError("upload-error", "Files must be under 20MB.");
   }
@@ -323,7 +272,7 @@ async function prepareAudit(billFile, eobFile, savedEob = null) {
   try {
     setStatus("Reading your documents…");
     const bill = await extractText(billFile);
-    const eob = eobFile && !eobCache.has(eobFile) ? await extractText(eobFile) : null;
+    const eob = eobFile ? await extractText(eobFile) : null;
 
     setStatus("Loading the privacy model (first run downloads ~90MB, cached after)…");
     const ner = await loadNer((p) => {
@@ -338,12 +287,9 @@ async function prepareAudit(billFile, eobFile, savedEob = null) {
     if (savedEob) {
       // Library EOB: already redacted in a previous session; original never stored.
       state.eob = { originalText: null, previews: null, saved: true, confidence: 100, redacted: savedEob.redactedText };
-    } else if (eobFile && eobCache.has(eobFile)) {
-      state.eob = { ...eobCache.get(eobFile) }; // copy: manual redactions stay per-audit
     } else if (eob) {
       state.eob = { originalText: eob.text, previews: eob.previews, method: eob.method, confidence: eob.confidence };
       state.eob.redacted = (await deidentify(eob.text, ner, state.registry)).redacted;
-      eobCache.set(eobFile, { ...state.eob });
     } else {
       state.eob = null;
     }
@@ -368,6 +314,103 @@ function resetStatePreservingFiles() {
   state = { registry: createRegistry(), bill: null, eob: null, activeDoc: "bill" };
 }
 
+// Review-all batch flow: every unique document is extracted and redacted up
+// front (one shared registry, so placeholders match across documents), the
+// user reviews them all once, then the audits run without pausing.
+async function prepareBatch() {
+  resetStatePreservingFiles();
+  batchDocs = null;
+  show("processing");
+  try {
+    const docs = uniqueDocs(batchQueue);
+    for (const d of docs) {
+      if (d.file && d.file.size > 20e6) throw new Error(`${d.file.name} is over 20MB`);
+    }
+    setStatus("Loading the privacy model (first run downloads ~90MB, cached after)…");
+    const ner = await loadNer((p) => {
+      if (p.status === "progress" && p.total) {
+        setStatus(`Downloading privacy model… ${Math.round((p.loaded / p.total) * 100)}%`);
+      }
+    });
+    const prepared = [];
+    for (const [i, d] of docs.entries()) {
+      if (d.savedEob) {
+        prepared.push({ name: `saved: ${d.savedEob.label}`, kind: "eob", saved: true,
+          savedEob: d.savedEob, confidence: 100, redacted: d.savedEob.redactedText });
+        continue;
+      }
+      setStatus(`Hiding personal info in ${d.file.name} (${i + 1} of ${docs.length}) — on your device…`);
+      const ex = await extractText(d.file);
+      const redacted = (await deidentify(ex.text, ner, state.registry)).redacted;
+      prepared.push({ file: d.file, name: d.file.name, kind: d.kind, originalText: ex.text,
+        previews: ex.previews, method: ex.method, confidence: ex.confidence, redacted });
+    }
+    batchDocs = prepared;
+    batchDocIndex = 0;
+    $("ocr-banner").hidden = !batchDocs.some((d) => d.method === "ocr");
+    $("save-eob").checked = true;
+    $("save-eob-wrap").hidden = !batchDocs.some((d) => d.kind === "eob" && !d.saved);
+    setBatchLabels(`Batch: ${batchQueue.length} audits — review every document below, then they run without stopping.`);
+    renderReview();
+    show("review");
+    track("audit_prepared");
+  } catch (e) {
+    console.error(e);
+    setError("upload-error", `Could not process the documents: ${e.message}`);
+    batchDocs = null;
+    show("upload");
+    batchBackToPanel();
+  }
+}
+
+// The uninterrupted run after the combined review: originals are destroyed
+// first, then each audit is sent in turn. On failure the unprocessed
+// remainder (including the failed item) goes back to the pairing panel.
+async function runBatch() {
+  for (const d of batchDocs) { d.originalText = null; d.previews = null; }
+  $("original-pane").textContent = "";
+  const byFile = new Map(batchDocs.filter((d) => d.file).map((d) => [d.file, d]));
+  const bySaved = new Map(batchDocs.filter((d) => d.savedEob).map((d) => [d.savedEob.id, d]));
+  const total = batchQueue.length;
+  show("processing");
+  let last = null;
+  try {
+    for (; batchIndex < batchQueue.length; batchIndex++) {
+      const it = batchQueue[batchIndex];
+      const billDoc = byFile.get(it.bill);
+      const eobDoc = it.eob ? byFile.get(it.eob) : it.savedEob ? bySaved.get(it.savedEob.id) : null;
+      setStatus(`Analyzing audit ${batchIndex + 1} of ${total} — ${it.bill.name}…`);
+      const payload = {
+        redactedBill: billDoc.redacted,
+        redactedEob: eobDoc ? eobDoc.redacted : "",
+        ocrConfidence: Math.min(billDoc.confidence, eobDoc ? eobDoc.confidence : 100),
+      };
+      const { data } = await analyzeFn(payload);
+      last = { data, ocrLow: payload.ocrConfidence < OCR_CONFIDENCE_THRESHOLD };
+      if (eobDoc && !eobDoc.saved && $("save-eob").checked) {
+        await maybeSaveEob(eobDoc.redacted, data);
+        eobDoc.saved = true; // shared EOB: save once, not once per audit
+      }
+      track("audit_completed");
+    }
+    batchQueue = null;
+    batchDocs = null;
+    setBatchLabels(`Batch complete — all ${total} audits are saved under “Your past audits”.`);
+    renderReport(last.data, { ocrLow: last.ocrLow, model: last.data.model });
+    show("report");
+    track("batch_completed");
+    await loadHistory(); // refreshes allAudits (incl. these audits) + usage cards
+    renderReportUsage(last.data);
+  } catch (e) {
+    console.error(e);
+    setError("upload-error",
+      `Audit ${batchIndex + 1} of ${total} failed: ${e.code === "functions/resource-exhausted" ? e.message : "analysis error — please try again."} The remaining documents are back below.`);
+    show("upload");
+    batchBackToPanel();
+    batchDocs = null;
+  }
+}
+
 function setStatus(msg) {
   $("processing-status").textContent = msg;
 }
@@ -377,7 +420,7 @@ function setStatus(msg) {
 const tidy = (s) => (s ?? "").replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
 
 function renderReview() {
-  const docState = state[state.activeDoc];
+  const docState = batchDocs ? batchDocs[batchDocIndex] : state[state.activeDoc];
   // Original pane: show the ACTUAL document (rendered pages) when we have it —
   // far easier to read than extracted text. Falls back to text for HTML/txt.
   const orig = $("original-pane");
@@ -397,8 +440,34 @@ function renderReview() {
   // Redacted pane: placeholders rendered as visible chips for human scanning.
   $("redacted-pane").innerHTML = escapeHtml(tidy(docState.redacted))
     .replace(/\[([A-Z][A-Z0-9_]*_\d+)\]/g, '<span class="chip">$1</span>');
-  $("tab-bill").classList.toggle("active", state.activeDoc === "bill");
-  $("tab-eob").classList.toggle("active", state.activeDoc === "eob");
+  const rd = $("review-doc");
+  rd.hidden = !batchDocs;
+  if (batchDocs) {
+    rd.innerHTML = `Reviewing <b>${escapeHtml(docState.name)}</b> — document ${batchDocIndex + 1} of ${batchDocs.length}`;
+  }
+  renderReviewTabs();
+}
+
+// Single mode uses the two fixed Bill/EOB tabs; a batch gets one tab per
+// unique document instead.
+function renderReviewTabs() {
+  const tabs = document.querySelector(".tabs");
+  for (const b of tabs.querySelectorAll("button.doc-tab")) b.remove();
+  const isBatch = !!batchDocs;
+  $("tab-bill").style.display = isBatch ? "none" : "";
+  $("tab-eob").style.display = isBatch || !state.eob ? "none" : "";
+  if (!isBatch) {
+    $("tab-bill").classList.toggle("active", state.activeDoc === "bill");
+    $("tab-eob").classList.toggle("active", state.activeDoc === "eob");
+    return;
+  }
+  batchDocs.forEach((d, i) => {
+    const b = document.createElement("button");
+    b.className = "doc-tab" + (i === batchDocIndex ? " active" : "");
+    b.textContent = d.name;
+    b.onclick = () => { batchDocIndex = i; renderReview(); };
+    tabs.appendChild(b);
+  });
 }
 
 $("tab-bill").onclick = () => { state.activeDoc = "bill"; renderReview(); };
@@ -407,6 +476,12 @@ $("tab-eob").onclick = () => { state.activeDoc = "eob"; renderReview(); };
 $("redact-selection").onclick = () => {
   const sel = window.getSelection().toString();
   if (!sel.trim()) return;
+  if (batchDocs) {
+    // Apply everywhere so shared strings stay consistent across the batch.
+    for (const d of batchDocs) d.redacted = manualRedact(d.redacted, sel, state.registry);
+    renderReview();
+    return;
+  }
   const docState = state[state.activeDoc];
   docState.redacted = manualRedact(docState.redacted, sel, state.registry);
   // Also apply to the other document so shared strings stay consistent.
@@ -416,6 +491,7 @@ $("redact-selection").onclick = () => {
 };
 
 $("confirm-review").onclick = async () => {
+  if (batchDocs) return runBatch();
   const payload = {
     redactedBill: state.bill.redacted,
     redactedEob: state.eob ? state.eob.redacted : "",
@@ -443,17 +519,6 @@ $("confirm-review").onclick = async () => {
     }
     await loadHistory(); // refreshes allAudits (incl. this audit) + usage cards
     renderReportUsage(data);
-    if (batchQueue) {
-      const last = batchIndex >= batchQueue.length - 1;
-      $("batch-next").hidden = last;
-      if (last) {
-        setBatchLabels(`Batch complete — all ${batchQueue.length} audits are saved under “Your past audits”.`);
-        batchQueue = null;
-        track("batch_completed");
-      } else {
-        $("batch-next").textContent = `Continue: audit ${batchIndex + 2} of ${batchQueue.length} →`;
-      }
-    }
   } catch (e) {
     console.error(e);
     setError("upload-error",
@@ -492,7 +557,7 @@ function renderReport(data, { ocrLow } = {}) {
     <div class="tot"><span>Billed</span><b>${fmt(totals.billed)}</b></div>
     <div class="tot"><span>EOB allowed</span><b>${fmt(totals.eobAllowed)}</b></div>
     <div class="tot"><span>Your responsibility</span><b>${fmt(totals.patientResponsibility)}</b></div>
-    <div class="tot hi"><span>Potentially at stake</span><b>${fmt(totals.totalAtStake)}</b></div>`;
+    <div class="tot hi"><span>Worth disputing — money you may not owe; hold off paying this part</span><b>${fmt(totals.totalAtStake)}</b></div>`;
 
   const byType = {};
   for (const f of findings) (byType[f.type] ||= []).push(f);
@@ -711,14 +776,13 @@ async function loadEobs() {
 // With a library on file, the EOB step answers itself: pre-select the most
 // recent saved EOB so a new bill can be audited with zero extra clicks.
 function defaultEobSelection() {
-  if (!savedEobs.length || $("saved-eob").value || $("eob-file").files[0] || $("no-eob").checked) return;
+  if (!savedEobs.length || $("saved-eob").value || batchFiles.some((b) => b.role === "eob") || $("no-eob").checked) return;
   $("saved-eob").value = savedEobs[0].id;
   $("eob-picked").textContent = `✓ using saved: ${savedEobs[0].label} — change below if this isn't the right one`;
 }
 
 $("saved-eob").onchange = () => {
   if ($("saved-eob").value) {
-    $("eob-file").value = "";
     $("eob-picked").textContent = `✓ saved: ${$("saved-eob").selectedOptions[0].textContent}`;
     $("no-eob").checked = false;
     $("no-eob").dispatchEvent(new Event("change"));
