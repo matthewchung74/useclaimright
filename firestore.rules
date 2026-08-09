@@ -17,6 +17,12 @@ service cloud.firestore {
     match /users/{uid}/eobs/{eobId} {
       allow read, write, delete: if request.auth != null && request.auth.uid == uid;
     }
+    // The active plan (SBC) is written exclusively by the extractPlan Function
+    // via the Admin SDK. Clients may only read and delete their own.
+    match /users/{uid}/plan/{docId} {
+      allow read, delete: if request.auth != null && request.auth.uid == uid;
+      allow create, update: if false;
+    }
     // Rate-limit counters are Function-managed; clients never touch them.
     match /users/{uid}/meta/{docId} {
       allow read, write: if false;
