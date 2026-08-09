@@ -50,6 +50,33 @@ ${remark ? `<div class="note"><b>Plan note:</b> ${remark}</div>` : ""}
 </body></html>`;
 }
 
+function sbc() {
+  return `<!DOCTYPE html><html><head><meta charset="utf-8">${css}</head><body>
+<div class="head"><div><h1 style="color:#123c78">ACME HEALTH INSURANCE</h1>
+<div class="muted">Summary of Benefits and Coverage: What this Plan Covers &amp; What You Pay For Covered Services</div></div>
+<div style="text-align:right"><b>Acme Silver PPO</b><br>Coverage Period: 01/01/2026 – 12/31/2026<br>Coverage for: Individual/Family · Plan Type: PPO</div></div>
+<div class="box"><b>Member:</b> Jane Q. Testpatient<br><b>Member ID:</b> AHX-55512345</div>
+<h1 style="margin-top:14px">Important Questions</h1>
+<table>
+<tr><th>Question</th><th>Answer</th></tr>
+<tr><td>What is the overall deductible?</td><td>$1,500 individual / $3,000 family</td></tr>
+<tr><td>What is the out-of-pocket limit for this plan?</td><td>$6,000 individual / $12,000 family</td></tr>
+<tr><td>Are there services covered before you meet your deductible?</td><td>Yes. Preventive care and services with a copay are covered before you meet your deductible.</td></tr>
+</table>
+<h1 style="margin-top:14px">Common Medical Events</h1>
+<table>
+<tr><th>Medical event</th><th>What you will pay (network)</th><th>Limitations &amp; exceptions</th></tr>
+<tr><td>Primary care visit</td><td>$25 copay/visit, deductible does not apply</td><td>none</td></tr>
+<tr><td>Specialist visit</td><td>$60 copay/visit, deductible does not apply</td><td>none</td></tr>
+<tr><td>Outpatient mental health services</td><td>$0 coinsurance after deductible</td><td>Limited to 6 visits per plan year</td></tr>
+<tr><td>Rehabilitation services (physical, occupational therapy)</td><td>$60 copay/visit, deductible does not apply</td><td>Limited to 20 visits per plan year</td></tr>
+<tr><td>Emergency room care</td><td>20% coinsurance after deductible</td><td>Copay waived if admitted</td></tr>
+<tr><td>Diagnostic test (x-ray, blood work)</td><td>10% coinsurance after deductible</td><td>none</td></tr>
+</table>
+<div class="note">This is a synthetic test fixture. Jane Q. Testpatient is a canary identity.</div>
+</body></html>`;
+}
+
 const THERAPY = { code: "90837", desc: "Psychotherapy, 60 minutes", charge: 175, allowed: 120, provider: "Testville Behavioral Health Associates" };
 const PT = { code: "97110", desc: "Therapeutic exercises, 15 min", charge: 210, allowed: 95, provider: "Testville Physical Therapy Group" };
 
@@ -102,5 +129,18 @@ writeFileSync(`${OUT}p1-eob.html`, eob({ n: 101, date: "2026-03-20", ...PT, dedT
 expected.ptControl = { pair: "p1", code: PT.code, therapyCountUnchanged: true };
 expected.final = { therapyCount: 6, level: "at", deductibleToDate: 720, deductibleLimit: 1500, suggestionCode: "90837" };
 
+writeFileSync(new URL("./fake-sbc.html", import.meta.url).pathname, sbc());
+expected.sbc = {
+  file: "fake-sbc.html",
+  deductible: { individual: 1500, family: 3000 },
+  oopMax: { individual: 6000, family: 12000 },
+  period: ["2026-01-01", "2026-12-31"],
+  limits: [
+    { label: "Outpatient mental health services", visitsPerYear: 6 },
+    { label: "Rehabilitation services (physical, occupational therapy)", visitsPerYear: 20 },
+  ],
+  plantedMismatch: { pairsWith: "p1", expectTypes: ["copay_mismatch", "deductible_misapplied"], planted: "$60 copay/visit vs $120 applied to deductible" },
+};
+
 writeFileSync(new URL("./series-expected.json", import.meta.url).pathname, JSON.stringify(expected, null, 2));
-console.log("Wrote 15 HTML fixtures + series-expected.json");
+console.log("Wrote 15 HTML fixtures + fake-sbc.html + series-expected.json");

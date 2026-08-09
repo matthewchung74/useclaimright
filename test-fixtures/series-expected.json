@@ -85,5 +85,38 @@
     "deductibleToDate": 720,
     "deductibleLimit": 1500,
     "suggestionCode": "90837"
+  },
+  "sbc": {
+    "file": "fake-sbc.html",
+    "deductible": {
+      "individual": 1500,
+      "family": 3000
+    },
+    "oopMax": {
+      "individual": 6000,
+      "family": 12000
+    },
+    "period": [
+      "2026-01-01",
+      "2026-12-31"
+    ],
+    "limits": [
+      {
+        "label": "Outpatient mental health services",
+        "visitsPerYear": 6
+      },
+      {
+        "label": "Rehabilitation services (physical, occupational therapy)",
+        "visitsPerYear": 20
+      }
+    ],
+    "plantedMismatch": {
+      "pairsWith": "p1",
+      "expectTypes": [
+        "copay_mismatch",
+        "deductible_misapplied"
+      ],
+      "planted": "$60 copay/visit vs $120 applied to deductible"
+    }
   }
 }
