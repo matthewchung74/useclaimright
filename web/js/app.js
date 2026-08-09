@@ -647,6 +647,7 @@ function buildDisputeEmail({ findings, totals }) {
     lines.push(`   ${f.description}`);
     if (f.evidence?.billQuote) lines.push(`   Bill states: "${f.evidence.billQuote}"`);
     if (f.evidence?.eobQuote) lines.push(`   EOB states: "${f.evidence.eobQuote}"`);
+    if (f.evidence?.sbcQuote) lines.push(`   My plan (SBC) states: "${f.evidence.sbcQuote}"`);
   });
   lines.push("");
   if (findings.some((f) => f.type === "billed_vs_allowed_mismatch")) {
@@ -835,8 +836,13 @@ let activePlan = null; // {structured, digest, redactedText, sourceName, created
 async function loadPlan() {
   const user = auth.currentUser;
   if (!user) return;
-  const snap = await getDoc(doc(db, `users/${user.uid}/plan/active`));
-  activePlan = snap.exists() ? snap.data() : null;
+  try {
+    const snap = await getDoc(doc(db, `users/${user.uid}/plan/active`));
+    activePlan = snap.exists() ? snap.data() : null;
+  } catch (e) {
+    console.error("loadPlan failed — showing empty plan card", e);
+    activePlan = null;
+  }
   renderPlanCard();
 }
 
