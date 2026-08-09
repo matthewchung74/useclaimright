@@ -17,6 +17,7 @@ import { firebaseConfig } from "./firebase-config.js";
 import { extractText } from "./extract.js";
 import { loadNer, deidentify, createRegistry, manualRedact } from "./deid.js";
 import { pairFiles, classifyFile, uniqueDocs } from "./batch.js";
+import { planYearStartMonthFrom, mergeSbcTrackers, deductibleTarget } from "./plan.js";
 
 const $ = (id) => document.getElementById(id);
 const show = (id) => {
@@ -41,6 +42,7 @@ if (["localhost", "127.0.0.1"].includes(location.hostname)) {
   connectFunctionsEmulator(functions, "localhost", 5001);
 }
 const analyzeFn = httpsCallable(functions, "analyze", { timeout: 300_000 });
+const extractPlanFn = httpsCallable(functions, "extractPlan", { timeout: 300_000 });
 let analytics = null;
 try { analytics = getAnalytics(app); } catch { /* blocked or unsupported — fine */ }
 const track = (name) => { try { analytics && logEvent(analytics, name); } catch {} };
@@ -79,6 +81,7 @@ onAuthStateChanged(auth, (user) => {
     $("user-email").textContent = user.email || "";
     show("upload");
     loadHistory();
+    loadPlan();
   } else {
     show("signin");
   }
@@ -491,6 +494,7 @@ $("redact-selection").onclick = () => {
 };
 
 $("confirm-review").onclick = async () => {
+  if (state.sbcFlow) return runSbcExtraction();
   if (batchDocs) return runBatch();
   const payload = {
     redactedBill: state.bill.redacted,
@@ -799,6 +803,136 @@ async function maybeSaveEob(redactedText, data) {
   });
   // No refresh here: the loadHistory() that follows every audit reloads the library.
   track("eob_saved");
+}
+
+// ---------- Your plan (SBC) ----------
+
+let activePlan = null; // {structured, digest, redactedText, sourceName, createdAt}
+
+async function loadPlan() {
+  const user = auth.currentUser;
+  if (!user) return;
+  const snap = await getDoc(doc(db, `users/${user.uid}/plan/active`));
+  activePlan = snap.exists() ? snap.data() : null;
+  renderPlanCard();
+}
+
+function renderPlanCard() {
+  const el = $("plan-card");
+  const s = activePlan?.structured;
+  if (!s) {
+    el.innerHTML = `<div class="usage-card plan-top">
+      <b>Add your Summary of Benefits — we'll set up your deductible and visit limits automatically.</b>
+      <label class="dz dz-sm" id="dz-sbc" style="margin-top:10px">
+        <b>Summary of Benefits (SBC)</b>
+        <div class="hint">Drop it here or click to choose · PDF or photo<br>This is about your plan — not a bill or EOB</div>
+        <input id="sbc-file" type="file" accept="application/pdf,image/*,text/html,.html,.htm,text/plain,.txt">
+      </label>
+      <details class="explain" style="margin-top:10px"><summary>What's an SBC, and where do I find it?</summary>
+        <p>A standard 4–8 page document every plan must provide — a grid of what you pay per visit type.
+        Find it: your insurer's website → your plan → “Summary of Benefits and Coverage” (PDF);
+        your enrollment packet or open-enrollment email; or ask HR.</p>
+      </details>
+    </div>`;
+  } else {
+    const fmtd = (n) => (typeof n === "number" ? fmt(n) : "—");
+    const expired = s.planYearEnd && todayISO() > s.planYearEnd;
+    el.innerHTML = `<div class="usage-card plan-top">
+      <div class="usage-head"><b>${escapeHtml(s.planName || "Your plan")}</b>
+        <span class="plan-period">${escapeHtml(s.planYearStart || "?")} → ${escapeHtml(s.planYearEnd || "?")}</span></div>
+      ${expired ? `<div class="banner" style="margin:10px 0 0">Your plan year ended ${escapeHtml(s.planYearEnd)} — upload your new SBC.</div>` : ""}
+      <div class="plan-grid">
+        <div><div class="pg-label">Deductible</div><div class="pg-value">${fmtd(s.deductible?.individual)}</div></div>
+        <div><div class="pg-label">Out-of-pocket max</div><div class="pg-value">${fmtd(s.oopMax?.individual)}</div></div>
+        ${(s.limits || []).map((l) => `<div><div class="pg-label">${escapeHtml(l.label)}</div><div class="pg-value">${l.visitsPerYear ?? "—"}/yr</div></div>`).join("")}
+      </div>
+      <div class="plan-actions">
+        <a href="#" id="plan-view">View full plan</a>
+        <label class="btn ghost sm" style="margin:0">Replace<input id="sbc-file" type="file" hidden accept="application/pdf,image/*,text/html,.html,.htm,text/plain,.txt"></label>
+      </div>
+    </div>`;
+    $("plan-view").onclick = (e) => {
+      e.preventDefault();
+      const full = $("plan-full");
+      full.querySelector("pre").textContent = activePlan.redactedText || "No stored text.";
+      full.hidden = !full.hidden;
+    };
+  }
+  const input = $("sbc-file");
+  if (input) input.onchange = () => { if (input.files[0]) prepareSbc(input.files[0]); input.value = ""; };
+  const dz = $("dz-sbc");
+  if (dz) {
+    dz.addEventListener("dragover", (e) => { e.preventDefault(); dz.classList.add("drag"); });
+    dz.addEventListener("dragleave", () => dz.classList.remove("drag"));
+    dz.addEventListener("drop", (e) => {
+      e.preventDefault(); dz.classList.remove("drag");
+      if (e.dataTransfer.files[0]) prepareSbc(e.dataTransfer.files[0]);
+    });
+  }
+}
+
+async function prepareSbc(file) {
+  if (file.size > 20e6) return setError("upload-error", "Files must be under 20MB.");
+  resetStatePreservingFiles();
+  state.sbcFlow = true;
+  show("processing");
+  try {
+    setStatus("Reading your Summary of Benefits…");
+    const ex = await extractText(file);
+    // Free duplicate check happens after redaction (compare redacted text).
+    setStatus("Loading the privacy model (first run downloads ~90MB, cached after)…");
+    const ner = await loadNer((p) => {
+      if (p.status === "progress" && p.total) setStatus(`Downloading privacy model… ${Math.round((p.loaded / p.total) * 100)}%`);
+    });
+    setStatus("Hiding your personal information — on your device…");
+    state.bill = { originalText: ex.text, previews: ex.previews, method: ex.method, confidence: ex.confidence };
+    state.bill.redacted = (await deidentify(ex.text, ner, state.registry)).redacted;
+    state.sbcName = file.name;
+    if (activePlan && activePlan.redactedText === state.bill.redacted) {
+      show("upload");
+      return setError("upload-error", "This plan is already on file.");
+    }
+    $("ocr-banner").hidden = ex.method !== "ocr";
+    state.activeDoc = "bill";
+    $("tab-eob").style.display = "none";
+    $("save-eob-wrap").hidden = true;
+    setBatchLabels("Reviewing your Summary of Benefits — plan documents contain little personal info, but check anyway.");
+    renderReview();
+    show("review");
+  } catch (e) {
+    console.error(e);
+    setError("upload-error", `Could not process the document: ${e.message}`);
+    show("upload");
+  }
+}
+
+async function runSbcExtraction(force = false) {
+  const redactedSbc = state.bill.redacted;
+  const sourceName = state.sbcName || "";
+  state.bill.originalText = null; state.bill.previews = null;
+  $("original-pane").textContent = "";
+  show("processing");
+  setStatus("Reading your plan's terms…");
+  try {
+    const { data } = await extractPlanFn({ redactedSbc, sourceName, force });
+    if (data.status === "confirm_older") {
+      const msg = `The plan on file covers ${data.existingPeriod.start} → ${data.existingPeriod.end}; ` +
+        `this document covers ${data.incomingPeriod.start} → ${data.incomingPeriod.end}. Replace anyway?`;
+      if (confirm(msg)) return runSbcExtraction(true);
+      show("upload"); setBatchLabels(null); return;
+    }
+    await loadPlan();
+    // applySbcConfiguration() — wired in a later task
+    setBatchLabels(null);
+    show("upload");
+    track("plan_added");
+    $("plan-card").scrollIntoView({ behavior: "smooth" });
+  } catch (e) {
+    console.error(e);
+    setError("upload-error", e.code === "functions/resource-exhausted" || e.code === "functions/invalid-argument"
+      ? e.message : "Plan extraction failed — please try again.");
+    show("upload"); setBatchLabels(null);
+  }
 }
 
 // ---------- Usage tracker UI ----------

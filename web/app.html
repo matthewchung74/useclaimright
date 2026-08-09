@@ -75,6 +75,14 @@
     background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%233f5a66' stroke-width='1.5' fill='none'/%3E%3C/svg%3E") no-repeat right 12px center;
     padding:9px 30px 9px 10px;font-size:14px;color:var(--ink);cursor:pointer}
   #bill-list .batch-row .fname,#eob-list .batch-row .fname{color:var(--good);font-weight:700}
+  .plan-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-top:10px}
+  .plan-grid .pg-label{font-size:12px;color:var(--ink-soft)}
+  .plan-grid .pg-value{font-family:ui-monospace,Menlo,monospace;font-size:15px;font-variant-numeric:tabular-nums}
+  .plan-top{border-top:3px solid var(--brand)}
+  .plan-period{font-family:ui-monospace,Menlo,monospace;font-size:13px;color:var(--ink-soft)}
+  .plan-actions{display:flex;gap:12px;justify-content:flex-end;align-items:center;margin-top:12px}
+  .plan-actions a{font-size:13px}
+  .dz.dz-sm{padding:18px 16px}
   #tracker-form select,#tracker-form input{border:1px solid var(--line);border-radius:10px;padding:9px;background:#fff;font-size:14px;width:100%}
   .tf-grid{display:grid;grid-template-columns:2fr 2fr 1fr 1.4fr auto;gap:10px;align-items:end;margin-top:8px}
   @media(max-width:720px){.tf-grid{grid-template-columns:1fr 1fr}}
@@ -214,6 +222,8 @@
 
     <h2>Coverage usage</h2>
     <p class="muted" style="margin-bottom:10px">Track plan limits ("6 therapy visits per year") across all your audits, and watch your deductible progress. Counts come from the audits you've run.</p>
+    <div id="plan-card"></div>
+    <div id="plan-full" class="card" hidden style="margin-top:10px"><pre style="white-space:pre-wrap;font-size:12.5px"></pre></div>
     <div id="suggestion-banner" class="banner" hidden></div>
     <div id="deductible-card"></div>
     <div id="usage-list"></div>
