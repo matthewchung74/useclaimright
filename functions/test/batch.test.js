@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { classifyFile, stemOf, pairFiles } from "../../web/js/batch.js";
+import { classifyFile, stemOf, pairFiles, uniqueDocs } from "../../web/js/batch.js";
 
 const f = (name, role) => (role ? { name, role } : { name });
 
@@ -77,4 +77,27 @@ test("same-stem group with several of each zips by name order", () => {
   assert.equal(pairs.length, 2);
   assert.equal(pairs[0].bill.name, "visit-bill-1.pdf");
   assert.equal(pairs[0].eob.name, "visit-eob-1.pdf");
+});
+
+test("uniqueDocs: every bill, shared EOB File once, saved EOBs once by id", () => {
+  const b1 = { name: "t1-bill.pdf" }, b2 = { name: "t2-bill.pdf" }, b3 = { name: "t3-bill.pdf" };
+  const cons = { name: "t-eob.pdf" };
+  const saved = { id: "abc", label: "Testville · 2026-01-15" };
+  const docs = uniqueDocs([
+    { bill: b1, eob: cons, savedEob: null },
+    { bill: b2, eob: cons, savedEob: null },
+    { bill: b3, eob: null, savedEob: saved },
+    { bill: { name: "t4-bill.pdf" }, eob: null, savedEob: saved },
+  ]);
+  assert.equal(docs.length, 6); // 4 bills + cons once + saved once
+  assert.deepEqual(docs.map((d) => d.kind), ["bill", "eob", "bill", "bill", "eob", "bill"]);
+  assert.equal(docs.filter((d) => d.file === cons).length, 1);
+  assert.equal(docs.filter((d) => d.savedEob === saved).length, 1);
+});
+
+test("uniqueDocs: bill-only queue yields just the bills in order", () => {
+  const q = [{ bill: { name: "a-bill.pdf" }, eob: null, savedEob: null },
+             { bill: { name: "b-bill.pdf" }, eob: null, savedEob: null }];
+  const docs = uniqueDocs(q);
+  assert.deepEqual(docs.map((d) => d.file.name), ["a-bill.pdf", "b-bill.pdf"]);
 });
