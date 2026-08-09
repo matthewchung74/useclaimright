@@ -157,6 +157,13 @@ test("planApplies: in-window date applies; all-out dates do not; no plan / no da
   assert.deepEqual(planApplies([], PLAN), { applies: false, reason: "no_dates" });
   // mixed dates: any in-window date applies
   assert.equal(planApplies(["2025-12-30", "2026-01-02"], PLAN).applies, true);
+  // boundary dates are inclusive on both ends
+  assert.equal(planApplies(["2026-01-01"], PLAN).applies, true);
+  assert.equal(planApplies(["2026-12-31"], PLAN).applies, true);
+  // garbage date strings never apply
+  assert.equal(planApplies(["not-a-date"], PLAN).applies, false);
+  // a plan missing either bound cannot be applied
+  assert.deepEqual(planApplies(["2026-03-20"], { planYearStart: "2026-01-01", planYearEnd: null }), { applies: false, reason: "no_plan" });
 });
 
 test("mergeSbcTrackers: creates new, updates sbc-sourced, never touches manual", () => {
@@ -174,6 +181,16 @@ test("mergeSbcTrackers: creates new, updates sbc-sourced, never touches manual",
   assert.deepEqual(upd.update, [{ id: "s1", changes: { label: "Outpatient mental health", codes: ["90832", "90834", "90837"], limit: 6 } }]);
   // a limit without visitsPerYear or codes creates nothing
   assert.deepEqual(mergeSbcTrackers([], [{ label: "X", codesHint: [], visitsPerYear: null }], 1), { create: [], update: [] });
+  // two SBC rows sharing a code must not create two overlapping trackers
+  const twoRows = mergeSbcTrackers([], [
+    { label: "Mental health", codesHint: ["90837"], visitsPerYear: 6 },
+    { label: "Therapy visits", codesHint: ["90837", "90834"], visitsPerYear: 6 },
+  ], 1);
+  assert.equal(twoRows.create.length, 1);
+  // code matching is case/whitespace-insensitive
+  const ci = mergeSbcTrackers([{ id: "m1", label: "T", codes: [" 90837 "], limit: 6 }],
+    [{ label: "MH", codesHint: ["90837"], visitsPerYear: 6 }], 1);
+  assert.deepEqual(ci, { create: [], update: [] });
 });
 
 test("deductibleTarget: SBC owns the limit; EOB fills gaps; conflict when both differ > $1", () => {
@@ -182,6 +199,9 @@ test("deductibleTarget: SBC owns the limit; EOB fills gaps; conflict when both d
   assert.deepEqual(deductibleTarget(PLAN, { deductibleLimit: 2000 }), { limit: 1500, source: "sbc", conflict: true });
   assert.deepEqual(deductibleTarget(PLAN, { deductibleLimit: 1500.5 }), { limit: 1500, source: "sbc", conflict: false });
   assert.deepEqual(deductibleTarget(null, null), { limit: null, source: null, conflict: false });
+  // family-only SBC deductible (individual null): individual target intentionally stays null/EOB-sourced
+  assert.deepEqual(deductibleTarget({ deductible: { individual: null, family: 3000 } }, { deductibleLimit: 1500 }),
+    { limit: 1500, source: "eob", conflict: false });
 });
 
 test("planYearStartMonthFrom: extracts month, defaults to 1", () => {
@@ -216,13 +236,16 @@ const norm = (c) => String(c).trim().toUpperCase();
 // tracker updates it in place (re-uploads refresh their own trackers only).
 export function mergeSbcTrackers(existing, limits, planYearStartMonth) {
   const create = [], update = [];
+  const pendingCodes = new Set(); // codes already claimed by a create/update this run
   for (const lim of limits || []) {
     const codes = (lim.codesHint || []).filter(Boolean);
     if (!codes.length || !Number.isFinite(lim.visitsPerYear) || lim.visitsPerYear < 1) continue;
     const codeSet = new Set(codes.map(norm));
+    if ([...codeSet].some((c) => pendingCodes.has(c))) continue; // two SBC rows sharing a code → first wins
     const overlap = (t) => (t.codes || []).some((c) => codeSet.has(norm(c)));
     const manualHit = existing.find((t) => t.source !== "sbc" && overlap(t));
     if (manualHit) continue;
+    for (const c of codeSet) pendingCodes.add(c);
     const sbcHit = existing.find((t) => t.source === "sbc" && overlap(t));
     if (sbcHit) {
       update.push({ id: sbcHit.id, changes: { label: lim.label, codes, limit: lim.visitsPerYear } });
@@ -268,6 +291,7 @@ export function planYearStartMonthFrom(planYearStart) {
   - `planSchema` — Ajv/Gemini responseSchema for the structured plan object (shape exactly as the spec's Data model section).
   - `buildDigest(structured) -> string` — deterministic, ≤2000 chars.
   - `replaceDecision(existingStructured|null, incomingStructured, force: boolean) -> "store"|"confirm_older"`
+  - `applyPlanGate(result, structured|null) -> {planApplied: boolean, planReason: null|"no_plan"|"no_dates"|"out_of_period", result}` — post-response applicability gate; strips straggler plan findings and clamps `totals.totalAtStake` when the plan doesn't apply.
   - `PLAN_EXTRACT_INSTRUCTIONS` — the extraction prompt string.
   - `planTermsBlock(digest: string) -> string` — the fenced block appended to the audit prompt.
 
@@ -287,6 +311,26 @@ test("planSchema validates the structured shape; rejects extra properties", () =
   const validate = new Ajv({ allErrors: true }).compile(planSchema);
   assert.equal(validate(STRUCTURED), true, new Ajv().errorsText(validate?.errors));
   assert.equal(validate({ ...STRUCTURED, bogus: 1 }), false);
+});
+
+const ALL_NULL = {
+  planName: null, planYearStart: null, planYearEnd: null,
+  deductible: { individual: null, family: null }, oopMax: { individual: null, family: null },
+  limits: [], costShares: [],
+};
+
+test("planSchema ACCEPTS an all-null plan — the not-an-SBC gate depends on this", () => {
+  // A junk upload makes the model return nulls; validation must pass so the
+  // callable can reject with the clean "doesn't look like an SBC" message
+  // instead of a confusing "invalid output" error.
+  const validate = new Ajv({ allErrors: true }).compile(planSchema);
+  assert.equal(validate(ALL_NULL), true);
+});
+
+test("buildDigest survives an all-null plan without crashing", () => {
+  const d = buildDigest(ALL_NULL);
+  assert.equal(typeof d, "string");
+  assert.ok(d.includes("not stated"));
 });
 
 test("buildDigest is deterministic, contains verbatim rows and key numbers, caps at 2000 chars", () => {
@@ -314,6 +358,39 @@ test("planTermsBlock fences the digest and forbids inference", () => {
   assert.ok(b.includes("PLAN TERMS"));
   assert.ok(b.includes("DIGEST"));
   assert.ok(/only when the plan term is explicit/i.test(b));
+});
+
+import { applyPlanGate } from "../plan.js";
+
+test("applyPlanGate: applies in-window (inclusive bounds), strips straggler plan findings when not applied, clamps totals", () => {
+  const mk = (dates, findings = [], totalAtStake = 0) => ({
+    serviceDates: dates,
+    findings,
+    totals: { billed: 0, eobAllowed: 0, patientResponsibility: 0, totalAtStake },
+  });
+  const planFinding = { type: "copay_mismatch", amountAtStake: 60 };
+  const normalFinding = { type: "duplicate_charge", amountAtStake: 145.5 };
+
+  // applies: boundary date, nothing stripped
+  let r = applyPlanGate(mk(["2026-12-31"], [planFinding, normalFinding], 205.5), STRUCTURED);
+  assert.equal(r.planApplied, true);
+  assert.equal(r.planReason, null);
+  assert.equal(r.result.findings.length, 2);
+
+  // out of period: plan findings stripped, totalAtStake reduced
+  r = applyPlanGate(mk(["2025-06-01"], [planFinding, normalFinding], 205.5), STRUCTURED);
+  assert.equal(r.planApplied, false);
+  assert.equal(r.planReason, "out_of_period");
+  assert.deepEqual(r.result.findings, [normalFinding]);
+  assert.equal(r.result.totals.totalAtStake, 145.5);
+
+  // clamp: stragglers larger than the stated total never go negative
+  r = applyPlanGate(mk(["2025-06-01"], [{ type: "deductible_misapplied", amountAtStake: 999 }], 10), STRUCTURED);
+  assert.equal(r.result.totals.totalAtStake, 0);
+
+  // no plan / no dates
+  assert.equal(applyPlanGate(mk(["2026-03-01"]), null).planReason, "no_plan");
+  assert.equal(applyPlanGate(mk([]), STRUCTURED).planReason, "no_dates");
 });
 ```
 
@@ -420,6 +497,34 @@ export function replaceDecision(existing, incoming, force) {
   const a = existing.planYearStart, b = incoming.planYearStart;
   if (a && b && b < a) return "confirm_older";
   return "store";
+}
+
+// Post-response gate: decide applicability from the audit's own service dates
+// and, when the plan does not apply, strip any straggler plan findings the
+// model emitted anyway (the prompt date-gates them; this is defense in depth).
+const PLAN_FINDING_TYPES = new Set(["copay_mismatch", "coinsurance_mismatch", "deductible_misapplied", "not_covered_per_plan"]);
+
+export function applyPlanGate(result, structured) {
+  const dates = (result.serviceDates || []).filter(Boolean);
+  let planApplied = false, planReason = "no_plan";
+  if (structured?.planYearStart && structured?.planYearEnd) {
+    if (!dates.length) planReason = "no_dates";
+    else if (dates.some((d) => d >= structured.planYearStart && d <= structured.planYearEnd)) {
+      planApplied = true; planReason = null;
+    } else planReason = "out_of_period";
+  }
+  if (!planApplied && (result.findings || []).some((f) => PLAN_FINDING_TYPES.has(f.type))) {
+    const dropped = result.findings.filter((f) => PLAN_FINDING_TYPES.has(f.type));
+    result = {
+      ...result,
+      findings: result.findings.filter((f) => !PLAN_FINDING_TYPES.has(f.type)),
+      totals: {
+        ...result.totals,
+        totalAtStake: Math.max(0, result.totals.totalAtStake - dropped.reduce((s, f) => s + (f.amountAtStake || 0), 0)),
+      },
+    };
+  }
+  return { planApplied, planReason, result };
 }
 
 export function planTermsBlock(digest) {
@@ -627,29 +732,23 @@ export const extractPlan = onCall(
     }
 ```
 
-Pass the digest into both `runAudit` calls (initial and the validation retry): `runAudit(redactedBill, redactedEob, opts, plan?.digest || null)` — bill-only audits included. After validation succeeds, compute applicability from the RESULT's service dates:
+Pass the digest into both `runAudit` calls (initial and the validation retry): `runAudit(redactedBill, redactedEob, opts, plan?.digest || null)` — bill-only audits included. After validation succeeds, gate via the tested pure function (import `applyPlanGate` from `./plan.js`):
 
 ```js
-    const s = plan?.structured;
-    const dates = (result.serviceDates || []).filter(Boolean);
-    let planApplied = false, planReason = "no_plan";
-    if (s?.planYearStart && s?.planYearEnd) {
-      if (!dates.length) planReason = "no_dates";
-      else if (dates.some((d) => d >= s.planYearStart && d <= s.planYearEnd)) { planApplied = true; planReason = null; }
-      else planReason = "out_of_period";
-    }
-    if (!planApplied) {
-      // Defense in depth: the prompt already date-gates plan findings; drop any stragglers.
-      const planTypes = new Set(["copay_mismatch", "coinsurance_mismatch", "deductible_misapplied", "not_covered_per_plan"]);
-      const dropped = result.findings.filter((f) => planTypes.has(f.type));
-      if (dropped.length) {
-        result.findings = result.findings.filter((f) => !planTypes.has(f.type));
-        result.totals.totalAtStake = Math.max(0, result.totals.totalAtStake - dropped.reduce((s2, f) => s2 + (f.amountAtStake || 0), 0));
-      }
-    }
+    const gated = applyPlanGate(result, plan?.structured ?? null);
+    result = gated.result;
+    const { planApplied, planReason } = gated;
 ```
 
 Add `planApplied` and `planReason` to the `auditRef.set({...})` payload and to the return object (`return { auditId: auditRef.id, planApplied, planReason, ...result }`).
+
+**Also fix the existing audit rate limiter (bug found in plan review):** `checkRateLimit` currently writes `tx.set(ref, { day, count: count + 1 })` WITHOUT merge — once plan counters live in the same `meta/usage` doc, every audit would wipe `planDay`/`planCount`. Change it to:
+
+```js
+    tx.set(ref, { day, count: count + 1 }, { merge: true });
+```
+
+(`checkPlanRateLimit` already spreads `...data` and merges; with both merging, the two counters coexist.)
 
 - [ ] **Step 3: Verify** — `node --check functions/index.js`; `cd functions && npm test` stays green.
 
