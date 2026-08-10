@@ -166,12 +166,14 @@ function resetState() {
   $("eob-picked").textContent = "";
   $("saved-eob").value = "";
   setError("upload-error", "");
-  defaultEobSelection();
   batchFiles = [];
   batchQueue = null;
   batchIndex = 0;
   batchDocs = null;
   batchDocIndex = 0;
+  // After the file list is cleared — a stale EOB row from the previous audit
+  // would otherwise suppress the saved-EOB pre-selection (bug found live).
+  defaultEobSelection();
   renderFiles();
   setBatchLabels(null);
 }
