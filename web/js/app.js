@@ -73,7 +73,35 @@ if (isSignInWithEmailLink(auth, location.href)) {
     .catch((e) => setError("signin-error", e.message));
 }
 
+$("menu-btn").onclick = (e) => {
+  e.stopPropagation();
+  $("menu").hidden = !$("menu").hidden;
+};
+document.addEventListener("click", (e) => {
+  if (!$("menu").hidden && !$("menu").contains(e.target) && e.target !== $("menu-btn")) $("menu").hidden = true;
+});
+
 $("signout").onclick = () => signOut(auth);
+
+// Dev helper doubling as "delete my data": wipes every owner-deletable
+// document so the account behaves like a fresh sign-up. Server-managed
+// rate-limit counters are Function-owned and intentionally survive.
+$("reset-account").onclick = async () => {
+  $("menu").hidden = true;
+  if (!confirm("Erase ALL your data — audits, saved EOBs, trackers, and your plan? This cannot be undone. (Today's usage counters stay.)")) return;
+  const uid = auth.currentUser.uid;
+  try {
+    for (const coll of ["audits", "eobs", "trackers"]) {
+      const snap = await getDocs(collection(db, `users/${uid}/${coll}`));
+      for (const d of snap.docs) await deleteDoc(d.ref);
+    }
+    await deleteDoc(doc(db, `users/${uid}/plan/active`));
+    location.reload();
+  } catch (e) {
+    console.error(e);
+    setError("upload-error", `Reset failed partway: ${e.message} — reload and try again.`);
+  }
+};
 
 onAuthStateChanged(auth, (user) => {
   document.body.classList.toggle("authed", !!user);
