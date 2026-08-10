@@ -18,6 +18,7 @@ import { extractText } from "./extract.js";
 import { loadNer, deidentify, createRegistry, manualRedact } from "./deid.js";
 import { pairFiles, classifyFile, uniqueDocs } from "./batch.js";
 import { planYearStartMonthFrom, mergeSbcTrackers, deductibleTarget } from "./plan.js";
+import { matchSavedEob } from "./eobmatch.js";
 
 const $ = (id) => document.getElementById(id);
 let currentSection = "signin";
@@ -331,6 +332,17 @@ async function prepareAudit(billFile, eobFile, savedEob = null) {
     setStatus("Reading your documents…");
     const bill = await extractText(billFile);
     const eob = eobFile ? await extractText(eobFile) : null;
+
+    // An auto-picked library EOB can be improved now that the bill is readable:
+    // swap only on a provider-strength match, and say why on the review screen.
+    if (savedEob && savedEobAutoSelected) {
+      const m = matchSavedEob(savedEobs, bill.text);
+      if (m && m.score >= 2 && m.eob.id !== savedEob.id) savedEob = m.eob;
+      const chosen = m && m.eob.id === (savedEob?.id) ? m : null;
+      setBatchLabels(chosen
+        ? `Using saved EOB: ${savedEob.label} — ${chosen.reason}`
+        : `Using saved EOB: ${savedEob.label} — most recent in your library`);
+    }
 
     setStatus("Loading the privacy model (first run downloads ~90MB, cached after)…");
     const ner = await loadNer((p) => {
@@ -896,13 +908,19 @@ async function loadEobs() {
 
 // With a library on file, the EOB step answers itself: pre-select the most
 // recent saved EOB so a new bill can be audited with zero extra clicks.
+// Auto picks may be improved by the content matcher once the bill is read;
+// a user's explicit dropdown choice is never overridden.
+let savedEobAutoSelected = false;
+
 function defaultEobSelection() {
   if (!savedEobs.length || $("saved-eob").value || batchFiles.some((b) => b.role === "eob") || $("no-eob").checked) return;
   $("saved-eob").value = savedEobs[0].id;
+  savedEobAutoSelected = true;
   $("eob-picked").textContent = `✓ using saved: ${savedEobs[0].label} — change below if this isn't the right one`;
 }
 
 $("saved-eob").onchange = () => {
+  savedEobAutoSelected = false; // explicit choice
   if ($("saved-eob").value) {
     $("eob-picked").textContent = `✓ saved: ${$("saved-eob").selectedOptions[0].textContent}`;
     $("no-eob").checked = false;
@@ -917,6 +935,10 @@ async function maybeSaveEob(redactedText, data) {
   const label = `${data.provider || "EOB"} · ${(data.serviceDates || [])[0] || todayISO()}`;
   await addDoc(collection(db, `users/${auth.currentUser.uid}/eobs`), {
     label, redactedText, createdAt: serverTimestamp(),
+    // Matching metadata: lets future lone bills find this EOB by content.
+    provider: data.provider || "",
+    serviceDates: data.serviceDates || [],
+    codes: (data.occurrenceTable || []).map((r) => r.code),
   });
   // No refresh here: the loadHistory() that follows every audit reloads the library.
   track("eob_saved");
@@ -1172,7 +1194,23 @@ function renderUsage() {
     sb.hidden = false;
     sb.innerHTML = `💡 Your insurer mentioned a benefit limit for <b>${escapeHtml(s.code)}${s.description ? " — " + escapeHtml(s.description) : ""}</b>
       (“${escapeHtml(s.remark.slice(0, 120))}${s.remark.length > 120 ? "…" : ""}”). <button id="suggest-track" class="btn sm" style="margin-left:8px">Track it</button>`;
-    $("suggest-track").onclick = () => {
+    $("suggest-track").onclick = async () => {
+      // Zero-entry tracking: when the remark printed the limit, one click
+      // creates the tracker — no form. Fallback: the prefilled form.
+      if (Number.isFinite(s.limit) && s.limit > 0) {
+        await addDoc(collection(db, `users/${auth.currentUser.uid}/trackers`), {
+          label: s.description || `Code ${s.code}`,
+          codes: [s.code],
+          limit: s.limit,
+          planYearStartMonth: planYearStartMonthFrom(activePlan?.structured?.planYearStart),
+          source: "remark",
+          createdAt: serverTimestamp(),
+        });
+        await loadTrackers();
+        renderUsage();
+        track("tracker_created");
+        return;
+      }
       $("tracker-form-wrap").open = true;
       $("tf-preset").value = "custom";
       $("tf-codes").value = s.code;
