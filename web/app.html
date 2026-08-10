@@ -82,6 +82,10 @@
   .plan-period{font-family:ui-monospace,Menlo,monospace;font-size:13px;color:var(--ink-soft)}
   .plan-actions{display:flex;gap:12px;justify-content:flex-end;align-items:center;margin-top:12px}
   .plan-actions a{font-size:13px}
+  .plan-line{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:10px 16px}
+  .plan-line b{font-size:14px}
+  .plan-line .pl-actions{margin-left:auto;display:flex;gap:14px;align-items:center;font-size:13px}
+  .plan-line .pl-actions label{margin:0;display:inline;font-weight:700;font-size:13px;cursor:pointer;color:var(--brand-dark)}
   .dz.dz-sm{padding:18px 16px}
   #tracker-form select,#tracker-form input{border:1px solid var(--line);border-radius:10px;padding:9px;background:#fff;font-size:14px;width:100%}
   .tf-grid{display:grid;grid-template-columns:2fr 2fr 1fr 1.4fr auto;gap:10px;align-items:end;margin-top:8px}
@@ -168,6 +172,8 @@
   <section id="upload" hidden>
     <h1>Audit a medical bill</h1>
     <p class="lead">Personal details are removed <b>on your device</b> before anything is analyzed — you'll review exactly what gets sent.</p>
+    <div id="plan-card"></div>
+    <div id="plan-full" class="card" hidden style="margin-top:10px"><pre style="white-space:pre-wrap;font-size:12.5px"></pre></div>
     <div class="card">
       <div class="step-row"><span class="step-n">1</span><div><b>Add the EOB from your insurance</b><div class="muted">The EOB is the answer key — it says what your plan allowed and what you actually owe.</div></div></div>
       <div class="dropzones" style="grid-template-columns:1fr">
@@ -191,7 +197,7 @@
       <label class="muted" style="display:flex;gap:8px;align-items:center;font-weight:600;margin-top:8px">
         <input type="checkbox" id="no-eob" style="width:auto"> I don't have an EOB — audit the bill alone
       </label>
-      <p class="muted" id="no-eob-note" hidden style="margin-top:6px">No EOB yet? We can still catch duplicate charges and coding issues on the bill itself — and if your Summary of Benefits is on file (see Coverage usage below), we'll also check the bill against your plan's promised copays and limits. The strongest check, comparing what you were billed against what insurance says you owe, still needs the EOB — the audit gets stronger when it arrives.</p>
+      <p class="muted" id="no-eob-note" hidden style="margin-top:6px">No EOB yet? We can still catch duplicate charges and coding issues on the bill itself — and if your Summary of Benefits is on file (top of this page), we'll also check the bill against your plan's promised copays and limits. The strongest check, comparing what you were billed against what insurance says you owe, still needs the EOB — the audit gets stronger when it arrives.</p>
 
       <div class="step-row" style="margin-top:22px"><span class="step-n">2</span><div><b>Add your itemized bill</b><div class="muted">From the hospital or doctor — the line-by-line version with codes, not just a total. Several bills? Add them all — each becomes its own audit.</div></div></div>
       <div class="dropzones" style="grid-template-columns:1fr">
@@ -225,8 +231,6 @@
 
     <h2>Coverage usage</h2>
     <p class="muted" style="margin-bottom:10px">Track plan limits ("6 therapy visits per year") across all your audits, and watch your deductible progress. Counts come from the audits you've run.</p>
-    <div id="plan-card"></div>
-    <div id="plan-full" class="card" hidden style="margin-top:10px"><pre style="white-space:pre-wrap;font-size:12.5px"></pre></div>
     <div id="suggestion-banner" class="banner" hidden></div>
     <div id="deductible-card"></div>
     <div id="usage-list"></div>

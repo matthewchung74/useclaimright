@@ -864,27 +864,33 @@ function renderPlanCard() {
       </details>
     </div>`;
   } else {
-    const fmtd = (n) => (typeof n === "number" ? fmt(n) : "—");
+    // Plan on file: one quiet line — the numbers live on the deductible and
+    // tracker cards; this line only identifies the plan and offers actions.
     const expired = s.planYearEnd && todayISO() > s.planYearEnd;
-    el.innerHTML = `<div class="usage-card plan-top">
-      <div class="usage-head"><b>${escapeHtml(s.planName || "Your plan")}</b>
-        <span class="plan-period">${escapeHtml(s.planYearStart || "?")} → ${escapeHtml(s.planYearEnd || "?")}</span></div>
-      ${expired ? `<div class="banner" style="margin:10px 0 0">Your plan year ended ${escapeHtml(s.planYearEnd)} — upload your new SBC.</div>` : ""}
-      <div class="plan-grid">
-        <div><div class="pg-label">Deductible</div><div class="pg-value">${fmtd(s.deductible?.individual)}</div></div>
-        <div><div class="pg-label">Out-of-pocket max</div><div class="pg-value">${fmtd(s.oopMax?.individual)}</div></div>
-        ${(s.limits || []).map((l) => `<div><div class="pg-label">${escapeHtml(l.label)}</div><div class="pg-value">${l.visitsPerYear ?? "—"}/yr</div></div>`).join("")}
-      </div>
-      <div class="plan-actions">
-        <a href="#" id="plan-view">View full plan</a>
-        <label class="btn ghost sm" style="margin:0">Replace<input id="sbc-file" type="file" hidden accept="application/pdf,image/*,text/html,.html,.htm,text/plain,.txt"></label>
-      </div>
-    </div>`;
+    el.innerHTML = `<div class="usage-card plan-top plan-line">
+      <b>Plan: ${escapeHtml(s.planName || "on file")}</b>
+      <span class="plan-period">${escapeHtml(s.planYearStart || "?")} → ${escapeHtml(s.planYearEnd || "?")}</span>
+      <span class="pl-actions">
+        <a href="#" id="plan-view">View</a>
+        <label>Replace<input id="sbc-file" type="file" hidden accept="application/pdf,image/*,text/html,.html,.htm,text/plain,.txt"></label>
+        <a href="#" id="plan-remove" style="color:var(--bad)">Remove</a>
+      </span>
+    </div>
+    ${expired ? `<div class="banner">Your plan year ended ${escapeHtml(s.planYearEnd)} — upload your new SBC.</div>` : ""}`;
     $("plan-view").onclick = (e) => {
       e.preventDefault();
       const full = $("plan-full");
       full.querySelector("pre").textContent = activePlan.redactedText || "No stored text.";
       full.hidden = !full.hidden;
+    };
+    $("plan-remove").onclick = async (e) => {
+      e.preventDefault();
+      if (!confirm(`Remove your plan (${s.planName || "SBC"})? Audits will no longer be checked against it. Trackers you've created stay.`)) return;
+      await deleteDoc(doc(db, `users/${auth.currentUser.uid}/plan/active`));
+      activePlan = null;
+      $("plan-full").hidden = true;
+      renderPlanCard();
+      renderUsage();
     };
   }
   const input = $("sbc-file");
