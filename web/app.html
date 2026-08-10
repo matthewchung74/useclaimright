@@ -95,6 +95,7 @@
   .plan-line .pl-actions{margin-left:auto;display:flex;gap:14px;align-items:center;font-size:13px}
   .plan-line .pl-actions label{margin:0;display:inline;font-weight:700;font-size:13px;cursor:pointer;color:var(--brand-dark)}
   .dz.dz-sm{padding:18px 16px}
+  .mono-money{font-family:ui-monospace,Menlo,monospace;font-variant-numeric:tabular-nums}
   #tracker-form select,#tracker-form input{border:1px solid var(--line);border-radius:10px;padding:9px;background:#fff;font-size:14px;width:100%}
   .tf-grid{display:grid;grid-template-columns:2fr 2fr 1fr 1.4fr auto;gap:10px;align-items:end;margin-top:8px}
   @media(max-width:720px){.tf-grid{grid-template-columns:1fr 1fr}}
@@ -181,6 +182,26 @@
       <button id="email-signin" class="btn ghost" style="width:100%;margin-top:10px">Email me a sign-in link</button>
       <p id="email-sent" class="muted" hidden>Link sent — check your inbox on this device.</p>
       <div id="signin-error" class="error" hidden></div>
+    </div>
+  </section>
+
+  <section id="onboarding" hidden>
+    <div class="card plan-top" style="max-width:560px;margin:40px auto">
+      <h1>Set up your plan</h1>
+      <p class="lead" style="margin-bottom:18px">Upload your Summary of Benefits once, and every audit also checks the bill against what your plan promises — like a <span class="mono-money">$60</span> specialist copay billed as <span class="mono-money">$175</span>.</p>
+      <label class="dz" id="dz-sbc">
+        <span class="ico">📄</span>
+        <b>Summary of Benefits (SBC)</b>
+        <div class="hint">Drop it here or click to choose · PDF or photo<br>This is about your plan — not a bill or EOB</div>
+        <input id="sbc-file" type="file" accept="application/pdf,image/*,text/html,.html,.htm,text/plain,.txt">
+      </label>
+      <details class="explain" style="margin-top:12px"><summary>What's an SBC, and where do I find it?</summary>
+        <p>A standard 4–8 page document every plan must provide — a grid of what you pay per visit type.
+        Find it: your insurer's website → your plan → “Summary of Benefits and Coverage” (PDF);
+        your enrollment packet or open-enrollment email; or ask HR.</p>
+      </details>
+      <div id="onboarding-error" class="error" hidden></div>
+      <p style="text-align:center;margin-top:18px"><a href="#" id="skip-onboarding" style="font-size:14px">Skip for now — audit a bill first</a></p>
     </div>
   </section>
 
