@@ -453,6 +453,11 @@ async function runBatch() {
   const total = batchQueue.length;
   show("processing");
   let last = null;
+  // The report screen shows only the final audit, so the batch's own total has
+  // to be stated separately — otherwise "2 audits saved" sits above one audit's
+  // number and reads as the whole batch's result.
+  let batchAtStake = 0;
+  let batchFindings = 0;
   try {
     for (; batchIndex < batchQueue.length; batchIndex++) {
       const it = batchQueue[batchIndex];
@@ -467,6 +472,8 @@ async function runBatch() {
       const { data } = await analyzeFn(payload);
       lastAuditId = data.auditId || null;
       last = { data, ocrLow: payload.ocrConfidence < OCR_CONFIDENCE_THRESHOLD };
+      batchAtStake += data.totals?.totalAtStake || 0;
+      batchFindings += (data.findings || []).length;
       if (eobDoc && !eobDoc.saved && $("save-eob").checked) {
         await maybeSaveEob(eobDoc.redacted, data);
         eobDoc.saved = true; // shared EOB: save once, not once per audit
@@ -475,7 +482,10 @@ async function runBatch() {
     }
     batchQueue = null;
     batchDocs = null;
-    setBatchLabels(`Batch complete — all ${total} audits are saved under “Your past audits”.`);
+    setBatchLabels(
+      `Batch complete — ${total} audits saved under “Your past audits” · ${batchFindings} finding${batchFindings === 1 ? "" : "s"}, ` +
+      `${fmt(batchAtStake)} worth disputing across all ${total}. The report below is the last audit only.`
+    );
     renderReport(last.data, { ocrLow: last.ocrLow, model: last.data.model, planApplied: last.data.planApplied, planReason: last.data.planReason });
     show("report");
     track("batch_completed");

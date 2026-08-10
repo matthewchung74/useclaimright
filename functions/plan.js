@@ -140,5 +140,18 @@ comparisons ONLY to services whose dates fall within the plan's coverage period;
 plan findings. Word not_covered_per_plan findings as "worth asking about", never as a definitive
 coverage determination. Every plan finding MUST quote the plan row verbatim in evidence.sbcQuote and
 default to "medium" confidence unless the plan row names the exact billed service. Non-plan findings
-keep sbcQuote as "".`;
+keep sbcQuote as "".
+
+Row matching (most specific wins): use the plan row whose category actually covers the billed
+service, never a generic one that merely sounds close. Psychotherapy and other behavioral-health
+codes belong to the mental-health row, NOT to a generic "specialist visit" row; physical or
+occupational therapy belongs to the rehabilitation row, not the office-visit row. If no row
+unambiguously covers the billed service, emit NO plan finding for it — silence is correct when the
+mapping is a guess.
+
+Deductible wording is decisive: "after deductible", "subject to the deductible", or "you must meet
+your deductible first" all mean applying the charge to the deductible is CORRECT — never report
+deductible_misapplied in those cases. Report deductible_misapplied ONLY when the matched row
+explicitly states the deductible does NOT apply (e.g. "deductible does not apply") and the EOB
+applied it anyway.`;
 }
