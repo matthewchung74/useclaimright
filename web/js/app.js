@@ -17,7 +17,8 @@ import { firebaseConfig } from "./firebase-config.js";
 import { extractText } from "./extract.js";
 import { loadNer, deidentify, createRegistry, manualRedact } from "./deid.js";
 import { pairFiles, classifyFile, uniqueDocs } from "./batch.js";
-import { planYearStartMonthFrom, mergeSbcTrackers, deductibleTarget } from "./plan.js";
+import { planYearStartMonthFrom, mergeSbcTrackers, deductibleTarget, oopTarget } from "./plan.js";
+import { crossBillDuplicates, runningTotals, groupAuditsByProvider } from "./crossbill.js";
 import { matchSavedEob, documentsRelated } from "./eobmatch.js";
 
 const $ = (id) => document.getElementById(id);
@@ -934,13 +935,11 @@ async function loadHistory() {
     loadTrackers(),
     loadEobs(),
   ]);
-  $("history-list").innerHTML = snap.empty
-    ? '<p class="muted">No audits yet — run your first above.</p>'
-    : "";
   allAudits = [];
   snap.forEach((d) => {
     const a = d.data();
     const created = a.createdAt?.toDate?.();
+    const findings = a.findings || [];
     allAudits.push({
       id: d.id,
       serviceDates: a.serviceDates || [],
@@ -949,30 +948,137 @@ async function loadHistory() {
       payerRemarks: a.payerRemarks || [],
       provider: a.provider || "",
       createdAtDate: created ? isoDate(created) : "",
+      // Dashboard fields: identity of the paper (so the same bill audited twice
+      // is never mistaken for a double-bill), money, and a human summary.
+      billKey: billKeyOf(a.redactedBill),
+      atStake: a.totals?.totalAtStake || 0,
+      findingTypes: findings.map((f) => f.type),
+      summary: summarizeFindings(findings),
     });
-    const el = document.createElement("div");
-    el.className = "history-item";
-    const when = (a.serviceDates && a.serviceDates[0]) ||
-      (created ? created.toLocaleDateString() : "");
-    const prov = a.provider ? ` · ${escapeHtml(a.provider)}` : "";
-    el.innerHTML = `
-      <button class="open">${escapeHtml(when)}${prov} · ${a.findings?.length ?? 0} findings · ${fmt(a.totals?.totalAtStake)}</button>
-      <button class="del" title="Delete this audit">✕</button>`;
-    el.querySelector(".open").onclick = async () => {
-      const full = await getDoc(doc(db, `users/${user.uid}/audits/${d.id}`));
-      renderReport(full.data(), { ocrLow: (full.data().ocrConfidence ?? 100) < OCR_CONFIDENCE_THRESHOLD, planApplied: full.data().planApplied, planReason: full.data().planReason });
-      renderReportUsage(full.data());
-      show("report");
-    };
-    el.querySelector(".del").onclick = async () => {
-      if (confirm("Delete this audit permanently?")) {
-        await deleteDoc(doc(db, `users/${user.uid}/audits/${d.id}`));
-        loadHistory();
-      }
-    };
-    $("history-list").appendChild(el);
   });
+  renderDashboard();
   renderUsage();
+}
+
+// Cheap, stable identity for a bill's redacted text (djb2). Two audits of the
+// same paper share it; two genuinely different statements do not.
+function billKeyOf(text) {
+  if (!text) return "";
+  let h = 5381;
+  for (let i = 0; i < text.length; i++) h = ((h << 5) + h + text.charCodeAt(i)) | 0;
+  return `b${h >>> 0}`;
+}
+
+// "Duplicate charge · Copay doesn't match your plan" — what was found, in the
+// user's words, capped so a row stays one line.
+function summarizeFindings(findings) {
+  const labels = [...new Set(findings.map((f) => TYPE_LABELS[f.type] || f.type))];
+  if (!labels.length) return "";
+  return labels.slice(0, 2).join(" · ") + (labels.length > 2 ? ` +${labels.length - 2}` : "");
+}
+
+async function openAudit(id) {
+  const full = await getDoc(doc(db, `users/${auth.currentUser.uid}/audits/${id}`));
+  const data = full.data();
+  renderReport(data, {
+    ocrLow: (data.ocrConfidence ?? 100) < OCR_CONFIDENCE_THRESHOLD,
+    planApplied: data.planApplied, planReason: data.planReason,
+  });
+  renderReportUsage(data);
+  show("report");
+}
+
+async function deleteAudit(id) {
+  if (!confirm("Delete this audit permanently?")) return;
+  await deleteDoc(doc(db, `users/${auth.currentUser.uid}/audits/${id}`));
+  loadHistory();
+}
+
+const shortDate = (iso) => {
+  if (!iso) return "";
+  const [y, m, d] = iso.split("-").map(Number);
+  return Number.isFinite(y) ? new Date(Date.UTC(y, (m || 1) - 1, d || 1)).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" }) : iso;
+};
+
+function renderDashboard() {
+  const win = planYearWindow(allTrackers[0]?.planYearStartMonth || planYearStartMonthFrom(activePlan?.structured?.planYearStart), todayISO());
+  const totals = runningTotals(allAudits, win);
+  $("dash-subtitle").innerHTML = allAudits.length
+    ? `${totals.audited} bill${totals.audited === 1 ? "" : "s"} audited this plan year · ${totals.findings} finding${totals.findings === 1 ? "" : "s"} — what's still worth disputing, and what's left of your coverage.`
+    : "Audit a bill above and it'll show up here with what's worth disputing.";
+
+  // Hero: the finding no single audit can produce.
+  const dups = crossBillDuplicates(allAudits);
+  const dc = $("dup-card");
+  if (!dups.length) {
+    dc.innerHTML = "";
+  } else {
+    const d = dups[0];
+    dc.innerHTML = `<div class="dup-hero">
+      <div class="dup-ribbon">Found by comparing your bills to each other</div>
+      <div class="dup-body">
+        <div class="dup-amount"><b>${fmt(d.amount)}</b><span>at stake</span></div>
+        <div class="dup-main">
+          <h3>The same visit is on two statements</h3>
+          <p>${escapeHtml(d.provider || "This provider")} billed ${escapeHtml(d.code)}${d.description ? ` — ${escapeHtml(d.description)}` : ""} —
+             for ${escapeHtml(shortDate(d.date))} on two different statements. You likely owe one, not both.</p>
+          <div class="dup-statements">
+            ${d.bills.map((b, i) => `<button class="dup-st" data-audit="${escapeHtml(b.auditId)}">
+              <span><span class="pg-label">Statement ${String.fromCharCode(65 + i)}</span>
+              <span class="when">audited ${escapeHtml(shortDate(b.statementDate))}</span></span>
+              <b class="money-pill">${fmt(b.amount)}</b></button>`).join("")}
+          </div>
+          <details class="explain" style="margin-top:2px"><summary>Why this was flagged</summary>
+            <p>Both statements list the same service code on the same date of service from the same provider,
+            but they are different documents — so the visit appears to have been billed twice. Open each one to
+            compare, then ask the provider to void the duplicate. If you uploaded the same bill twice, it is not
+            counted here.</p>
+          </details>
+        </div>
+      </div>
+    </div>`;
+    for (const b of dc.querySelectorAll(".dup-st")) b.onclick = () => openAudit(b.dataset.audit);
+  }
+
+  // Bills, money first.
+  const { groups, clean } = groupAuditsByProvider(allAudits);
+  $("bills-total").innerHTML = totals.atStake
+    ? `<span class="money-pill">${fmt(totals.atStake)}</span> <span class="muted">worth disputing across ${groups.length} provider${groups.length === 1 ? "" : "s"}</span>`
+    : "";
+  $("bills-sort").textContent = groups.length > 1 ? "Sorted by amount at stake" : "";
+
+  const bg = $("bill-groups");
+  bg.innerHTML = groups.length
+    ? groups.map((g) => `<details class="prov-group" open>
+        <summary><span class="caret">▾</span> ${escapeHtml(g.provider)}
+          <span class="count">${g.bills.length} bill${g.bills.length === 1 ? "" : "s"}</span>
+          <span class="money-pill">${fmt(g.atStake)}</span></summary>
+        ${g.bills.map((b) => `<div class="bill-row">
+          <span class="when">${escapeHtml(shortDate(b.serviceDates[0] || b.createdAtDate))}</span>
+          <button class="what" data-audit="${escapeHtml(b.id)}">${escapeHtml(b.summary)}</button>
+          <span class="money-pill">${fmt(b.atStake)}</span>
+          <button class="rm" data-del="${escapeHtml(b.id)}" title="Delete this audit">✕</button>
+        </div>`).join("")}
+      </details>`).join("")
+    : (allAudits.length ? "" : '<p class="muted">No bills audited yet — add one above and it\'ll show up here with what\'s worth disputing.</p>');
+
+  $("clean-bills").innerHTML = clean.length
+    ? `<details class="prov-group"><summary><span class="caret">▸</span> Clean bills
+        <span class="count">${clean.length} with nothing to dispute</span></summary>
+        ${clean.map((b) => `<div class="bill-row quiet">
+          <span class="when">${escapeHtml(shortDate(b.serviceDates[0] || b.createdAtDate))}</span>
+          <button class="what" data-audit="${escapeHtml(b.id)}">${escapeHtml(b.provider || "Provider not read")} — nothing to dispute</button>
+          <button class="rm" data-del="${escapeHtml(b.id)}" title="Delete this audit">✕</button>
+        </div>`).join("")}
+      </details>`
+    : "";
+
+  for (const el of document.querySelectorAll("#bill-groups .what, #clean-bills .what")) {
+    el.onclick = () => openAudit(el.dataset.audit);
+  }
+  for (const el of document.querySelectorAll("#bill-groups .rm, #clean-bills .rm")) {
+    el.onclick = () => deleteAudit(el.dataset.del);
+  }
 }
 
 async function loadTrackers() {
@@ -1294,10 +1400,28 @@ function renderUsage() {
     dc.innerHTML = `<div class="usage-card">
       <div class="usage-head"><b>Deductible</b><span class="usage-count">${fmt(applied)}${lim}</span></div>
       ${target.limit !== null ? `<div class="progress"><div class="bar" style="width:${Math.min(100, (applied / target.limit) * 100)}%"></div></div>` : ""}
-      <div class="muted">${sourcing}${disagreement ? ` Note: your EOBs' per-claim amounts sum to ${fmt(summedApplied)} — the insurer's running total disagrees; worth a look.` : ""}${target.conflict ? ` Note: your EOB states a different annual deductible (${fmt(snapshot.deductibleLimit)}) than your SBC (${fmt(target.limit)}) — worth a look.` : ""}</div>
+      <div class="muted">${sourcing}${disagreement ? ` Note: your EOBs' per-claim amounts sum to ${fmt(summedApplied)} — the insurer's running total disagrees; worth a look.` : ""}${target.conflict ? ` Note: your EOB states a different annual deductible (${fmt(snapshot.deductibleLimit)}) than your SBC (${fmt(target.limit)}) — worth a look.` : ""}
+        ${target.limit !== null && applied < target.limit ? `<span style="float:right">${fmt(target.limit - applied)} to go</span>` : ""}</div>
     </div>`;
   } else {
     dc.innerHTML = "";
+  }
+
+  // Out-of-pocket max — extracted since the SBC feature landed, never shown
+  // until now. Same precedence as the deductible; a slim row, not a full card.
+  const oop = oopTarget(activePlan?.structured ?? null, snapshot);
+  const oc = $("oop-card");
+  const oopPaid = typeof snapshot?.oopToDate === "number" ? snapshot.oopToDate : null;
+  if (oop.limit !== null || oopPaid !== null) {
+    const pct = oop.limit ? Math.min(100, Math.round(((oopPaid ?? 0) / oop.limit) * 100)) : null;
+    oc.innerHTML = `<div class="usage-card">
+      <div class="usage-head"><b>Out-of-pocket maximum</b>
+        <span class="usage-count">${fmt(oopPaid ?? 0)}${oop.limit !== null ? ` of ${fmt(oop.limit)}` : ""}${pct !== null ? ` · ${pct}%` : ""}</span></div>
+      ${oop.limit !== null ? `<div class="progress"><div class="bar" style="width:${pct}%"></div></div>` : ""}
+      ${oop.conflict ? `<div class="muted">Note: your EOB states a different out-of-pocket limit (${fmt(snapshot.oopLimit)}) than your SBC (${fmt(oop.limit)}) — worth a look.</div>` : ""}
+    </div>`;
+  } else {
+    oc.innerHTML = "";
   }
 
   // Suggestion banner
