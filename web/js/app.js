@@ -20,8 +20,14 @@ import { pairFiles, classifyFile, uniqueDocs } from "./batch.js";
 import { planYearStartMonthFrom, mergeSbcTrackers, deductibleTarget } from "./plan.js";
 
 const $ = (id) => document.getElementById(id);
+let currentSection = "signin";
 const show = (id) => {
+  currentSection = id;
   for (const s of document.querySelectorAll("main > section")) s.hidden = s.id !== id;
+  // Feedback bubble lives on the calm screens only — never over a review or spinner.
+  const fbVisible = id === "upload" || id === "report";
+  $("fb-bubble").hidden = !fbVisible;
+  if (!fbVisible) $("fb-card").hidden = true;
   window.scrollTo(0, 0);
 };
 
@@ -43,6 +49,7 @@ if (["localhost", "127.0.0.1"].includes(location.hostname)) {
 }
 const analyzeFn = httpsCallable(functions, "analyze", { timeout: 300_000 });
 const extractPlanFn = httpsCallable(functions, "extractPlan", { timeout: 300_000 });
+const submitFeedbackFn = httpsCallable(functions, "submitFeedback", { timeout: 30_000 });
 let analytics = null;
 try { analytics = getAnalytics(app); } catch { /* blocked or unsupported — fine */ }
 const track = (name) => { try { analytics && logEvent(analytics, name); } catch {} };
@@ -438,6 +445,7 @@ async function runBatch() {
         ocrConfidence: Math.min(billDoc.confidence, eobDoc ? eobDoc.confidence : 100),
       };
       const { data } = await analyzeFn(payload);
+      lastAuditId = data.auditId || null;
       last = { data, ocrLow: payload.ocrConfidence < OCR_CONFIDENCE_THRESHOLD };
       if (eobDoc && !eobDoc.saved && $("save-eob").checked) {
         await maybeSaveEob(eobDoc.redacted, data);
@@ -564,6 +572,7 @@ $("confirm-review").onclick = async () => {
   setStatus("Analyzing your bill against the EOB…");
   try {
     const { data } = await analyzeFn(payload);
+    lastAuditId = data.auditId || null;
     renderReport(data, { ocrLow, model: data.model, planApplied: data.planApplied, planReason: data.planReason });
     show("report");
     track("audit_completed");
@@ -602,6 +611,41 @@ const TYPE_LABELS = {
 const fmt = (n) => (typeof n === "number" ? n.toLocaleString("en-US", { style: "currency", currency: "USD" }) : "—");
 
 let lastReport = null;
+let lastAuditId = null;
+
+// ---------- Feedback widget ----------
+
+let fbCategory = "bug";
+$("fb-bubble").onclick = () => {
+  $("fb-card").hidden = !$("fb-card").hidden;
+  if (!$("fb-card").hidden) $("fb-text").focus();
+};
+$("fb-close").onclick = () => { $("fb-card").hidden = true; };
+for (const b of document.querySelectorAll(".fb-chips button")) {
+  b.onclick = () => {
+    fbCategory = b.dataset.cat;
+    for (const o of document.querySelectorAll(".fb-chips button")) o.classList.toggle("active", o === b);
+  };
+}
+$("fb-send").onclick = async () => {
+  const message = $("fb-text").value.trim();
+  if (!message) return;
+  $("fb-send").disabled = true;
+  $("fb-status").textContent = "Sending…";
+  try {
+    await submitFeedbackFn({
+      message, category: fbCategory, screen: currentSection,
+      auditId: currentSection === "report" ? lastAuditId : null,
+    });
+    $("fb-status").textContent = "Thanks — we read every note.";
+    $("fb-text").value = "";
+    setTimeout(() => { $("fb-card").hidden = true; $("fb-status").textContent = ""; $("fb-send").disabled = false; }, 1200);
+  } catch (e) {
+    console.error(e);
+    $("fb-status").textContent = e.code === "functions/resource-exhausted" ? e.message : "Couldn't send — try again.";
+    $("fb-send").disabled = false;
+  }
+};
 
 const PLAN_TYPES = new Set(["copay_mismatch", "coinsurance_mismatch", "deductible_misapplied", "not_covered_per_plan"]);
 

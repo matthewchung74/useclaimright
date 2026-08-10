@@ -105,5 +105,11 @@ if (!EMULATOR) {
     await assertSucceeds(alice.doc("users/alice/plan/active").delete());
   });
 
+  test("feedback: no client access at all (Function sole writer)", async () => {
+    await assertFails(alice.doc("feedback/f1").set({ message: "hi" }));
+    await assertFails(alice.doc("feedback/f1").get());
+    await assertFails(anon.doc("feedback/f1").get());
+  });
+
   test.after(async () => { await env.cleanup(); });
 }

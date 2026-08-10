@@ -27,6 +27,11 @@ service cloud.firestore {
     match /users/{uid}/meta/{docId} {
       allow read, write: if false;
     }
+    // In-app feedback is written exclusively by the submitFeedback Function;
+    // read in the console. No client access at all.
+    match /feedback/{feedbackId} {
+      allow read, write: if false;
+    }
     match /{document=**} {
       allow read, write: if false;
     }

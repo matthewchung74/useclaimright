@@ -6,6 +6,7 @@ import Ajv from "ajv";
 import { findingsSchema } from "./schema.js";
 import { runAudit, runPlanExtract } from "./providers/gemini.js";
 import { planSchema, buildDigest, replaceDecision, applyPlanGate } from "./plan.js";
+import { validateFeedback } from "./feedback.js";
 
 initializeApp();
 const db = getFirestore();
@@ -34,7 +35,42 @@ async function checkRateLimit(uid) {
 }
 
 const PLAN_DAILY_LIMIT = 3;
+const FEEDBACK_DAILY_LIMIT = 20;
 const validatePlan = ajv.compile(planSchema);
+
+async function checkFeedbackRateLimit(uid) {
+  const day = new Date().toISOString().slice(0, 10);
+  const ref = db.doc(`users/${uid}/meta/usage`);
+  await db.runTransaction(async (tx) => {
+    const snap = await tx.get(ref);
+    const data = snap.exists ? snap.data() : {};
+    const count = data.fbDay === day ? data.fbCount || 0 : 0;
+    if (count >= FEEDBACK_DAILY_LIMIT) {
+      throw new HttpsError("resource-exhausted", "Daily feedback limit reached — thank you for all the notes!");
+    }
+    tx.set(ref, { ...data, fbDay: day, fbCount: count + 1 }, { merge: true });
+  });
+}
+
+// In-app feedback: auth-gated, validated, written server-side only (rules deny
+// all client access to the feedback collection). Read in the Firebase console.
+export const submitFeedback = onCall(
+  { region: "us-central1", memory: "256MiB", timeoutSeconds: 30, enforceAppCheck: false },
+  async (request) => {
+    if (!request.auth) throw new HttpsError("unauthenticated", "Sign in to send feedback.");
+    const v = validateFeedback(request.data || {});
+    if (!v.ok) throw new HttpsError("invalid-argument", v.errors.join("; "));
+    await checkFeedbackRateLimit(request.auth.uid);
+    await db.collection("feedback").add({
+      uid: request.auth.uid,
+      email: request.auth.token?.email ?? null,
+      ...v.value,
+      platform: "web",
+      createdAt: FieldValue.serverTimestamp(),
+    });
+    return { ok: true };
+  }
+);
 
 async function checkPlanRateLimit(uid) {
   const day = new Date().toISOString().slice(0, 10);

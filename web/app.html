@@ -96,6 +96,19 @@
   .plan-line .pl-actions label{margin:0;display:inline;font-weight:700;font-size:13px;cursor:pointer;color:var(--brand-dark)}
   .dz.dz-sm{padding:18px 16px}
   .mono-money{font-family:ui-monospace,Menlo,monospace;font-variant-numeric:tabular-nums}
+  /* feedback widget */
+  #fb-bubble{position:fixed;right:18px;bottom:18px;width:48px;height:48px;border-radius:50%;background:var(--brand);
+    border:none;cursor:pointer;z-index:15;box-shadow:0 4px 14px rgba(18,50,50,.25);display:flex;align-items:center;justify-content:center}
+  #fb-bubble:hover{background:var(--brand-dark)}
+  #fb-card{position:fixed;bottom:78px;right:18px;width:min(360px,calc(100vw - 36px));background:#fff;border:1px solid var(--line);
+    border-radius:16px;padding:18px;z-index:15;box-shadow:0 8px 24px rgba(18,50,50,.12)}
+  .fb-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+  .fb-head b{font-size:16px}
+  .fb-head button{border:none;background:none;font-size:16px;cursor:pointer;color:var(--ink-soft);padding:3px 6px}
+  .fb-chips{margin-bottom:10px}
+  .fb-chips button{padding:6px 12px;font-size:13px;border-radius:999px}
+  #fb-text{width:100%;height:96px;border:1px solid var(--line);border-radius:10px;padding:10px;font-size:14px;font-family:inherit;resize:vertical}
+  .fb-foot{display:flex;align-items:center;gap:10px;margin-top:10px}
   #tracker-form select,#tracker-form input{border:1px solid var(--line);border-radius:10px;padding:9px;background:#fff;font-size:14px;width:100%}
   .tf-grid{display:grid;grid-template-columns:2fr 2fr 1fr 1.4fr auto;gap:10px;align-items:end;margin-top:8px}
   @media(max-width:720px){.tf-grid{grid-template-columns:1fr 1fr}}
@@ -373,6 +386,20 @@
     </div>
   </section>
 </main>
+
+<button id="fb-bubble" class="no-print" aria-label="Send feedback" hidden>
+  <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v8a2.5 2.5 0 0 1-2.5 2.5H9.4l-4 3.2c-.6.5-1.4.1-1.4-.6V5.5Z" fill="#fff"/></svg>
+</button>
+<div id="fb-card" class="no-print" hidden>
+  <div class="fb-head"><b>Send feedback</b><button id="fb-close" aria-label="Close">✕</button></div>
+  <div class="tabs fb-chips">
+    <button data-cat="bug" class="active">Bug</button>
+    <button data-cat="idea">Idea</button>
+    <button data-cat="other">Other</button>
+  </div>
+  <textarea id="fb-text" maxlength="1000" placeholder="What happened, or what would make this better?"></textarea>
+  <div class="fb-foot"><button id="fb-send" class="btn sm">Send</button><span id="fb-status" class="muted"></span></div>
+</div>
 
 <script type="module" src="/js/app.js"></script>
 </body>
