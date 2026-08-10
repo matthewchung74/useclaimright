@@ -158,6 +158,19 @@ good
 
 ---
 
+## E7 — Wrong EOB paired with a bill
+**Use case:** pairing the wrong EOB must be called out, not silently reported as "you may not owe the whole bill".
+**Data:** copies of two unrelated fixtures given matching stems so they pair by filename — e.g. `mixup-bill.pdf` (copy of `fake-bill.pdf`, ED visit 2026-06-12) + `mixup-eob.pdf` (copy of `series/p1-eob.pdf`, PT 2026-03-20).
+
+1. Upload both, Prepare audit. ✓ They pair ("1 audit: 1 bill+EOB pair").
+2. On the review screen, **before** analyzing:
+   ✓ Banner: "⚠️ **This EOB may not cover this bill** (mixup-bill.pdf) — they share no service dates and no procedure codes…"
+3. Repeat with a genuine pair (`p1-bill.pdf` + `p1-eob.pdf`). ✓ **No banner** — a real pair shares dates and codes.
+4. Note: files with clearly different stems (`fake-bill.pdf` + `p1-eob.pdf`) never pair at all — the filename router keeps them separate and the audit reports "1 bill-only, 1 EOB has no matching bill".
+5. Backstop (needs a real audit): if a mismatched pair is analyzed anyway and **every** finding comes back `not_in_eob`, the report shows "⚠️ Every line on this bill came back missing from the EOB…" above the totals.
+
+**Cost:** 0 audits for steps 1–4 (back out with **Start over**); 1 audit for step 5.
+
 ## E6 — Reset account returns you to onboarding
 **Use case:** "erase all my data" means a genuinely fresh account, including the first-run setup screen.
 **Data:** none (destructive — run it last, or on a scratch account).
