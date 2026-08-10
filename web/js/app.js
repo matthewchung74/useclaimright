@@ -104,6 +104,9 @@ $("reset-account").onclick = async () => {
       for (const d of snap.docs) await deleteDoc(d.ref);
     }
     await deleteDoc(doc(db, `users/${uid}/plan/active`));
+    // "Treat it like a fresh account" includes the onboarding gate: without
+    // this the skip flag survives the wipe and drops you on the audit page.
+    localStorage.removeItem("ucr-skip-onboarding");
     location.reload();
   } catch (e) {
     console.error(e);
