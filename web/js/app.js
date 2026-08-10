@@ -293,6 +293,7 @@ $("run-audit").onclick = async () => {
 // At most one is non-null; both null means bill-only.
 async function prepareAudit(billFile, eobFile, savedEob = null) {
   setBatchLabels(null);
+  $("tab-bill").textContent = "Bill";
   if (billFile.size > 20e6 || (eobFile && eobFile.size > 20e6)) {
     return setError("upload-error", "Files must be under 20MB.");
   }
@@ -351,6 +352,7 @@ function resetStatePreservingFiles() {
 async function prepareBatch() {
   resetStatePreservingFiles();
   batchDocs = null;
+  $("tab-bill").textContent = "Bill";
   show("processing");
   try {
     const docs = uniqueDocs(batchQueue);
@@ -881,6 +883,7 @@ function renderPlanCard() {
     el.innerHTML = `<div class="usage-card plan-top">
       <b>Add your Summary of Benefits — we'll set up your deductible and visit limits automatically.</b>
       <label class="dz dz-sm" id="dz-sbc" style="margin-top:10px">
+        <span class="ico">📄</span>
         <b>Summary of Benefits (SBC)</b>
         <div class="hint">Drop it here or click to choose · PDF or photo<br>This is about your plan — not a bill or EOB</div>
         <input id="sbc-file" type="file" accept="application/pdf,image/*,text/html,.html,.htm,text/plain,.txt">
@@ -896,7 +899,7 @@ function renderPlanCard() {
     // tracker cards; this line only identifies the plan and offers actions.
     const expired = s.planYearEnd && todayISO() > s.planYearEnd;
     el.innerHTML = `<div class="usage-card plan-top plan-line">
-      <b>Plan: ${escapeHtml(s.planName || "on file")}</b>
+      <b><span style="color:var(--good)">✓</span> Plan on file: ${escapeHtml(s.planName || "")}</b>
       <span class="plan-period">${escapeHtml(s.planYearStart || "?")} → ${escapeHtml(s.planYearEnd || "?")}</span>
       <span class="pl-actions">
         <a href="#" id="plan-view">View</a>
@@ -938,6 +941,7 @@ async function prepareSbc(file) {
   if (file.size > 20e6) return setError("upload-error", "Files must be under 20MB.");
   resetStatePreservingFiles();
   state.sbcFlow = true;
+  $("tab-bill").textContent = "Plan (SBC)";
   show("processing");
   try {
     setStatus("Reading your Summary of Benefits…");
