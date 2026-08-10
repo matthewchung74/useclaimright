@@ -16,7 +16,8 @@ Fixtures: `test-fixtures/` (regenerate HTML: `node test-fixtures/gen-series.mjs`
 **Use case:** a user who skips plan setup still gets the full bill-vs-EOB audit, and the report admits the plan check didn't run.
 **Data:** `fake-bill.pdf` + `fake-eob.pdf` (ED visit, planted errors).
 
-1. On a fresh account, confirm the top of the audit page shows the **"Add your Summary of Benefits"** card (empty state, own dropzone, "What's an SBC?" explainer). Do NOT upload it yet.
+1. A fresh account lands on the **onboarding screen** first: "Set up your plan" card (560px, teal top rule), payoff pitch with mono `$60`/`$175` figures, SBC dropzone with 📄, "What's an SBC?" explainer, and a centered "**Skip for now — audit a bill first**" link. Click **Skip**.
+   ✓ The audit page appears; the top shows a **dashed one-line reminder** "No plan on file — add your Summary of Benefits · Add now" (not a big card, not a gold banner); step 1 (EOB) is the first big element and its explainer ("What's an EOB…") sits directly under it.
 2. Drag `fake-eob.pdf` onto the EOB zone, `fake-bill.pdf` onto the bill zone. ✓ One "✓ file ✕" row under each zone.
 3. Click **Prepare audit →**. ✓ Processing (first run: "Downloading privacy model… N%", ~1–2 min, one-time).
 4. Review both tabs. ✓ Canary PHI chipped: Jane Q. Testpatient, DOB 03/14/1985, MRN TESTMRN-424242, AHX-55512345.
@@ -27,6 +28,13 @@ Fixtures: `test-fixtures/` (regenerate HTML: `node test-fixtures/gen-series.mjs`
 
 **Cost:** 1 audit.
 
+when there is no sbc, eob should be step 1
+we should have a support form similar to the askmyfit project
+after the upload bill it says whats and eob and how do i find it. shouldnt that be after the eob section? 
+for eob and bills cant we upload a batch number
+if eob is saved to account, how can it be matched to future bills from other sessoins?
+are we saving all eobs and bills so one can log in and see all their bills and remaining coverage , may need design
+
 ---
 
 # Main case — the SBC journey
@@ -35,13 +43,15 @@ Fixtures: `test-fixtures/` (regenerate HTML: `node test-fixtures/gen-series.mjs`
 **Use case:** upload the SBC once; the app configures itself.
 **Data:** `fake-sbc.pdf` (Acme Silver PPO: deductible $1,500/$3,000, OOP $6,000/$12,000, period 2026-01-01→12-31, mental health 6/yr, rehab 20/yr, planted "$60 copay" rehab row).
 
-1. Drag `fake-sbc.pdf` onto the SBC dropzone at the top of the page.
-2. Review screen (single document, note says plan documents carry little personal info). ✓ Member name/ID chipped. Click **Looks right — analyze**.
+1. Click **Add now** on the reminder line. ✓ The onboarding screen returns, and its skip link now reads "**Not now — back to your audits**" (origin-aware). Drag `fake-sbc.pdf` onto the dropzone.
+2. Review screen (single document; the tab is labeled "**Plan (SBC)**", not "Bill"). ✓ Member name/ID chipped. Click **Looks right — analyze**.
 3. Back on the audit page:
    ✓ The SBC card is replaced by ONE line: `Plan: Acme Silver PPO · 2026-01-01 → 2026-12-31 · View · Replace · Remove`.
    ✓ Coverage usage: two trackers tagged "**from your SBC — check the codes**" (6/yr mental health, 20/yr rehab).
    ✓ Deductible card: "$0.00 of $1,500.00 · Target from your plan (SBC)."
    ✓ **View** toggles the redacted SBC text; opening a tracker's details clears its tag.
+
+confused when i uploaded sbc it auto took me to redacting, since it was using a prev used bill. why would it use a prev used bill .  i now think the sbc should be a separate requrired step in onboarding that happens before eob and bill. can u desing for that.
 
 **Cost:** 1 plan upload.
 
@@ -86,6 +96,7 @@ Fixtures: `test-fixtures/` (regenerate HTML: `node test-fixtures/gen-series.mjs`
 1. Expand "My saved EOBs". ✓ The consolidated EOB saved ONCE despite 2 audits sharing it.
 2. Upload `t4-bill.pdf` only. ✓ Saved EOB pre-selected ("✓ using saved: …").
 3. Prepare, review, analyze.
+   ✓ On the review screen, the label above reads "Using saved EOB: … — **matched by provider and service date**" (or "most recent in your library" if no content match) — the auto-pick is explained, and an explicit dropdown choice is never overridden.
    ✓ "**On the bill, missing from the EOB**" (`not_in_eob`) — full $175 worth disputing; mental-health tracker 4/6.
 
 **Cost:** 1 audit.
@@ -102,6 +113,16 @@ Fixtures: `test-fixtures/` (regenerate HTML: `node test-fixtures/gen-series.mjs`
 ---
 
 # Remaining exceptions
+
+## M7 — Zero-entry tracking from remarks (optional, +3 audits)
+**Use case:** when an EOB remark prints the limit, one click tracks it — no typing. (With an SBC on file the trackers already exist; to see this path, delete the mental-health tracker first or run without a plan.)
+**Data:** `series/t4-bill.pdf`+`t4-eob.pdf`, `t5-bill.pdf`+`t5-eob.pdf`, `t6-bill.pdf`+`t6-eob.pdf`.
+
+1. Audit the pairs in order. After t5 (remark "5 of 6 visits used"), if its codes are untracked:
+   ✓ The 💡 banner offers "Track it" — ONE click creates the tracker fully configured (codes, limit 6, plan year) with no form. The manual form is labeled "**Add a custom limit**" and remains the fallback for unprinted limits.
+2. After t6: ✓ tracker red ("Limit reached…"), deductible card $720 of $1,500.
+
+**Cost:** 3 audits.
 
 ## E2 — No EOB (bill-only) with SBC on file
 **Use case:** bill-only audits still get plan checks; the no-EOB note explains the hierarchy.
@@ -139,6 +160,18 @@ Fixtures: `test-fixtures/` (regenerate HTML: `node test-fixtures/gen-series.mjs`
 **Cost:** 1 plan upload (3/3 for the day after M1 + E4 + E5).
 
 ---
+
+## F1 — Feedback widget
+**Use case:** in-app feedback reaches the founder without leaving the app.
+**Data:** none.
+
+1. On the audit page (or a report), find the teal **chat bubble** bottom-right. ✓ It does NOT appear on the sign-in, onboarding, processing, or review screens.
+2. Click it → card opens: "Send feedback", Bug/Idea/Other pills, textarea, Send.
+3. Pick a category, type a note, Send.
+   ✓ "Thanks — we read every note." and the card closes itself.
+   ✓ The submission appears in the Firestore `feedback` collection (console or CLI) with uid, email, message, category, screen, and — when sent from a report — the auditId.
+
+**Cost:** 0 audits (20 feedback/day limit).
 
 ## Always-on checks (every pass)
 - **PHI canary:** every review chips Jane Q. Testpatient / 03/14/1985 / TESTMRN-424242 / AHX-55512345; "Hide selection" redacts across all open documents.
