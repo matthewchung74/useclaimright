@@ -28,6 +28,8 @@ Fixtures: `test-fixtures/` (regenerate HTML: `node test-fixtures/gen-series.mjs`
 
 **Cost:** 1 audit.
 
+good
+
 ---
 
 # Main case — the SBC journey
@@ -78,6 +80,9 @@ Fixtures: `test-fixtures/` (regenerate HTML: `node test-fixtures/gen-series.mjs`
 2. Start. ✓ Per-document redaction progress, then ONE review screen with 3 tabs + "Reviewing <name> — document N of 3".
 3. Confirm once. ✓ "Analyzing audit 1 of 2… 2 of 2" with no pauses; final report + "Batch complete".
    ✓ Each audit matches its claim line in the consolidated EOB (no false `not_in_eob` for t2/t3); mental-health tracker reaches 3/6; deductible $360.
+   ✓ **Batch total stated**: "2 audits saved … **$110.00 worth disputing across all 2**. The report below is the last audit only." Each t-audit is $55 (bill demands $175, EOB responsibility $120) — the on-screen report shows one audit, the label shows the batch.
+   ✓ **No `deductible_misapplied`** on either audit. The SBC's mental-health row reads "$0 coinsurance **after** deductible", so applying $120 to the deductible is correct. *(Regression guard: this fired falsely once at $95 — the model had matched psychotherapy to the generic "specialist visit — deductible does not apply" row.)*
+   ✓ Each audit's `serviceDates` holds **only its own bill's date** — not all three dates from the consolidated EOB. *(Regression guard: t3's audit once recorded 2026-01-15, 02-12 and 03-11.)*
 
 **Cost:** 2 audits.
 
