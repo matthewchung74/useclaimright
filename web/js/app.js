@@ -384,6 +384,9 @@ async function prepareAudit(billFile, eobFile, savedEob = null) {
 
 function resetStatePreservingFiles() {
   state = { registry: createRegistry(), bill: null, eob: null, activeDoc: "bill" };
+  redactUndoStack = [];
+  setRedactStatus("");
+  $("hide-chip").hidden = true;
 }
 
 // Review-all batch flow: every unique document is extracted and redacted up
@@ -547,22 +550,79 @@ function renderReviewTabs() {
 $("tab-bill").onclick = () => { state.activeDoc = "bill"; renderReview(); };
 $("tab-eob").onclick = () => { state.activeDoc = "eob"; renderReview(); };
 
-$("redact-selection").onclick = () => {
-  const sel = window.getSelection().toString();
-  if (!sel.trim()) return;
-  if (batchDocs) {
-    // Apply everywhere so shared strings stay consistent across the batch.
-    for (const d of batchDocs) d.redacted = manualRedact(d.redacted, sel, state.registry);
-    renderReview();
+// Manual redaction: a floating chip appears at the selection (no travelling to
+// a button), every hide is undoable, and a hide always applies to every open
+// document so shared strings stay consistent.
+let redactUndoStack = [];
+
+function redactionSnapshot() {
+  return batchDocs
+    ? { batch: batchDocs.map((d) => d.redacted) }
+    : { bill: state.bill?.redacted ?? null, eob: state.eob?.redacted ?? null };
+}
+
+function restoreRedactions(snap) {
+  if (snap.batch) {
+    snap.batch.forEach((t, i) => { if (batchDocs?.[i]) batchDocs[i].redacted = t; });
     return;
   }
-  const docState = state[state.activeDoc];
-  docState.redacted = manualRedact(docState.redacted, sel, state.registry);
-  // Also apply to the other document so shared strings stay consistent.
-  const other = state.activeDoc === "bill" ? state.eob : state.bill;
-  if (other) other.redacted = manualRedact(other.redacted, sel, state.registry);
+  if (state.bill && snap.bill !== null) state.bill.redacted = snap.bill;
+  if (state.eob && snap.eob !== null) state.eob.redacted = snap.eob;
+}
+
+function setRedactStatus(msg) {
+  $("redact-status").textContent = msg || "";
+  $("undo-redaction").hidden = redactUndoStack.length === 0;
+}
+
+function applyManualRedaction() {
+  const sel = window.getSelection().toString();
+  if (!sel.trim()) return;
+  redactUndoStack.push(redactionSnapshot());
+  if (batchDocs) {
+    for (const d of batchDocs) d.redacted = manualRedact(d.redacted, sel, state.registry);
+  } else {
+    const docState = state[state.activeDoc];
+    docState.redacted = manualRedact(docState.redacted, sel, state.registry);
+    const other = state.activeDoc === "bill" ? state.eob : state.bill;
+    if (other) other.redacted = manualRedact(other.redacted, sel, state.registry);
+  }
+  window.getSelection().removeAllRanges();
+  $("hide-chip").hidden = true;
   renderReview();
+  setRedactStatus("Hidden everywhere in these documents.");
+}
+
+$("redact-selection").onclick = applyManualRedaction;
+$("hide-chip").onclick = applyManualRedaction;
+// Clicking the chip must not clear the selection before the handler reads it.
+$("hide-chip").addEventListener("mousedown", (e) => e.preventDefault());
+
+$("undo-redaction").onclick = () => {
+  const snap = redactUndoStack.pop();
+  if (!snap) return;
+  restoreRedactions(snap);
+  renderReview();
+  setRedactStatus("Undid — restored.");
 };
+
+// Position the chip just above whatever is selected inside the review panes.
+function positionHideChip() {
+  const chip = $("hide-chip");
+  const sel = window.getSelection();
+  if ($("review").hidden || !sel || sel.isCollapsed || !sel.toString().trim()) {
+    chip.hidden = true;
+    return;
+  }
+  const node = sel.anchorNode?.nodeType === 3 ? sel.anchorNode.parentElement : sel.anchorNode;
+  if (!node?.closest?.(".panes")) { chip.hidden = true; return; }
+  const r = sel.getRangeAt(0).getBoundingClientRect();
+  if (!r.width && !r.height) { chip.hidden = true; return; }
+  chip.hidden = false;
+  chip.style.top = `${window.scrollY + r.top - chip.offsetHeight - 8}px`;
+  chip.style.left = `${window.scrollX + r.left + r.width / 2 - chip.offsetWidth / 2}px`;
+}
+document.addEventListener("selectionchange", () => requestAnimationFrame(positionHideChip));
 
 $("confirm-review").onclick = async () => {
   if (state.sbcFlow) return runSbcExtraction();

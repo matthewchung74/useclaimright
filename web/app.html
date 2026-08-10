@@ -96,6 +96,10 @@
   .plan-line .pl-actions label{margin:0;display:inline;font-weight:700;font-size:13px;cursor:pointer;color:var(--brand-dark)}
   .dz.dz-sm{padding:18px 16px}
   .mono-money{font-family:ui-monospace,Menlo,monospace;font-variant-numeric:tabular-nums}
+  /* floating redaction chip — appears at the selection inside the review panes */
+  #hide-chip{position:absolute;z-index:25;background:var(--ink);color:#fff;border:none;border-radius:8px;
+    padding:7px 13px;font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 4px 12px rgba(18,50,50,.3)}
+  #hide-chip:hover{background:var(--brand-dark)}
   /* feedback widget */
   #fb-bubble{position:fixed;right:18px;bottom:18px;width:48px;height:48px;border-radius:50%;background:var(--brand);
     border:none;cursor:pointer;z-index:15;box-shadow:0 4px 14px rgba(18,50,50,.25);display:flex;align-items:center;justify-content:center}
@@ -337,7 +341,11 @@
       <div><div class="pane-label">Your document (never leaves this device)</div><div id="original-pane" class="pane"></div></div>
       <div><div class="pane-label">What gets analyzed (personal info hidden)</div><div id="redacted-pane" class="pane"></div></div>
     </div>
-    <button id="redact-selection" class="btn ghost">Hide selection</button>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <button id="redact-selection" class="btn ghost">Hide selection</button>
+      <button id="undo-redaction" class="btn ghost" hidden>Undo</button>
+      <span id="redact-status" class="muted"></span>
+    </div>
     <label id="save-eob-wrap" class="muted" style="display:flex;gap:8px;align-items:center;font-weight:600;margin-top:14px" hidden>
       <input type="checkbox" id="save-eob" checked style="width:auto">
       Save this EOB (redacted) to my account, so future bills can be audited against it
@@ -387,6 +395,7 @@
   </section>
 </main>
 
+<button id="hide-chip" class="no-print" hidden>Hide this</button>
 <button id="fb-bubble" class="no-print" aria-label="Send feedback" hidden>
   <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v8a2.5 2.5 0 0 1-2.5 2.5H9.4l-4 3.2c-.6.5-1.4.1-1.4-.6V5.5Z" fill="#fff"/></svg>
 </button>
