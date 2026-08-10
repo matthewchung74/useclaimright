@@ -94,6 +94,22 @@ export function latestAccumulators(audits, window) {
 
 const LIMIT_REMARK = /(benefit\s+maximum|maximum\s+reached|visit\s+limit|visits?\s+(?:per|allowed)|\d+\s+of\s+\d+\s+(?:covered\s+)?visits)/i;
 
+// When the remark PRINTS the limit ("5 of 6 visits used", "covers 6 ... visits
+// per calendar year"), extract it so tracking needs zero typing. Null when the
+// remark only hints that a limit exists.
+const LIMIT_FROM_REMARK = [
+  /\d+\s*of\s*(\d+)\s*(?:covered\s+)?visits/i,
+  /(?:covers|allows|limited\s+to)\s+(\d+)\b[^.]*?visits/i,
+  /(\d+)\s+visits?\s+per\s+(?:calendar\s+|plan\s+)?year/i,
+];
+function limitFromRemark(remark) {
+  for (const re of LIMIT_FROM_REMARK) {
+    const m = remark.match(re);
+    if (m) return Number(m[1]);
+  }
+  return null;
+}
+
 export function suggestedTrackers(audits, existingTrackers = []) {
   const covered = new Set();
   for (const t of existingTrackers) for (const c of t.codes || []) covered.add(String(c).toUpperCase());
@@ -104,7 +120,7 @@ export function suggestedTrackers(audits, existingTrackers = []) {
     for (const row of a.occurrenceTable || []) {
       const code = String(row.code).toUpperCase();
       if (covered.has(code) || out.has(code)) continue;
-      out.set(code, { code: row.code, description: row.description || "", remark });
+      out.set(code, { code: row.code, description: row.description || "", remark, limit: limitFromRemark(remark) });
     }
   }
   return [...out.values()];

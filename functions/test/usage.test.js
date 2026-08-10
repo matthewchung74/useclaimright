@@ -107,6 +107,19 @@ test("no suggestion without limit-flavored remarks", () => {
   assert.equal(suggestedTrackers([a]).length, 0);
 });
 
+test("suggestion carries the limit parsed from the remark when printed", () => {
+  const used = audit("t5", "2026-05-13", "90837", {
+    payerRemarks: ["NOTICE: 5 of 6 covered visits used for outpatient mental health services."],
+  });
+  assert.equal(suggestedTrackers([used])[0].limit, 6);
+  const covers = audit("t6", "2026-06-10", "90837", {
+    payerRemarks: ["BENEFIT MAXIMUM REACHED: your plan covers 6 outpatient mental health visits per calendar year."],
+  });
+  assert.equal(suggestedTrackers([covers])[0].limit, 6);
+  const vague = audit("x", "2026-02-01", "97110", { payerRemarks: ["Visit limit may apply to this service."] });
+  assert.equal(suggestedTrackers([vague])[0].limit, null);
+});
+
 // --- warningLevel ---
 test("warning thresholds", () => {
   assert.equal(warningLevel(3, 6), "ok");
