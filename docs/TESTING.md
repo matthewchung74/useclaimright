@@ -153,6 +153,18 @@ Fixtures: `test-fixtures/` (regenerate HTML: `node test-fixtures/gen-series.mjs`
 
 ---
 
+## E6 — Reset account returns you to onboarding
+**Use case:** "erase all my data" means a genuinely fresh account, including the first-run setup screen.
+**Data:** none (destructive — run it last, or on a scratch account).
+
+1. With a plan on file and having previously clicked "Skip for now" at least once, open **☰ → Reset account — erase all my data** and confirm.
+   ✓ After the reload you land on "**Set up your plan**", not the audit page — the onboarding skip flag is cleared along with the Firestore data.
+   ✓ The skip link reads the first-visit wording ("Skip for now — audit a bill first").
+   ✓ Audits, saved EOBs, trackers, and the plan are all gone; today's usage counters are intentionally NOT reset.
+2. Contrast with **E3 (Remove the plan)**: removing just the plan leaves you on the audit page with the dashed "No plan on file · Add now" reminder — deliberate, since removing a plan is a deliberate act, not a fresh start.
+
+**Cost:** 0 audits.
+
 ## R1 — Manual redaction: floating chip + undo
 **Use case:** hiding something the model missed takes one click at the selection, and mistakes are recoverable.
 **Data:** any review screen (reachable without spending an audit — Prepare, then **Start over** to back out).
