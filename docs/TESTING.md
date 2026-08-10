@@ -28,13 +28,6 @@ Fixtures: `test-fixtures/` (regenerate HTML: `node test-fixtures/gen-series.mjs`
 
 **Cost:** 1 audit.
 
-when there is no sbc, eob should be step 1
-we should have a support form similar to the askmyfit project
-after the upload bill it says whats and eob and how do i find it. shouldnt that be after the eob section? 
-for eob and bills cant we upload a batch number
-if eob is saved to account, how can it be matched to future bills from other sessoins?
-are we saving all eobs and bills so one can log in and see all their bills and remaining coverage , may need design
-
 ---
 
 # Main case — the SBC journey
@@ -50,8 +43,7 @@ are we saving all eobs and bills so one can log in and see all their bills and r
    ✓ Coverage usage: two trackers tagged "**from your SBC — check the codes**" (6/yr mental health, 20/yr rehab).
    ✓ Deductible card: "$0.00 of $1,500.00 · Target from your plan (SBC)."
    ✓ **View** toggles the redacted SBC text; opening a tracker's details clears its tag.
-
-confused when i uploaded sbc it auto took me to redacting, since it was using a prev used bill. why would it use a prev used bill .  i now think the sbc should be a separate requrired step in onboarding that happens before eob and bill. can u desing for that.
+   ✓ The review screen in step 2 shows the SBC itself — never a previously uploaded bill. (The tab label used to read "Bill" here, which made it look like an old document was being reused.)
 
 **Cost:** 1 plan upload.
 
@@ -161,6 +153,21 @@ confused when i uploaded sbc it auto took me to redacting, since it was using a 
 
 ---
 
+## R1 — Manual redaction: floating chip + undo
+**Use case:** hiding something the model missed takes one click at the selection, and mistakes are recoverable.
+**Data:** any review screen (reachable without spending an audit — Prepare, then **Start over** to back out).
+
+1. On a review screen, select any text in either pane (e.g. a claim number).
+   ✓ A dark "**Hide this**" chip appears immediately above the selection.
+2. Click the chip.
+   ✓ The text is replaced by a `MANUAL_n` chip **everywhere in all open documents**; the chip disappears; "**Undo**" appears; status reads "Hidden everywhere in these documents."
+3. Click **Undo**.
+   ✓ The original text returns, the `MANUAL_n` chip is gone, Undo hides, status reads "Undid — restored."
+4. Select text OUTSIDE the panes (e.g. the page heading). ✓ No chip appears.
+5. The "Hide selection" button below the panes still works — kept as the keyboard/fallback path.
+
+**Cost:** 0 audits.
+
 ## F1 — Feedback widget
 **Use case:** in-app feedback reaches the founder without leaving the app.
 **Data:** none.
@@ -177,6 +184,11 @@ confused when i uploaded sbc it auto took me to redacting, since it was using a 
 - **PHI canary:** every review chips Jane Q. Testpatient / 03/14/1985 / TESTMRN-424242 / AHX-55512345; "Hide selection" redacts across all open documents.
 - **Originals destroyed at confirm** — reports and history never show unredacted values.
 - **Limits:** 11th audit → "Daily limit of 10 audits reached."; 4th plan upload → "Daily limit of 3 plan uploads reached."
+
+## Background-tab regression check (both bugs found this way)
+Chrome freezes `requestAnimationFrame` in hidden tabs. Two features broke on this and were fixed; re-check after touching either:
+- Start an audit, **switch to another tab** during "Reading your documents…", wait ~30s, come back. ✓ Extraction completed (pdf.js renders with `intent:"print"`).
+- The Hide chip positions via `setTimeout`, not rAF — it must still appear when the tab regains focus after a background selection.
 
 ## Not covered by this suite (documented gaps)
 - Out-of-period plan check (needs a bill dated outside 2026; verify the footer variant "service dates fall outside your plan year").
