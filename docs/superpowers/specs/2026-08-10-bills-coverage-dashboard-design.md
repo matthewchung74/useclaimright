@@ -28,6 +28,24 @@ A repositioning of existing elements plus one genuinely new card:
 - **`#oop-card` is the new piece** — closes a real gap: `oopToDate`/`oopLimit` are extracted by the schema and never rendered anywhere. Built exactly like the deductible card (`.usage-card` + `.progress`, guarded render: paint only when `snapshot.oopToDate` is a number OR `structured.oopMax` exists, else empty). Requires a pure `oopTarget(structured, snapshot)` in `web/js/plan.js` mirroring `deductibleTarget()` (SBC owns the limit, EOB owns progress), with node:test coverage.
 - The plan-line strip stays number-free (its existing contract); no duplication of figures on the page.
 
+## Visual design: `designs/Bills and Coverage Dashboard v2.dc.html` is the reference
+
+A rendered v2 mockup now exists and **supersedes the layout notes below where they differ**. What it changes, and why each change is adopted:
+
+1. **The cross-bill duplicate is the hero, not a card in the list.** Full-width, ribboned "FOUND BY COMPARING YOUR BILLS TO EACH OTHER", big `$175 at stake`, both statements side by side, its own "Generate dispute email" + "Why this was flagged". Adopted — this is the one finding no single-bill audit can produce, so it should look unlike everything else on the page.
+2. **Bill rows carry a plain-English finding summary**, not a count: "Duplicate charge · Copay above plan", "Specialist copay billed at $175, plan says $60". Adopted — derive from the audit's finding types (`TYPE_LABELS`) plus the top finding's description.
+3. **Sorted by amount at stake**, stated in the header ("Sorted by amount at stake"), rather than by recency. Adopted — supersedes the recency ordering below; the dashboard answers "what should I act on", not "what did I do last".
+4. **A collapsed "Clean bills" group** at the bottom absorbs zero-finding bills. Adopted — keeps the main list to things that need action. Note: v2's label conflates "no findings" with "provider we couldn't read"; keep those distinct ("Nothing to dispute" vs "Provider not read").
+5. **Running totals appear twice**: in the subtitle ("7 bills audited this plan year · 7 findings") and as a highlighter pill in the section header ("$1,240 worth disputing across 3 providers"). Adopted.
+6. **Out-of-pocket max is a slim row**, not a full card like the deductible, and the deductible shows a "$1,150 to go" remainder. Adopted — supersedes the two-up `coverage-row` grid below.
+
+### Conflicts that must be resolved before building
+
+- **Statement numbers cannot be rendered.** v2 identifies the two duplicate statements as `#4471` and `#4599`, but account/statement numbers are redacted to `ACCOUNT_n` on device and never stored — by design. Resolution: identify the two statements by **service date + statement date + amount** ("Feb 12, 2026 · billed Mar 12 · $175"), or label them "Statement A / Statement B". Do NOT weaken redaction to satisfy the mockup.
+- **"Audit a new bill" as a card inside the dashboard implies the dashboard is the home screen**, with upload as a step entered from it. That is a routing change beyond this spec and interacts with the onboarding gate (no plan → onboarding → *where?*). Decide explicitly: (a) dashboard becomes home and `#upload` is entered via the CTA, or (b) keep upload as home and the dashboard below it, dropping the CTA card. Everything else in v2 works either way.
+- **Highlighter as fills vs inline marks.** v2 fills pills with `#E8F25C`; the earlier designer ruling restricted the highlighter to inline text marks so it wouldn't clash with the gold `.tot.hi` card on the report. Adopting v2 means retiring gold from "Worth disputing" on the report in the same change — otherwise the two screens disagree about what "found money" looks like.
+- **"You should owe one, not both"** is more definitive than the product's posture elsewhere ("worth asking about", "verify before disputing"). Soften to "you likely owe one, not both" and keep the existing disclaimer.
+
 ## Bills grouped by provider
 
 Replace the flat `#history-list` loop with per-provider `<details>` groups (native disclosure — the pattern `details.explain` already established):
@@ -71,7 +89,7 @@ The finding: a service billed on **two different bills**. Keying:
 
 Why this is safe: recurring care shares codes but not dates, so a weekly therapy patient never trips it. The date is what makes a repeat suspicious.
 
-Surface: a card above the bill groups — *"Billed twice across statements: 90837 on 2026-02-12 appears on two different bills ($175 each)"* — with links to both audits. Amount at stake = the lesser of the two charges (you should owe one, not both).
+Surface: the hero card at the top of the dashboard (see v2 above) — both statements shown side by side, identified by service date + statement date + amount (never by statement number, which is redacted), with its own dispute-email action and a "Why this was flagged" explainer. Amount at stake = the lesser of the two charges (you likely owe one, not both).
 
 ### 2. `runningTotals(audits, window) -> {atStake, findings, audited}`
 
@@ -94,6 +112,8 @@ New nav/routes · per-bill collapse · new color tokens · OOP editing UI · cha
 3. **`web/js/crossbill.js`**: `crossBillDuplicates()` + `runningTotals()` + tests (TDD) — the cross-bill analysis above.
 4. `renderUsage()` gains the `#oop-card` block; `loadHistory()`'s render loop becomes the grouped renderer; the duplicates card and running-total line render above it; markup + CSS per above.
 5. TESTING.md: new plan (grouped bills, OOP card, pills, empty state, a planted cross-bill duplicate); live smoke.
+
+**Open decision blocking step 4:** dashboard-as-home vs upload-as-home (see Conflicts above).
 
 **Fixture needed for step 5:** a second statement re-billing a service already on another bill (e.g. `t2-bill-rebill.pdf` — same provider, same 90837, same 2026-02-12, new statement number) so the duplicate detector has a true positive to catch, plus the existing t-series as the negative control (same code, different dates → no flag).
 
