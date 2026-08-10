@@ -38,16 +38,24 @@ export function mergeSbcTrackers(existing, limits, planYearStartMonth) {
   return { create, update };
 }
 
-// The SBC owns the deductible LIMIT; the EOB owns progress. When both state a
-// limit and disagree by more than $1, surface the conflict (UI shows both).
-export function deductibleTarget(structured, snapshot) {
-  const sbcLimit = typeof structured?.deductible?.individual === "number" ? structured.deductible.individual : null;
-  const eobLimit = typeof snapshot?.deductibleLimit === "number" ? snapshot.deductibleLimit : null;
-  if (sbcLimit !== null) {
-    return { limit: sbcLimit, source: "sbc", conflict: eobLimit !== null && Math.abs(eobLimit - sbcLimit) > 1 };
+// The SBC owns the LIMIT; the EOB owns progress. When both state a limit and
+// disagree by more than $1, surface the conflict (UI shows both).
+function limitTarget(sbcLimit, eobLimit) {
+  if (typeof sbcLimit === "number") {
+    return { limit: sbcLimit, source: "sbc", conflict: typeof eobLimit === "number" && Math.abs(eobLimit - sbcLimit) > 1 };
   }
-  if (eobLimit !== null) return { limit: eobLimit, source: "eob", conflict: false };
+  if (typeof eobLimit === "number") return { limit: eobLimit, source: "eob", conflict: false };
   return { limit: null, source: null, conflict: false };
+}
+
+export function deductibleTarget(structured, snapshot) {
+  return limitTarget(structured?.deductible?.individual, snapshot?.deductibleLimit);
+}
+
+// Out-of-pocket max: same precedence, and the reason the OOP card can finally
+// render — oopToDate/oopLimit have been extracted since v2 but never shown.
+export function oopTarget(structured, snapshot) {
+  return limitTarget(structured?.oopMax?.individual, snapshot?.oopLimit);
 }
 
 export function planYearStartMonthFrom(planYearStart) {

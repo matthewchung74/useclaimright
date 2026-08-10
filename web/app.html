@@ -96,6 +96,37 @@
   .plan-line .pl-actions label{margin:0;display:inline;font-weight:700;font-size:13px;cursor:pointer;color:var(--brand-dark)}
   .dz.dz-sm{padding:18px 16px}
   .mono-money{font-family:ui-monospace,Menlo,monospace;font-variant-numeric:tabular-nums}
+  /* Bills & coverage dashboard (see designs/Bills and Coverage Dashboard v2) */
+  h3{font-size:18px}
+  .dash-head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-top:6px}
+  .dash-head .muted{margin-left:auto;font-size:13px}
+  .money-pill{background:#E8F25C;color:var(--ink);border-radius:6px;padding:2px 8px;font-weight:700;
+    font-family:ui-monospace,Menlo,monospace;font-variant-numeric:tabular-nums;font-size:13.5px}
+  .dup-hero{border:1px solid var(--line);border-radius:14px;overflow:hidden;margin:12px 0 22px;background:#fff}
+  .dup-ribbon{background:#E8F25C;color:var(--ink);font-size:11.5px;font-weight:800;letter-spacing:.6px;
+    text-transform:uppercase;padding:7px 18px}
+  .dup-body{display:flex;gap:22px;padding:18px;flex-wrap:wrap}
+  .dup-amount b{display:block;font-size:34px;font-family:ui-monospace,Menlo,monospace;font-variant-numeric:tabular-nums;line-height:1.1}
+  .dup-amount span{font-size:12px;color:var(--ink-soft);font-weight:700}
+  .dup-main{flex:1;min-width:260px}
+  .dup-main h3{margin-bottom:4px}
+  .dup-statements{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin:12px 0}
+  .dup-st{border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:flex;justify-content:space-between;
+    align-items:center;gap:8px;background:#fff;cursor:pointer;text-align:left;width:100%;font:inherit}
+  .dup-st:hover{border-color:var(--brand)}
+  .dup-st .pg-label{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--ink-soft)}
+  .dup-st .when{font-family:ui-monospace,Menlo,monospace;font-size:12.5px;color:var(--ink-soft)}
+  .prov-group{background:#fff;border:1px solid var(--line);border-radius:12px;margin:10px 0;overflow:hidden}
+  .prov-group>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:10px;padding:13px 16px;font-weight:700}
+  .prov-group>summary::-webkit-details-marker{display:none}
+  .prov-group>summary .count{background:none;color:var(--ink-soft);font-weight:400;padding:0}
+  .prov-group>summary .money-pill{margin-left:auto}
+  .bill-row{display:flex;align-items:center;gap:12px;padding:11px 16px;border-top:1px solid var(--line);font-size:14px}
+  .bill-row .when{font-family:ui-monospace,Menlo,monospace;font-size:13px;color:var(--ink-soft);flex:0 0 110px}
+  .bill-row .what{flex:1;text-align:left;background:none;border:none;cursor:pointer;color:var(--ink);font:inherit;padding:0}
+  .bill-row .what:hover{color:var(--brand-dark);text-decoration:underline}
+  .bill-row.quiet .what{color:var(--ink-soft)}
+  .bill-row .rm{border:none;background:none;cursor:pointer;color:var(--bad);font-size:14px}
   /* floating redaction chip — appears at the selection inside the review panes */
   #hide-chip{position:absolute;z-index:25;background:var(--ink);color:#fff;border:none;border-radius:8px;
     padding:7px 13px;font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 4px 12px rgba(18,50,50,.3)}
@@ -281,10 +312,24 @@
       <button id="run-audit" class="btn" style="margin-top:10px">Prepare audit →</button>
     </div>
 
-    <h2>Coverage usage</h2>
-    <p class="muted" style="margin-bottom:10px">Track plan limits ("6 therapy visits per year") across all your audits, and watch your deductible progress. Counts come from the audits you've run.</p>
+    <h2 style="margin-top:28px">Bills &amp; coverage</h2>
+    <p class="muted" id="dash-subtitle" style="margin-bottom:14px"></p>
+
+    <div id="dup-card"></div>
+
+    <div class="dash-head">
+      <h3>Your bills</h3>
+      <span id="bills-total"></span>
+      <span class="muted" id="bills-sort"></span>
+    </div>
+    <div id="bill-groups"></div>
+    <div id="clean-bills"></div>
+
+    <h3 style="margin-top:26px">Your coverage</h3>
+    <p class="muted" id="coverage-sub" style="margin-bottom:10px">Track plan limits ("6 therapy visits per year") across all your audits, and watch your deductible progress. Counts come from the audits you've run.</p>
     <div id="suggestion-banner" class="banner" hidden></div>
     <div id="deductible-card"></div>
+    <div id="oop-card"></div>
     <div id="usage-list"></div>
     <details class="explain" id="tracker-form-wrap">
       <summary>Add a custom limit</summary>
@@ -307,8 +352,6 @@
       </form>
     </details>
 
-    <h2 style="margin-top:28px">Your past audits</h2>
-    <div id="history-list"></div>
   </section>
 
   <section id="processing" hidden>

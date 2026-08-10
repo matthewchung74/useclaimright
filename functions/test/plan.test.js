@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import Ajv from "ajv";
 import { FINDING_TYPES, findingsSchema } from "../schema.js";
-import { planApplies, mergeSbcTrackers, deductibleTarget, planYearStartMonthFrom } from "../../web/js/plan.js";
+import { planApplies, mergeSbcTrackers, deductibleTarget, oopTarget, planYearStartMonthFrom } from "../../web/js/plan.js";
 import { planSchema, buildDigest, replaceDecision, planTermsBlock, applyPlanGate } from "../plan.js";
 
 const ajv = new Ajv({ allErrors: true });
@@ -86,6 +86,13 @@ test("deductibleTarget: SBC owns the limit; EOB fills gaps; conflict when both d
   // family-only SBC deductible (individual null): individual target intentionally stays null/EOB-sourced
   assert.deepEqual(deductibleTarget({ deductible: { individual: null, family: 3000 } }, { deductibleLimit: 1500 }),
     { limit: 1500, source: "eob", conflict: false });
+});
+
+test("oopTarget: SBC owns the limit, EOB fills gaps, conflicts flagged", () => {
+  assert.deepEqual(oopTarget({ oopMax: { individual: 6000, family: 12000 } }, null), { limit: 6000, source: "sbc", conflict: false });
+  assert.deepEqual(oopTarget(null, { oopLimit: 6000 }), { limit: 6000, source: "eob", conflict: false });
+  assert.deepEqual(oopTarget({ oopMax: { individual: 6000 } }, { oopLimit: 8150 }), { limit: 6000, source: "sbc", conflict: true });
+  assert.deepEqual(oopTarget(null, null), { limit: null, source: null, conflict: false });
 });
 
 test("planYearStartMonthFrom: extracts month, defaults to 1", () => {
