@@ -33,7 +33,10 @@ async function renderPageToDataUrl(page, scale = 1.5) {
   const canvas = document.createElement("canvas");
   canvas.width = viewport.width;
   canvas.height = viewport.height;
-  await page.render({ canvasContext: canvas.getContext("2d"), viewport }).promise;
+  // intent "print" skips requestAnimationFrame pacing — display-intent renders
+  // freeze indefinitely in hidden tabs (Chrome pauses rAF), stalling extraction
+  // for anyone who switches tabs during "Reading your documents…".
+  await page.render({ canvasContext: canvas.getContext("2d"), viewport, intent: "print" }).promise;
   return canvas;
 }
 
