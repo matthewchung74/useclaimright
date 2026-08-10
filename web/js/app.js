@@ -103,17 +103,36 @@ $("reset-account").onclick = async () => {
   }
 };
 
-onAuthStateChanged(auth, (user) => {
+onAuthStateChanged(auth, async (user) => {
   document.body.classList.toggle("authed", !!user);
   if (user) {
     $("user-email").textContent = user.email || "";
-    show("upload");
     loadHistory();
-    loadPlan();
+    await loadPlan();
+    // First-run gate: no plan on file and never skipped → one-time setup screen.
+    if (!activePlan && localStorage.getItem("ucr-skip-onboarding") !== user.uid) {
+      openOnboarding("signin");
+    } else {
+      show("upload");
+    }
   } else {
     show("signin");
   }
 });
+
+function openOnboarding(origin) {
+  $("skip-onboarding").textContent = origin === "upload"
+    ? "Not now — back to your audits"
+    : "Skip for now — audit a bill first";
+  setError("onboarding-error", "");
+  show("onboarding");
+}
+
+$("skip-onboarding").onclick = (e) => {
+  e.preventDefault();
+  if (auth.currentUser) localStorage.setItem("ucr-skip-onboarding", auth.currentUser.uid);
+  show("upload");
+};
 
 function setError(id, msg) {
   const el = $(id);
@@ -880,20 +899,12 @@ function renderPlanCard() {
   const el = $("plan-card");
   const s = activePlan?.structured;
   if (!s) {
-    el.innerHTML = `<div class="usage-card plan-top">
-      <b>Add your Summary of Benefits — we'll set up your deductible and visit limits automatically.</b>
-      <label class="dz dz-sm" id="dz-sbc" style="margin-top:10px">
-        <span class="ico">📄</span>
-        <b>Summary of Benefits (SBC)</b>
-        <div class="hint">Drop it here or click to choose · PDF or photo<br>This is about your plan — not a bill or EOB</div>
-        <input id="sbc-file" type="file" accept="application/pdf,image/*,text/html,.html,.htm,text/plain,.txt">
-      </label>
-      <details class="explain" style="margin-top:10px"><summary>What's an SBC, and where do I find it?</summary>
-        <p>A standard 4–8 page document every plan must provide — a grid of what you pay per visit type.
-        Find it: your insurer's website → your plan → “Summary of Benefits and Coverage” (PDF);
-        your enrollment packet or open-enrollment email; or ask HR.</p>
-      </details>
+    // Empty slot, not a warning: dashed border echoes the dropzone grammar.
+    el.innerHTML = `<div class="usage-card plan-line" style="border:1px dashed var(--line)">
+      <span class="muted">No plan on file — add your Summary of Benefits</span>
+      <span class="pl-actions"><a href="#" id="plan-add-now">Add now</a></span>
     </div>`;
+    $("plan-add-now").onclick = (e) => { e.preventDefault(); openOnboarding("upload"); };
   } else {
     // Plan on file: one quiet line — the numbers live on the deductible and
     // tracker cards; this line only identifies the plan and offers actions.
@@ -903,7 +914,7 @@ function renderPlanCard() {
       <span class="plan-period">${escapeHtml(s.planYearStart || "?")} → ${escapeHtml(s.planYearEnd || "?")}</span>
       <span class="pl-actions">
         <a href="#" id="plan-view">View</a>
-        <label>Replace<input id="sbc-file" type="file" hidden accept="application/pdf,image/*,text/html,.html,.htm,text/plain,.txt"></label>
+        <label>Replace<input id="sbc-file-replace" type="file" hidden accept="application/pdf,image/*,text/html,.html,.htm,text/plain,.txt"></label>
         <a href="#" id="plan-remove" style="color:var(--bad)">Remove</a>
       </span>
     </div>
@@ -924,23 +935,33 @@ function renderPlanCard() {
       renderUsage();
     };
   }
-  const input = $("sbc-file");
-  if (input) input.onchange = () => { if (input.files[0]) prepareSbc(input.files[0]); input.value = ""; };
-  const dz = $("dz-sbc");
-  if (dz) {
-    dz.addEventListener("dragover", (e) => { e.preventDefault(); dz.classList.add("drag"); });
-    dz.addEventListener("dragleave", () => dz.classList.remove("drag"));
-    dz.addEventListener("drop", (e) => {
-      e.preventDefault(); dz.classList.remove("drag");
-      if (e.dataTransfer.files[0]) prepareSbc(e.dataTransfer.files[0]);
-    });
-  }
+  const rep = $("sbc-file-replace");
+  if (rep) rep.onchange = () => { if (rep.files[0]) prepareSbc(rep.files[0]); rep.value = ""; };
 }
 
+// The SBC dropzone is static markup in the onboarding section — wire it once.
+{
+  const input = $("sbc-file");
+  input.onchange = () => { if (input.files[0]) prepareSbc(input.files[0]); input.value = ""; };
+  const dz = $("dz-sbc");
+  dz.addEventListener("dragover", (e) => { e.preventDefault(); dz.classList.add("drag"); });
+  dz.addEventListener("dragleave", () => dz.classList.remove("drag"));
+  dz.addEventListener("drop", (e) => {
+    e.preventDefault(); dz.classList.remove("drag");
+    if (e.dataTransfer.files[0]) prepareSbc(e.dataTransfer.files[0]);
+  });
+}
+
+const sbcErrTarget = () => (state?.sbcOrigin === "onboarding" ? "onboarding-error" : "upload-error");
+
 async function prepareSbc(file) {
-  if (file.size > 20e6) return setError("upload-error", "Files must be under 20MB.");
+  const origin = !$("onboarding").hidden ? "onboarding" : "upload";
+  if (file.size > 20e6) {
+    return setError(origin === "onboarding" ? "onboarding-error" : "upload-error", "Files must be under 20MB.");
+  }
   resetStatePreservingFiles();
   state.sbcFlow = true;
+  state.sbcOrigin = origin;
   $("tab-bill").textContent = "Plan (SBC)";
   show("processing");
   try {
@@ -956,8 +977,8 @@ async function prepareSbc(file) {
     state.bill.redacted = (await deidentify(ex.text, ner, state.registry)).redacted;
     state.sbcName = file.name;
     if (activePlan && activePlan.redactedText === state.bill.redacted) {
-      show("upload");
-      return setError("upload-error", "This plan is already on file.");
+      show(state.sbcOrigin);
+      return setError(sbcErrTarget(), "This plan is already on file.");
     }
     $("ocr-banner").hidden = ex.method !== "ocr";
     state.activeDoc = "bill";
@@ -968,8 +989,8 @@ async function prepareSbc(file) {
     show("review");
   } catch (e) {
     console.error(e);
-    setError("upload-error", `Could not process the document: ${e.message}`);
-    show("upload");
+    setError(sbcErrTarget(), `Could not process the document: ${e.message}`);
+    show(state.sbcOrigin);
   }
 }
 
@@ -996,9 +1017,9 @@ async function runSbcExtraction(force = false) {
     $("plan-card").scrollIntoView({ behavior: "smooth" });
   } catch (e) {
     console.error(e);
-    setError("upload-error", e.code === "functions/resource-exhausted" || e.code === "functions/invalid-argument"
+    setError(sbcErrTarget(), e.code === "functions/resource-exhausted" || e.code === "functions/invalid-argument"
       ? e.message : "Plan extraction failed — please try again.");
-    show("upload"); setBatchLabels(null);
+    show(state.sbcOrigin); setBatchLabels(null);
   }
 }
 
