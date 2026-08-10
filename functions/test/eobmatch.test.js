@@ -1,6 +1,41 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { matchSavedEob } from "../../web/js/eobmatch.js";
+import { matchSavedEob, documentsRelated } from "../../web/js/eobmatch.js";
+
+// --- documentsRelated: catches a bill paired with someone else's EOB ---
+
+const ptBill = "TESTVILLE PHYSICAL THERAPY GROUP itemized statement Date of service: 2026-03-20 97110 Therapeutic exercises $210.00";
+const ptEob = "ACME HEALTH INSURANCE EOB Claim CLM-SER-101 Date of service: 2026-03-20 97110 allowed $95.00";
+const edBill = "ST. VERIFICATION GENERAL HOSPITAL Date of service: 2026-06-12 99284 Emergency dept 80053 Metabolic panel $145.50";
+
+test("documentsRelated: a real pair shares dates and codes", () => {
+  const r = documentsRelated(ptBill, ptEob);
+  assert.equal(r.related, true);
+  assert.deepEqual(r.sharedDates, ["2026-03-20"]);
+  assert.ok(r.sharedCodes.includes("97110"));
+});
+
+test("documentsRelated: an unrelated pair shares neither", () => {
+  const r = documentsRelated(edBill, ptEob);
+  assert.equal(r.related, false);
+  assert.deepEqual(r.sharedDates, []);
+  assert.deepEqual(r.sharedCodes, []);
+});
+
+test("documentsRelated: either signal alone is enough", () => {
+  assert.equal(documentsRelated("visit 2026-03-20 no codes here", ptEob).related, true); // date only
+  assert.equal(documentsRelated("code 97110 billed, date unreadable", ptEob).related, true); // code only
+});
+
+test("documentsRelated: US-format dates normalize to ISO before comparing", () => {
+  assert.equal(documentsRelated("Date of service: 03/20/2026", ptEob).related, true);
+});
+
+test("documentsRelated: unreadable documents are never flagged (can't judge)", () => {
+  const r = documentsRelated("scanned illegible text", ptEob);
+  assert.equal(r.related, true);
+  assert.equal(r.confident, false);
+});
 
 const pt = { id: "pt", label: "Testville PT · 2026-03-20", provider: "Testville Physical Therapy Group", serviceDates: ["2026-03-20"], codes: ["97110"] };
 const mh = { id: "mh", label: "Behavioral · 2026-01-15", provider: "Testville Behavioral Health Associates", serviceDates: ["2026-01-15", "2026-02-12"], codes: ["90837"] };

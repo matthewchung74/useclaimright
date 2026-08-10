@@ -18,7 +18,7 @@ import { extractText } from "./extract.js";
 import { loadNer, deidentify, createRegistry, manualRedact } from "./deid.js";
 import { pairFiles, classifyFile, uniqueDocs } from "./batch.js";
 import { planYearStartMonthFrom, mergeSbcTrackers, deductibleTarget } from "./plan.js";
-import { matchSavedEob } from "./eobmatch.js";
+import { matchSavedEob, documentsRelated } from "./eobmatch.js";
 
 const $ = (id) => document.getElementById(id);
 let currentSection = "signin";
@@ -370,6 +370,11 @@ async function prepareAudit(billFile, eobFile, savedEob = null) {
     }
 
     $("ocr-banner").hidden = !(bill.method === "ocr" || state.eob?.method === "ocr");
+    // Wrong-EOB guard: warn BEFORE analysis, since a mismatched pair reports
+    // every line as "missing from the EOB" and inflates "worth disputing".
+    showPairWarning(
+      state.eob && !state.eob.saved && eob ? [{ name: billFile.name, rel: documentsRelated(bill.text, eob.text) }] : []
+    );
     state.activeDoc = state.eob ? "eob" : "bill";
     $("tab-eob").style.display = state.eob ? "" : "none";
     $("save-eob").checked = true;
@@ -383,6 +388,19 @@ async function prepareAudit(billFile, eobFile, savedEob = null) {
     show("upload");
     batchBackToPanel();
   }
+}
+
+// pairs: [{name, rel}] from documentsRelated. Only confident mismatches warn —
+// an unreadable scan must never raise a false alarm.
+function showPairWarning(pairs) {
+  const bad = pairs.filter((p) => p.rel && p.rel.confident && !p.rel.related);
+  const el = $("pair-banner");
+  el.hidden = !bad.length;
+  if (!bad.length) return;
+  const names = bad.map((p) => escapeHtml(p.name)).join(", ");
+  el.innerHTML = `⚠️ <b>This EOB may not cover ${bad.length === 1 ? "this bill" : "these bills"}</b> (${names}) —
+    they share no service dates and no procedure codes. Check you picked the right EOB: analyzing a
+    mismatched pair reports every line as “missing from the EOB” and overstates what's worth disputing.`;
 }
 
 function resetStatePreservingFiles() {
@@ -427,6 +445,14 @@ async function prepareBatch() {
     batchDocs = prepared;
     batchDocIndex = 0;
     $("ocr-banner").hidden = !batchDocs.some((d) => d.method === "ocr");
+    // Same guard per pair — name the bills whose EOB looks unrelated.
+    const byFileDoc = new Map(prepared.filter((d) => d.file).map((d) => [d.file, d]));
+    showPairWarning(batchQueue
+      .filter((it) => it.eob)
+      .map((it) => ({
+        name: it.bill.name,
+        rel: documentsRelated(byFileDoc.get(it.bill)?.originalText || "", byFileDoc.get(it.eob)?.originalText || ""),
+      })));
     $("save-eob").checked = true;
     $("save-eob-wrap").hidden = !batchDocs.some((d) => d.kind === "eob" && !d.saved);
     setBatchLabels(`Batch: ${batchQueue.length} audits — review every document below, then they run without stopping.`);
@@ -744,6 +770,17 @@ function renderReport(data, { ocrLow, model, planApplied, planReason } = {}) {
   $("email-card").hidden = true;
 
   $("report-caveat").hidden = !ocrLow;
+
+  // Backstop for a mismatched pair that got past the pre-send warning: if every
+  // finding is "missing from the EOB", the documents almost certainly don't
+  // correspond — say so before the user reads the total as money owed to them.
+  const allMissing = findings.length >= 2 && findings.every((f) => f.type === "not_in_eob");
+  $("report-pair-warning").hidden = !allMissing;
+  if (allMissing) {
+    $("report-pair-warning").innerHTML = `⚠️ <b>Every line on this bill came back missing from the EOB.</b>
+      That usually means these two documents don't go together — check you paired the right EOB before
+      acting on the total below.`;
+  }
 
   $("report-totals").innerHTML = `
     <div class="tot"><span>Billed</span><b>${fmt(totals.billed)}</b></div>
