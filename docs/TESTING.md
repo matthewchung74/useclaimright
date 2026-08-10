@@ -91,8 +91,8 @@ Each plan states the **use case** it verifies, the exact **data** (fixture files
 
 1. Audit the p1 pair.
    ✓ ONE finding: "Billed above EOB allowed amount" ($115, high confidence) — the fixture bills demand the full charge ($210) while the EOB member responsibility is $95, a genuine discrepancy the audit should catch. No OTHER findings.
-   ✓ Report footer (gray, above the disclaimer): "**Not checked against your plan** — add your Summary of Benefits under Coverage usage to enable plan checks."
-   *(Verified live 2026-08-09.)*
+   ✓ Report footer (gray, above the disclaimer): "**Not checked against your plan** — add your Summary of Benefits at the top of the audit page to enable plan checks."
+   *(Verified live 2026-08-09, prior wording.)*
 
 **Cost:** 1 audit.
 
@@ -104,7 +104,7 @@ Each plan states the **use case** it verifies, the exact **data** (fixture files
 **Use case:** uploading a Summary of Benefits auto-configures deductible target, visit trackers, and the plan card.
 **Data:** `test-fixtures/fake-sbc.pdf` (Acme Silver PPO)
 
-1. Scroll to **Coverage usage**. ✓ The "Your plan" card shows the empty state: "Add your Summary of Benefits — we'll set up your deductible and visit limits automatically", its own small dropzone, and a "What's an SBC?" explainer.
+1. The "Your plan" card sits at the **top of the upload screen**, above the audit card. ✓ Empty state shows: "Add your Summary of Benefits — we'll set up your deductible and visit limits automatically", its own small dropzone, and a "What's an SBC?" explainer. (Once a plan is on file it collapses to one line: `Plan: <name> · <period> · View · Replace · Remove`.)
 2. Drag `fake-sbc.pdf` onto that dropzone (NOT the bill/EOB zones).
    ✓ Processing → review screen with ONE document and the note that plan documents carry little personal info. Member name/ID chipped.
 3. Click **Looks right — analyze**.

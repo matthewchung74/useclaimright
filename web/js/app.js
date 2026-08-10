@@ -605,7 +605,7 @@ function renderReport(data, { ocrLow, model, planApplied, planReason } = {}) {
   if (planApplied === false && planReason) {
     note.hidden = false;
     note.innerHTML = planReason === "no_plan"
-      ? `Not checked against your plan — add your Summary of Benefits under Coverage usage to enable plan checks.`
+      ? `Not checked against your plan — add your Summary of Benefits at the top of the audit page to enable plan checks.`
       : planReason === "out_of_period"
         ? `Not checked against your plan — this bill's service dates fall outside your plan year${activePlan?.structured?.planYearEnd ? ` (ended ${escapeHtml(activePlan.structured.planYearEnd)})` : ""}.`
         : `Not checked against your plan — no service dates could be read from this bill.`;
