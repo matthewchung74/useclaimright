@@ -119,8 +119,12 @@ onAuthStateChanged(auth, async (user) => {
   document.body.classList.toggle("authed", !!user);
   if (user) {
     $("user-email").textContent = user.email || "";
-    loadHistory();
+    // Plan first: the coverage cards and the dashboard's plan-year window read
+    // activePlan, so loading history in parallel raced it — the out-of-pocket
+    // card silently vanished and the deductible credited the EOB for the SBC's
+    // limit, depending on which query returned first.
     await loadPlan();
+    loadHistory();
     // First-run gate: no plan on file and never skipped → one-time setup screen.
     if (!activePlan && localStorage.getItem("ucr-skip-onboarding") !== user.uid) {
       openOnboarding("signin");
