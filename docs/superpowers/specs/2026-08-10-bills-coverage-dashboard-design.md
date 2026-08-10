@@ -1,6 +1,6 @@
 # Bills & Coverage Dashboard — Design
 
-**Date:** 2026-08-10 · **Status:** Awaiting user review (spec-first per plan; no code yet)
+**Date:** 2026-08-10 · **Status: BUILT and deployed 2026-08-10**, verified live against a planted re-billed statement (test plan D1). Open follow-ups: dashboard-as-home routing (see Conflicts), a dispute email specific to a cross-bill duplicate, and retiring gold from the report's "Worth disputing" card now that highlighter fills are in use.
 **Designer-voice input incorporated in full (2026-08-10).**
 
 ## Context
