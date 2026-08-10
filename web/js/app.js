@@ -622,7 +622,9 @@ function positionHideChip() {
   chip.style.top = `${window.scrollY + r.top - chip.offsetHeight - 8}px`;
   chip.style.left = `${window.scrollX + r.left + r.width / 2 - chip.offsetWidth / 2}px`;
 }
-document.addEventListener("selectionchange", () => requestAnimationFrame(positionHideChip));
+// setTimeout, not requestAnimationFrame: rAF is frozen in background tabs, so
+// an rAF-gated chip silently never appears there (same trap as the PDF render).
+document.addEventListener("selectionchange", () => setTimeout(positionHideChip, 0));
 
 $("confirm-review").onclick = async () => {
   if (state.sbcFlow) return runSbcExtraction();
