@@ -29,7 +29,9 @@ Your job, in order:
    - charity_care_eligible: signals the provider is a nonprofit hospital (501r financial assistance may apply)
 
 Also extract, verbatim from the documents (NEVER inferred or guessed):
-- serviceDates: every distinct date of service, ISO format YYYY-MM-DD. Statement/processing dates are NOT dates of service.
+- serviceDates: every distinct date of service ON THE BILL BEING AUDITED, ISO format YYYY-MM-DD.
+  Statement/processing dates are NOT dates of service. When the EOB is a consolidated statement
+  covering other claims, do NOT include dates that appear only on the EOB — this bill's dates only.
 - provider: the billing provider or facility name.
 - payerRemarks: remark or note lines mentioning benefit maximums, visit limits, coverage denials,
   or accumulator status — copied word-for-word. Empty array when none.

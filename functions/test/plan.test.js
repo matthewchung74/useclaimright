@@ -154,6 +154,17 @@ test("planTermsBlock fences the digest and forbids inference", () => {
   assert.ok(/only when the plan term is explicit/i.test(b));
 });
 
+test("planTermsBlock guards the two false-positive modes seen live", () => {
+  const b = planTermsBlock("DIGEST");
+  // 1. Wrong-row matching: psychotherapy matched the generic "specialist visit" row.
+  assert.ok(/most specific wins/i.test(b), "must require most-specific row matching");
+  assert.ok(/behavioral-health\s+codes belong to the mental-health row/i.test(b));
+  assert.ok(/emit NO plan finding/i.test(b), "must require silence when the mapping is a guess");
+  // 2. "after deductible" misread as "deductible does not apply".
+  assert.ok(/after deductible[\s\S]*applying the charge to the deductible is CORRECT/i.test(b));
+  assert.ok(/deductible_misapplied ONLY when the matched row\s*\n?explicitly states the deductible does NOT apply/i.test(b));
+});
+
 test("applyPlanGate: applies in-window (inclusive bounds), strips straggler plan findings when not applied, clamps totals", () => {
   const mk = (dates, findings = [], totalAtStake = 0) => ({
     serviceDates: dates,
