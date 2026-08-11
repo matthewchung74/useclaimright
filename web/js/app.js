@@ -18,7 +18,7 @@ import { extractText } from "./extract.js";
 import { loadNer, deidentify, createRegistry, manualRedact } from "./deid.js";
 import { pairFiles, classifyFile, uniqueDocs } from "./batch.js";
 import { planYearStartMonthFrom, mergeSbcTrackers, deductibleTarget, oopTarget } from "./plan.js";
-import { crossBillDuplicates, runningTotals, groupAuditsByProvider } from "./crossbill.js";
+import { crossBillDuplicates, runningTotals, groupAuditsByProvider, splitJustAudited } from "./crossbill.js";
 import { matchSavedEob, documentsRelated } from "./eobmatch.js";
 
 const $ = (id) => document.getElementById(id);
@@ -27,7 +27,7 @@ const show = (id) => {
   currentSection = id;
   for (const s of document.querySelectorAll("main > section")) s.hidden = s.id !== id;
   // Feedback bubble lives on the calm screens only — never over a review or spinner.
-  const fbVisible = id === "upload" || id === "report";
+  const fbVisible = id === "bills" || id === "upload" || id === "report";
   $("fb-bubble").hidden = !fbVisible;
   if (!fbVisible) $("fb-card").hidden = true;
   window.scrollTo(0, 0);
@@ -111,7 +111,10 @@ $("reset-account").onclick = async () => {
     location.reload();
   } catch (e) {
     console.error(e);
-    setError("upload-error", `Reset failed partway: ${e.message} — reload and try again.`);
+    // Reset is reached from the account menu, so the error has to land on the
+    // home screen — the audit form's error slot would be on a hidden section.
+    show("bills");
+    setError("bills-error", `Reset failed partway: ${e.message} — reload and try again.`);
   }
 };
 
@@ -124,12 +127,15 @@ onAuthStateChanged(auth, async (user) => {
     // card silently vanished and the deductible credited the EOB for the SBC's
     // limit, depending on which query returned first.
     await loadPlan();
-    loadHistory();
+    // Both awaited before routing: the bills list IS the home screen, so
+    // showing it mid-query would flash "no bills audited yet" at a user who
+    // has plenty.
+    await loadHistory();
     // First-run gate: no plan on file and never skipped → one-time setup screen.
     if (!activePlan && localStorage.getItem("ucr-skip-onboarding") !== user.uid) {
       openOnboarding("signin");
     } else {
-      show("upload");
+      show("bills");
     }
   } else {
     show("signin");
@@ -137,9 +143,9 @@ onAuthStateChanged(auth, async (user) => {
 });
 
 function openOnboarding(origin) {
-  $("skip-onboarding").textContent = origin === "upload"
-    ? "Not now — back to your audits"
-    : "Skip for now — audit a bill first";
+  $("skip-onboarding").textContent = origin === "signin"
+    ? "Skip for now — audit a bill first"
+    : "Not now — back to your audits";
   setError("onboarding-error", "");
   show("onboarding");
 }
@@ -147,7 +153,7 @@ function openOnboarding(origin) {
 $("skip-onboarding").onclick = (e) => {
   e.preventDefault();
   if (auth.currentUser) localStorage.setItem("ucr-skip-onboarding", auth.currentUser.uid);
-  show("upload");
+  show("bills");
 };
 
 function setError(id, msg) {
@@ -219,6 +225,10 @@ for (const kind of ["bill", "eob"]) {
 // ---------- Files & pairing ----------
 
 let batchFiles = []; // [{file, name, role}] everything uploaded, either zone
+// Audit ids from the run that just finished, pinned at the top of the bills
+// list. Session-scoped on purpose — it answers "what just happened", not
+// "what is true", so it never persists and is cleared when a new run starts.
+let justAuditedIds = [];
 let batchQueue = null; // [{bill: File, eob: File|null, savedEob}] while a batch runs
 let batchIndex = 0;
 let batchDocs = null; // unique docs for the review-all screen (one tab each)
@@ -330,6 +340,7 @@ $("run-audit").onclick = async () => {
 // At most one is non-null; both null means bill-only.
 async function prepareAudit(billFile, eobFile, savedEob = null) {
   setBatchLabels(null);
+  justAuditedIds = [];
   $("tab-bill").textContent = "Bill";
   if (billFile.size > 20e6 || (eobFile && eobFile.size > 20e6)) {
     return setError("upload-error", "Files must be under 20MB.");
@@ -420,6 +431,7 @@ function resetStatePreservingFiles() {
 // user reviews them all once, then the audits run without pausing.
 async function prepareBatch() {
   resetStatePreservingFiles();
+  justAuditedIds = [];
   batchDocs = null;
   $("tab-bill").textContent = "Bill";
   show("processing");
@@ -483,12 +495,6 @@ async function runBatch() {
   const bySaved = new Map(batchDocs.filter((d) => d.savedEob).map((d) => [d.savedEob.id, d]));
   const total = batchQueue.length;
   show("processing");
-  let last = null;
-  // The report screen shows only the final audit, so the batch's own total has
-  // to be stated separately — otherwise "2 audits saved" sits above one audit's
-  // number and reads as the whole batch's result.
-  let batchAtStake = 0;
-  let batchFindings = 0;
   try {
     for (; batchIndex < batchQueue.length; batchIndex++) {
       const it = batchQueue[batchIndex];
@@ -502,9 +508,7 @@ async function runBatch() {
       };
       const { data } = await analyzeFn(payload);
       lastAuditId = data.auditId || null;
-      last = { data, ocrLow: payload.ocrConfidence < OCR_CONFIDENCE_THRESHOLD };
-      batchAtStake += data.totals?.totalAtStake || 0;
-      batchFindings += (data.findings || []).length;
+      if (data.auditId) justAuditedIds.push(data.auditId);
       if (eobDoc && !eobDoc.saved && $("save-eob").checked) {
         await maybeSaveEob(eobDoc.redacted, data);
         eobDoc.saved = true; // shared EOB: save once, not once per audit
@@ -513,15 +517,13 @@ async function runBatch() {
     }
     batchQueue = null;
     batchDocs = null;
-    setBatchLabels(
-      `Batch complete — ${total} audits saved under “Your past audits” · ${batchFindings} finding${batchFindings === 1 ? "" : "s"}, ` +
-      `${fmt(batchAtStake)} worth disputing across all ${total}. The report below is the last audit only.`
-    );
-    renderReport(last.data, { ocrLow: last.ocrLow, model: last.data.model, planApplied: last.data.planApplied, planReason: last.data.planReason });
-    show("report");
+    setBatchLabels(null);
+    // A batch ends on the bills list, not on one arbitrary report: the question
+    // after N bills is "what did you find across all of these", and the
+    // just-audited block answers it with every audit one click away.
     track("batch_completed");
-    await loadHistory(); // refreshes allAudits (incl. these audits) + usage cards
-    renderReportUsage(last.data);
+    await loadHistory(); // refreshes allAudits (incl. these audits) + renders the list
+    show("bills");
   } catch (e) {
     console.error(e);
     setError("upload-error",
@@ -712,6 +714,11 @@ $("confirm-review").onclick = async () => {
 
 $("back-to-upload").onclick = () => { resetState(); show("upload"); };
 
+$("go-audit").onclick = () => { resetState(); show("upload"); };
+for (const el of document.querySelectorAll(".back-link")) {
+  el.onclick = (e) => { e.preventDefault(); show("bills"); };
+}
+
 // ---------- Report ----------
 
 const TYPE_LABELS = {
@@ -791,7 +798,7 @@ function renderReport(data, { ocrLow, model, planApplied, planReason } = {}) {
     <div class="tot"><span>Billed</span><b>${fmt(totals.billed)}</b></div>
     <div class="tot"><span>EOB allowed</span><b>${fmt(totals.eobAllowed)}</b></div>
     <div class="tot"><span>Your responsibility</span><b>${fmt(totals.patientResponsibility)}</b></div>
-    <div class="tot hi"><span>Worth disputing — money you may not owe; hold off paying this part</span><b>${fmt(totals.totalAtStake)}</b></div>`;
+    <div class="tot hi"><span>Worth disputing</span><b>${fmt(totals.totalAtStake)}</b></div>`;
 
   const byType = {};
   for (const f of findings) (byType[f.type] ||= []).push(f);
@@ -1044,6 +1051,28 @@ function renderDashboard() {
     for (const b of dc.querySelectorAll(".dup-st")) b.onclick = () => openAudit(b.dataset.audit);
   }
 
+  // What the run that just finished found. The same bills also appear in their
+  // provider groups below — this is a lens on the list, not a second list.
+  const just = splitJustAudited(allAudits, justAuditedIds);
+  const ja = $("just-audited");
+  if (!just.length) {
+    ja.innerHTML = "";
+  } else {
+    const jt = runningTotals(just);
+    ja.innerHTML = `<div class="just-block">
+      <div class="just-head">Just audited
+        <span class="count">${just.length} bill${just.length === 1 ? "" : "s"}</span>
+        <span class="money-pill">${fmt(jt.atStake)}</span>
+        <span class="muted">worth disputing</span></div>
+      ${just.map((b) => `<div class="bill-row${b.atStake ? "" : " quiet"}">
+        <span class="when">${escapeHtml(shortDate(b.serviceDates[0] || b.createdAtDate))}</span>
+        <button class="what" data-audit="${escapeHtml(b.id)}">${escapeHtml(b.summary || "Nothing to dispute")}</button>
+        ${b.atStake ? `<span class="money-pill">${fmt(b.atStake)}</span>` : ""}
+      </div>`).join("")}
+    </div>`;
+    for (const el of ja.querySelectorAll(".what")) el.onclick = () => openAudit(el.dataset.audit);
+  }
+
   // Bills, money first.
   const { groups, clean } = groupAuditsByProvider(allAudits);
   $("bills-total").innerHTML = totals.atStake
@@ -1064,7 +1093,7 @@ function renderDashboard() {
           <button class="rm" data-del="${escapeHtml(b.id)}" title="Delete this audit">✕</button>
         </div>`).join("")}
       </details>`).join("")
-    : (allAudits.length ? "" : '<p class="muted">No bills audited yet — add one above and it\'ll show up here with what\'s worth disputing.</p>');
+    : (allAudits.length ? "" : '<p class="muted">No bills audited yet — start one above and it\'ll show up here with what\'s worth disputing.</p>');
 
   $("clean-bills").innerHTML = clean.length
     ? `<details class="prov-group"><summary><span class="caret">▸</span> Clean bills
@@ -1107,6 +1136,7 @@ async function loadEobs() {
   snap.forEach((d) => savedEobs.push({ id: d.id, ...d.data() }));
 
   $("saved-eob-wrap").hidden = !savedEobs.length;
+  $("cta-eob").textContent = savedEobs.length ? `EOB on file: ${savedEobs[0].label}` : "";
   const sel = $("saved-eob");
   const prev = sel.value;
   sel.innerHTML = '<option value="">— choose a saved EOB —</option>' +
@@ -1194,7 +1224,7 @@ function renderPlanCard() {
       <span class="muted">No plan on file — add your Summary of Benefits</span>
       <span class="pl-actions"><a href="#" id="plan-add-now">Add now</a></span>
     </div>`;
-    $("plan-add-now").onclick = (e) => { e.preventDefault(); openOnboarding("upload"); };
+    $("plan-add-now").onclick = (e) => { e.preventDefault(); openOnboarding("bills"); };
   } else {
     // Plan on file: one quiet line — the numbers live on the deductible and
     // tracker cards; this line only identifies the plan and offers actions.
@@ -1242,12 +1272,12 @@ function renderPlanCard() {
   });
 }
 
-const sbcErrTarget = () => (state?.sbcOrigin === "onboarding" ? "onboarding-error" : "upload-error");
+const sbcErrTarget = () => (state?.sbcOrigin === "onboarding" ? "onboarding-error" : "bills-error");
 
 async function prepareSbc(file) {
-  const origin = !$("onboarding").hidden ? "onboarding" : "upload";
+  const origin = !$("onboarding").hidden ? "onboarding" : "bills";
   if (file.size > 20e6) {
-    return setError(origin === "onboarding" ? "onboarding-error" : "upload-error", "Files must be under 20MB.");
+    return setError(origin === "onboarding" ? "onboarding-error" : "bills-error", "Files must be under 20MB.");
   }
   resetStatePreservingFiles();
   state.sbcFlow = true;
@@ -1297,12 +1327,12 @@ async function runSbcExtraction(force = false) {
       const msg = `The plan on file covers ${data.existingPeriod.start} → ${data.existingPeriod.end}; ` +
         `this document covers ${data.incomingPeriod.start} → ${data.incomingPeriod.end}. Replace anyway?`;
       if (confirm(msg)) return runSbcExtraction(true);
-      show("upload"); setBatchLabels(null); return;
+      show("bills"); setBatchLabels(null); return;
     }
     await loadPlan();
     await applySbcConfiguration();
     setBatchLabels(null);
-    show("upload");
+    show("bills");
     track("plan_added");
     $("plan-card").scrollIntoView({ behavior: "smooth" });
   } catch (e) {

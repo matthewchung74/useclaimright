@@ -107,7 +107,7 @@ Fixtures: `test-fixtures/` (regenerate HTML: `node test-fixtures/gen-series.mjs`
    ✓ Deductible card: "**$120.00 of $1,500.00** — Target from your plan (SBC). As stated on your most recent EOB (2026-01-15)."
 
 **Cost:** 1 audit.
-
+---
 ## M4 — Batch with a consolidated EOB, plan still applied
 **Use case:** many bills + one EOB in a single review-all pass; plan checks apply to every audit in the batch.
 **Data:** `series/t2-bill.pdf`, `series/t3-bill.pdf`, `series/t-eob.pdf` (consolidated statement covering t1–t3; leave "save this EOB" checked).

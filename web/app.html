@@ -127,6 +127,17 @@
   .bill-row .what:hover{color:var(--brand-dark);text-decoration:underline}
   .bill-row.quiet .what{color:var(--ink-soft)}
   .bill-row .rm{border:none;background:none;cursor:pointer;color:var(--bad);font-size:14px}
+  .cta-card{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  .cta-card .btn{margin-left:auto}
+  #cta-eob{font-size:13px}
+  .back-link{color:var(--brand-dark);font-size:14px;text-decoration:none}
+  .back-link:hover{text-decoration:underline}
+  .just-block{background:#fff;border:1px solid var(--line);border-radius:12px;margin:14px 0;overflow:hidden}
+  .just-head{background:#E8F25C;color:var(--ink);display:flex;align-items:center;gap:10px;padding:10px 16px;
+    font-size:11.5px;font-weight:800;letter-spacing:.6px;text-transform:uppercase}
+  .just-head .count,.just-head .muted{font-size:13px;font-weight:400;letter-spacing:0;text-transform:none;color:var(--ink)}
+  .just-head .money-pill{background:#fff;margin-left:auto;text-transform:none;letter-spacing:0}
+  .just-block .bill-row:first-of-type{border-top:none}
   /* floating redaction chip — appears at the selection inside the review panes */
   #hide-chip{position:absolute;z-index:25;background:var(--ink);color:#fff;border:none;border-radius:8px;
     padding:7px 13px;font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 4px 12px rgba(18,50,50,.3)}
@@ -253,11 +264,65 @@
     </div>
   </section>
 
-  <section id="upload" hidden>
-    <h1>Audit a medical bill</h1>
-    <p class="lead">Personal details are removed <b>on your device</b> before anything is analyzed — you'll review exactly what gets sent.</p>
+  <section id="bills" hidden>
+    <h1>Bills &amp; coverage</h1>
+    <p class="muted" id="dash-subtitle" style="margin-bottom:14px"></p>
+
+    <div class="card cta-card">
+      <div>
+        <b>Audit a new bill</b>
+        <div class="muted">Personal details are removed on your device before anything is analyzed.</div>
+      </div>
+      <span class="muted" id="cta-eob"></span>
+      <button id="go-audit" class="btn">Start an audit →</button>
+    </div>
+
+    <div id="dup-card"></div>
+    <div id="just-audited"></div>
+
+    <div class="dash-head">
+      <h3>Your bills</h3>
+      <span id="bills-total"></span>
+      <span class="muted" id="bills-sort"></span>
+    </div>
+    <div id="bill-groups"></div>
+    <div id="clean-bills"></div>
+
+    <h3 style="margin-top:26px">Your coverage</h3>
+    <p class="muted" id="coverage-sub" style="margin-bottom:10px">Track plan limits ("6 therapy visits per year") across all your audits, and watch your deductible progress. Counts come from the audits you've run.</p>
+    <div id="bills-error" class="error" hidden></div>
     <div id="plan-card"></div>
     <div id="plan-full" class="card" hidden style="margin-top:10px"><pre style="white-space:pre-wrap;font-size:12.5px"></pre></div>
+    <div id="suggestion-banner" class="banner" hidden></div>
+    <div id="deductible-card"></div>
+    <div id="oop-card"></div>
+    <div id="usage-list"></div>
+    <details class="explain" id="tracker-form-wrap">
+      <summary>Add a custom limit</summary>
+      <form id="tracker-form">
+        <div class="tf-grid">
+          <div><label for="tf-preset">Type</label>
+            <select id="tf-preset">
+              <option value="psych">Psychotherapy (90832, 90834, 90837)</option>
+              <option value="pt">Physical therapy (97110, 97112, 97530)</option>
+              <option value="chiro">Chiropractic (98940, 98941, 98942)</option>
+              <option value="acu">Acupuncture (97810, 97811, 97813, 97814)</option>
+              <option value="custom">Custom…</option>
+            </select></div>
+          <div><label for="tf-codes">Service codes</label><input id="tf-codes" placeholder="90832, 90834, 90837"></div>
+          <div><label for="tf-limit">Visits / yr</label><input id="tf-limit" type="number" min="1" placeholder="6"></div>
+          <div><label for="tf-month">Plan year starts</label>
+            <select id="tf-month"><option value="1">January</option><option value="2">February</option><option value="3">March</option><option value="4">April</option><option value="5">May</option><option value="6">June</option><option value="7">July</option><option value="8">August</option><option value="9">September</option><option value="10">October</option><option value="11">November</option><option value="12">December</option></select></div>
+          <button type="submit" class="btn">Track</button>
+        </div>
+      </form>
+    </details>
+  </section>
+
+  <section id="upload" hidden>
+    <p><a href="#" class="back-link" id="back-to-bills-upload">← Back to bills</a></p>
+    <h1>Audit a medical bill</h1>
+    <p class="lead">Personal details are removed <b>on your device</b> before anything is analyzed — you'll review exactly what gets sent.</p>
     <div class="card">
       <div class="step-row"><span class="step-n">1</span><div><b>Add the EOB from your insurance</b><div class="muted">The EOB is the answer key — it says what your plan allowed and what you actually owe.</div></div></div>
       <div class="dropzones" style="grid-template-columns:1fr">
@@ -424,6 +489,7 @@
         <button id="gen-email" class="btn">Generate dispute email</button>
         <button id="print-report" class="btn ghost">Print / save PDF</button>
         <button id="new-audit" class="btn ghost">New audit</button>
+        <a href="#" class="back-link" id="back-to-bills-report" style="align-self:center">← Back to bills</a>
       </div>
     </div>
 

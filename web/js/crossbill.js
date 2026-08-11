@@ -63,6 +63,14 @@ export function runningTotals(audits, window = null) {
   return { audited, findings, atStake };
 }
 
+// The audits from the run that just finished, in the order the list already
+// holds them. Ids with no matching audit are dropped — a deleted audit should
+// not leave a hole in the pinned block.
+export function splitJustAudited(audits, ids) {
+  const want = new Set(ids || []);
+  return want.size ? (audits || []).filter((a) => want.has(a.id)) : [];
+}
+
 // Bills grouped by provider, money first. Bills with no findings move to a
 // separate "clean" list so the main list only holds things needing action.
 export function groupAuditsByProvider(audits) {
