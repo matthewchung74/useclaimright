@@ -28,9 +28,20 @@ Fixtures: `test-fixtures/` (regenerate HTML: `node test-fixtures/gen-series.mjs`
 3. Click **Prepare audit →**. ✓ Processing (first run: "Downloading privacy model… N%", ~1–2 min, one-time).
 4. Review both tabs. ✓ Canary PHI chipped: Jane Q. Testpatient, DOB 03/14/1985, MRN TESTMRN-424242, AHX-55512345.
 5. Click **Looks right — analyze**.
-   ✓ **Duplicate charge**: 80053 metabolic panel, $145.50 ×2 (occurrence table count 2).
-   ✓ **Billed above EOB allowed**: the bill demands far more than the EOB's member responsibility.
-   ⚠️ *Known gap (observed 2026-08-10):* the planted **$18 cost-share error** (EOB states $186.35; its own lines sum to $168.35) was **not** reported as `cost_share_error` — the model folded the discrepancy into the billed-vs-allowed finding. Treat a `cost_share_error` here as a bonus, not a requirement, until the prompt is tightened.
+   ✓ **The four totals cards** read (observed 2026-08-10; amounts are model-extracted so treat as ±, but the relationships must hold):
+
+   | Card | Value | Where it comes from |
+   |---|---|---|
+   | Billed | **$2,115.00** | sum of the bill's line items |
+   | EOB allowed | **$841.75** | the plan's allowed amount |
+   | Your responsibility | **$186.35** | what the EOB says you owe |
+   | Worth disputing | **$804.15** | $145.50 duplicate + $658.65 billed-above-allowed |
+
+   ✓ **Duplicate charge** $145.50 — 80053 metabolic panel billed twice (occurrence table count 2).
+   ✓ **Billed above EOB allowed** $658.65 — the bill demands ~$845 against $186.35 responsibility.
+   ✓ **Charity care eligible** $186.35 — nonprofit-hospital financial assistance flag. Note it is deliberately **not** added into "Worth disputing": it's an avenue to pursue, not an overcharge, and adding it would double-count the responsibility figure.
+   ✓ Sanity check: "Worth disputing" equals the duplicate plus the billed-above-allowed exactly. If it ever equals all three findings summed, that's a double-count bug.
+   ⚠️ *Known gap:* the planted **$18 cost-share error** (EOB states $186.35; its own lines sum to $168.35) is **not** reported as `cost_share_error` — the discrepancy gets folded into the billed-above-allowed finding. Treat a `cost_share_error` here as a bonus, not a requirement.
    ✓ Footer: "**Not checked against your plan** — add your Summary of Benefits at the top of the audit page to enable plan checks."
 
 **Cost:** 1 audit.
@@ -69,9 +80,10 @@ Fixtures: `test-fixtures/` (regenerate HTML: `node test-fixtures/gen-series.mjs`
 **Data:** `series/p1-bill.pdf` + `series/p1-eob.pdf` (PT 97110, 2026-03-20; EOB member responsibility $95 vs SBC's "$60 copay, deductible does not apply").
 
 1. Upload both, Prepare, review, analyze.
+   ✓ **Totals cards**: Billed **$210.00** · EOB allowed **$95.00** · Your responsibility **$95.00** · Worth disputing **$150.00**.
    ✓ "**Copay doesn't match your plan**" ($35.00, medium confidence): mono `SBC` quote of the rehab row, mono `BILL` quote, sentence ending in yellow-highlighted "**$35.00 you may not owe**".
    ✓ "**Billed above EOB allowed**" ($115, high confidence — bill demands $210, EOB says $95).
-   ✓ "Worth disputing" = $150 (both findings). ✓ Tracker line "Rehabilitation…: visit 1 of 20". ✓ NO "not checked" footer.
+   ✓ Worth disputing = $115 + $35 = $150 exactly. ✓ Tracker line "Rehabilitation…: visit 1 of 20". ✓ NO "not checked" footer.
    ✓ Dispute email includes `My plan (SBC) states: "…$60 copay…"`.
 
 **Cost:** 1 audit.
@@ -81,6 +93,7 @@ Fixtures: `test-fixtures/` (regenerate HTML: `node test-fixtures/gen-series.mjs`
 **Data:** `series/t1-bill.pdf` + `series/t1-eob.pdf` (90837, $175 billed, $120 to deductible — consistent with the SBC's "$0 coinsurance after deductible" row).
 
 1. Upload both, Prepare, review, analyze.
+   ✓ **Totals cards**: Billed **$175.00** · EOB allowed **$120.00** · Your responsibility **$120.00** · Worth disputing **$55.00**.
    ✓ NO plan-mismatch findings. (One "Billed above EOB allowed" $55 finding is expected — the fixture bill demands the full $175.)
    ✓ Mental-health tracker: "visit 1 of 6".
    ✓ Deductible card: "**$120.00 of $1,500.00** — Target from your plan (SBC). As stated on your most recent EOB (2026-01-15)."
