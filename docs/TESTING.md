@@ -15,9 +15,10 @@ Fixtures: `test-fixtures/` (regenerate HTML: `node test-fixtures/gen-series.mjs`
 **Automated tests first:** `cd functions && npm test`. Rules tests need the emulator + Java: `firebase emulators:exec --only firestore "npm --prefix functions test"`.
 
 **Moving between plans:**
-- From a **report** → **New audit** returns to the audit page and clears staged files, the saved-EOB selection, and any error (it's a full reset of the upload form, not of your data).
+- **Bills & coverage is home** — every sign-in lands there, and so does every batch. The audit form is reached from its "**Audit a new bill**" card; "← Back to bills" on the form and on any report goes back.
+- From a **report** → **New audit** goes straight to the audit form and clears staged files, the saved-EOB selection, and any error (it's a full reset of the upload form, not of your data).
 - From a **review** screen you don't want to analyze → **Start over** (costs no audit — use this whenever a plan says to back out).
-- Already on the audit page → just scroll; nothing needs resetting.
+- Already on the audit form → just scroll; nothing needs resetting.
 - Staged files you no longer want → the **✕** on each row. Worth doing at the end of any plan that leaves files staged (E1b), so they don't follow you into the next one.
 
 ---
@@ -29,8 +30,8 @@ Fixtures: `test-fixtures/` (regenerate HTML: `node test-fixtures/gen-series.mjs`
 **Data:** `fake-bill.pdf` + `fake-eob.pdf` (ED visit, planted errors).
 
 1. A fresh account lands on the **onboarding screen** first: "Set up your plan" card (560px, teal top rule), payoff pitch with mono `$60`/`$175` figures, SBC dropzone with 📄, "What's an SBC?" explainer, and a centered "**Skip for now — audit a bill first**" link. Click **Skip**.
-   ✓ The audit page appears; the top shows a **dashed one-line reminder** "No plan on file — add your Summary of Benefits · Add now" (not a big card, not a gold banner); step 1 (EOB) is the first big element and its explainer ("What's an EOB…") sits directly under it.
-2. Drag `fake-eob.pdf` onto the EOB zone, `fake-bill.pdf` onto the bill zone. ✓ One "✓ file ✕" row under each zone.
+   ✓ The **Bills & coverage** page appears — this is home. The "**Audit a new bill**" card is the first thing on it, above "No bills audited yet…", so the primary action is never hidden behind the empty state. Scroll to "Your coverage": the **dashed one-line reminder** "No plan on file — add your Summary of Benefits · Add now" sits there (not a big card, not a gold banner).
+2. Click **Start an audit →**. ✓ The audit form appears with a "← Back to bills" link above the heading; step 1 (EOB) is the first big element and its explainer ("What's an EOB…") sits directly under it. Drag `fake-eob.pdf` onto the EOB zone, `fake-bill.pdf` onto the bill zone. ✓ One "✓ file ✕" row under each zone.
 3. Click **Prepare audit →**. ✓ Processing (first run: "Downloading privacy model… N%", ~1–2 min, one-time).
 4. Review both tabs. ✓ Canary PHI chipped: Jane Q. Testpatient, DOB 03/14/1985, MRN TESTMRN-424242, AHX-55512345.
 5. Click **Looks right — analyze**.
@@ -48,13 +49,14 @@ Fixtures: `test-fixtures/` (regenerate HTML: `node test-fixtures/gen-series.mjs`
    ✓ **Charity care eligible** $186.35 — nonprofit-hospital financial assistance flag. Note it is deliberately **not** added into "Worth disputing": it's an avenue to pursue, not an overcharge, and adding it would double-count the responsibility figure.
    ✓ Sanity check: "Worth disputing" equals the duplicate plus the billed-above-allowed exactly. If it ever equals all three findings summed, that's a double-count bug.
    ⚠️ *Known gap:* the planted **$18 cost-share error** (EOB states $186.35; its own lines sum to $168.35) is **not** reported as `cost_share_error` — the discrepancy gets folded into the billed-above-allowed finding. Treat a `cost_share_error` here as a bonus, not a requirement.
-   ✓ Footer: "**Not checked against your plan** — add your Summary of Benefits at the top of the audit page to enable plan checks."
+   ✓ The found-money card is labelled just "**Worth disputing**" — the old sentence-long label ("money you may not owe; hold off paying this part") is gone from every report.
+   ✓ Footer: "**Not checked against your plan** — add your Summary of Benefits under 'Your coverage' on the bills page to enable plan checks."
 
 **Cost:** 1 audit.
 
 ## E1b — Intake and account-menu details (no audits)
 **Use case:** the small copy and affordance fixes a full audit pass wouldn't catch.
-**Getting here:** press **New audit** on E1's report (clears E1's files). You can equally run this right after E1's step 1, before uploading anything.
+**Getting here:** on E1's report, click **← Back to bills**, then **Audit a new bill**. (**New audit** on the report goes to the same form directly; either route clears E1's files.)
 
 1. On the audit page: ✓ both dropzones read "**Drop one or more files**, or click to choose"; the SBC dropzone reads "Drop it here" — one plan only.
 2. Drop two bills one at a time. ✓ They accumulate as rows, nothing is replaced, and the button becomes "Start 2 audits →".
@@ -74,7 +76,7 @@ Fixtures: `test-fixtures/` (regenerate HTML: `node test-fixtures/gen-series.mjs`
 
 1. Click **Add now** on the reminder line. ✓ The onboarding screen returns, and its skip link now reads "**Not now — back to your audits**" (origin-aware). Drag `fake-sbc.pdf` onto the dropzone.
 2. Review screen (single document; the tab is labeled "**Plan (SBC)**", not "Bill"). ✓ Member name/ID chipped. Click **Looks right — analyze**.
-3. Back on the audit page:
+3. Back on the bills page, under **Your coverage**:
    ✓ The SBC card is replaced by ONE line: `Plan: Acme Silver PPO · 2026-01-01 → 2026-12-31 · View · Replace · Remove`.
    ✓ Coverage usage: two trackers tagged "**from your SBC — check the codes**" (6/yr mental health, 20/yr rehab).
    ✓ Deductible card: "$0.00 of $1,500.00 · Target from your plan (SBC)."
@@ -114,10 +116,12 @@ Fixtures: `test-fixtures/` (regenerate HTML: `node test-fixtures/gen-series.mjs`
 
 1. Add all three files (any order, any zone — filenames route them). ✓ Rows accumulate; summary "2 audits: 2 bill+EOB pairs"; button "Start 2 audits →".
 2. Start. ✓ Per-document redaction progress, then ONE review screen with 3 tabs + "Reviewing <name> — document N of 3".
-3. Confirm once. ✓ "Analyzing audit 1 of 2… 2 of 2" with no pauses; final report + "Batch complete".
-   ✓ **Totals cards show the LAST audit only** — Billed **$175.00** · EOB allowed **$120.00** · Your responsibility **$120.00** · Worth disputing **$55.00** — while the batch label above states the across-batch total. That split is the whole point of the label; if the cards ever showed $110 they'd be summing audits that aren't on screen.
+3. Confirm once. ✓ "Analyzing audit 1 of 2… 2 of 2" with no pauses, then the batch **lands on the Bills & coverage page — not on one audit's report**. (Before this change it showed whichever audit the queue ordered last, with no signal the other existed.)
+   ✓ A **highlighter-ribboned "JUST AUDITED" block** sits above "Your bills": "JUST AUDITED · **2 bills** · **$110.00** worth disputing", then one row per audit — date · plain-English finding · amount. Each t-audit is $55 (bill demands $175, EOB responsibility $120), so the block's total is the real batch total; no screen shows $55 as if it were the answer for the whole batch.
+   ✓ Clicking either row opens **that** audit's own report (Billed $175.00 · EOB allowed $120.00 · Your responsibility $120.00 · Worth disputing $55.00), and "← Back to bills" returns with the block still pinned.
+   ✓ The same two bills **also appear below in their provider group** — the block is a lens on the list, not a second list, so nothing is hidden from the permanent view.
+   ✓ The block is session-scoped: it survives navigating to a report and back, and disappears once a new audit run starts or the page is reloaded.
    ✓ Each audit matches its claim line in the consolidated EOB (no false `not_in_eob` for t2/t3); mental-health tracker reaches 3/6; deductible $360.
-   ✓ **Batch total stated**: "2 audits saved … **$110.00 worth disputing across all 2**. The report below is the last audit only." Each t-audit is $55 (bill demands $175, EOB responsibility $120) — the on-screen report shows one audit, the label shows the batch.
    ✓ **No `deductible_misapplied`** on either audit. The SBC's mental-health row reads "$0 coinsurance **after** deductible", so applying $120 to the deductible is correct. *(Regression guard: this fired falsely once at $95 — the model had matched psychotherapy to the generic "specialist visit — deductible does not apply" row.)*
    ✓ Each audit's `serviceDates` holds **only its own bill's date** — not all three dates from the consolidated EOB. *(Regression guard: t3's audit once recorded 2026-01-15, 02-12 and 03-11.)*
 
@@ -161,7 +165,7 @@ Fixtures: `test-fixtures/` (regenerate HTML: `node test-fixtures/gen-series.mjs`
 **Use case:** the cumulative view — what's worth disputing across all bills, what coverage is left, and the one finding no single audit can produce (the same visit billed on two statements).
 **Data:** `series/t2-bill.pdf` + `t2-eob.pdf`, then `series/t2-bill-rebill.pdf` + `t2-eob.pdf` (a second statement for the same 2026-02-12 visit — same provider, same 90837, different statement date and account number), with `fake-sbc.pdf` on file.
 
-1. Audit the t2 pair, then audit the re-bill pair. Return to the audit page.
+1. Audit the t2 pair, then audit the re-bill pair. Each single audit ends on its own report — click **← Back to bills** to reach the dashboard. (The dashboard is also where you land on every sign-in: it is the home screen, and the audit form is reached from its "Audit a new bill" card.)
    *(Each individual report shows the t-series totals from M3: Billed $175 · allowed $120 · responsibility $120 · disputing $55. Verified 2026-08-10. The dashboard figures below are what this plan actually tests.)*
 2. ✓ **Hero card** at the top of "Bills & coverage": a yellow ribbon "FOUND BY COMPARING YOUR BILLS TO EACH OTHER", **$175.00 at stake**, "The same visit is on two statements", naming the provider, 90837, and Feb 12 2026, with **Statement A / Statement B** each showing its audited date and amount (never a statement number — those are redacted), plus a "Why this was flagged" explainer. Clicking a statement opens that audit.
 3. ✓ **Your bills**: one group per provider — the same provider under different extraction casing must be **one** group — sorted by amount at stake, header pill "$110.00 worth disputing across 1 provider", each row showing date · plain-English finding summary · amount · ✕.
@@ -191,7 +195,7 @@ Fixtures: `test-fixtures/` (regenerate HTML: `node test-fixtures/gen-series.mjs`
 **Data:** none.
 
 1. Click **Remove** on the plan line. ✓ Confirm dialog names the plan and says trackers stay.
-2. Confirm. ✓ The full "Add your Summary of Benefits" card returns at the top; trackers remain (tags still cleared/uncleared as they were); deductible card falls back to EOB-stated values ("$120.00 of $1,500.00" from t-series EOBs, no "Target from your plan" line... EOB-only sourcing).
+2. Confirm. ✓ The dashed "No plan on file — add your Summary of Benefits · Add now" reminder returns under **Your coverage**; trackers remain (tags still cleared/uncleared as they were); deductible card falls back to EOB-stated values ("$120.00 of $1,500.00" from t-series EOBs, no "Target from your plan" line... EOB-only sourcing).
 
 **Cost:** 0.
 
@@ -206,7 +210,7 @@ Fixtures: `test-fixtures/` (regenerate HTML: `node test-fixtures/gen-series.mjs`
 **Cost:** 1 plan upload.
 
 ## E5 — Restore the plan (closes the loop)
-1. Upload `fake-sbc.pdf` again via the top card. ✓ Full M1 checkpoints repeat (plan line, trackers update in place — no duplicates, `source:"sbc"` trackers refreshed).
+1. Upload `fake-sbc.pdf` again via **Add now** under "Your coverage". ✓ Full M1 checkpoints repeat (plan line, trackers update in place — no duplicates, `source:"sbc"` trackers refreshed).
 
 **Cost:** 1 plan upload (3/3 for the day after M1 + E4 + E5).
 
@@ -232,7 +236,7 @@ Fixtures: `test-fixtures/` (regenerate HTML: `node test-fixtures/gen-series.mjs`
    ✓ After the reload you land on "**Set up your plan**", not the audit page — the onboarding skip flag is cleared along with the Firestore data.
    ✓ The skip link reads the first-visit wording ("Skip for now — audit a bill first").
    ✓ Audits, saved EOBs, trackers, and the plan are all gone; today's usage counters are intentionally NOT reset.
-2. Contrast with **E3 (Remove the plan)**: removing just the plan leaves you on the audit page with the dashed "No plan on file · Add now" reminder — deliberate, since removing a plan is a deliberate act, not a fresh start.
+2. Contrast with **E3 (Remove the plan)**: removing just the plan leaves you on the bills page with the dashed "No plan on file · Add now" reminder under "Your coverage" — deliberate, since removing a plan is a deliberate act, not a fresh start.
 3. ✓ Daily counters survive: immediately after a reset, the audit and plan-upload allowances are unchanged (reset is not a way to buy more audits).
 
 **Cost:** 0 audits.
@@ -252,6 +256,18 @@ Fixtures: `test-fixtures/` (regenerate HTML: `node test-fixtures/gen-series.mjs`
 6. **Undo stack**: hide three different strings, then click Undo three times. ✓ Each click restores exactly one hide, most recent first; after the last one, Undo disappears.
 7. **Applies to every open document**: on a batch review (M4's 3-tab screen), hide a string that appears in more than one document, then switch tabs. ✓ It's hidden in all of them, and one Undo restores all of them together.
 8. Leave and re-enter a review (**Start over**, then Prepare again). ✓ Undo is gone and the status line is clear — the stack does not leak across documents.
+
+**Cost:** 0 audits.
+
+## R2 — Home routing and the short "Worth disputing" label
+**Use case:** the bills list is the app's home, and the found-money card says one thing.
+**Data:** none — run against whatever audits already exist.
+
+1. Sign out and back in (with a plan on file). ✓ You land on **Bills & coverage**, never on the audit form, and the list is already populated — no flash of "No bills audited yet" while the query runs.
+2. ✓ The feedback bubble is visible here, as it is on the audit form and reports.
+3. Open any report. ✓ The fourth totals card reads exactly "**Worth disputing**" — not "Worth disputing — money you may not owe; hold off paying this part".
+4. ✓ Both exits work: "← Back to bills" returns to the list; "New audit" goes to the form, whose "← Back to bills" also returns.
+5. ✓ From the list, "**Audit a new bill**" shows "EOB on file: …" when the library has one, and its "Start an audit →" opens the form with the previous run's files cleared.
 
 **Cost:** 0 audits.
 
