@@ -4,7 +4,13 @@ The main case assumes the user has their **Summary of Benefits (SBC)** on file: 
 
 Fixtures: `test-fixtures/` (regenerate HTML: `node test-fixtures/gen-series.mjs`; PDFs render via the browse CLI). Answer key: `test-fixtures/series-expected.json`. Pairings: `test-fixtures/README.md`.
 
-**Session setup:** open https://useclaimright.web.app/app, hard-refresh, sign in. A fresh account starts empty with full daily limits (**10 audits, 3 plan uploads**). The full suite below ≈ 7 audits + 3 plan uploads — one fresh day, in the listed order.
+**Session setup:** open https://useclaimright.web.app/app, hard-refresh, sign in. A fresh account starts empty with full daily limits (**10 audits, 3 plan uploads**).
+
+**Budget — the full suite does NOT fit in one day.** Core plans (E1, M1–M6, D1, E2, E4–E7) cost **10 audits + 3 plan uploads**, exactly the daily ceiling, leaving no room for the rate-limit check. Optional **M7** adds 3 more. Run it as:
+
+- **Day 1 (core):** E1 → M1 → M2 → M3 → M4 → M5 → M6 → D1, then the zero-cost plans (E3, E5*, R1, F1). *E5 needs a plan upload.
+- **Day 2 (edges):** M7, E2, E4, E6, E7, and the rate-limit check in Always-on.
+- Or use **☰ → Reset account** between passes: it clears data and returns you to onboarding, but **daily counters intentionally survive**, so it does not buy more audits.
 
 **Automated tests first:** `cd functions && npm test`. Rules tests need the emulator + Java: `firebase emulators:exec --only firestore "npm --prefix functions test"`.
 
@@ -23,12 +29,21 @@ Fixtures: `test-fixtures/` (regenerate HTML: `node test-fixtures/gen-series.mjs`
 4. Review both tabs. ✓ Canary PHI chipped: Jane Q. Testpatient, DOB 03/14/1985, MRN TESTMRN-424242, AHX-55512345.
 5. Click **Looks right — analyze**.
    ✓ **Duplicate charge**: 80053 metabolic panel, $145.50 ×2 (occurrence table count 2).
-   ✓ **Cost-share error**: ~$18 (EOB states $186.35; lines sum $168.35).
+   ✓ **Billed above EOB allowed**: the bill demands far more than the EOB's member responsibility.
+   ⚠️ *Known gap (observed 2026-08-10):* the planted **$18 cost-share error** (EOB states $186.35; its own lines sum to $168.35) was **not** reported as `cost_share_error` — the model folded the discrepancy into the billed-vs-allowed finding. Treat a `cost_share_error` here as a bonus, not a requirement, until the prompt is tightened.
    ✓ Footer: "**Not checked against your plan** — add your Summary of Benefits at the top of the audit page to enable plan checks."
 
 **Cost:** 1 audit.
 
-good
+## E1b — Intake and account-menu details (no audits)
+**Use case:** the small copy and affordance fixes a full audit pass wouldn't catch.
+
+1. On the audit page: ✓ both dropzones read "**Drop one or more files**, or click to choose"; the SBC dropzone reads "Drop it here" — one plan only.
+2. Drop two bills one at a time. ✓ They accumulate as rows, nothing is replaced, and the button becomes "Start 2 audits →".
+3. Open **☰**. ✓ Your full email wraps without breaking mid-word; **Sign out**; then **Reset account — erase all my data** below a divider, in red, with a red (not teal) hover.
+4. ✓ The "What's an EOB, and where do I find it?" explainer sits under **step 1**, not after the bill section.
+
+**Cost:** 0 audits.
 
 ---
 
@@ -107,10 +122,6 @@ good
 
 **Cost:** 0.
 
----
-
-# Remaining exceptions
-
 ## M7 — Zero-entry tracking from remarks (optional, +3 audits)
 **Use case:** when an EOB remark prints the limit, one click tracks it — no typing. (With an SBC on file the trackers already exist; to see this path, delete the mental-health tracker first or run without a plan.)
 **Data:** `series/t4-bill.pdf`+`t4-eob.pdf`, `t5-bill.pdf`+`t5-eob.pdf`, `t6-bill.pdf`+`t6-eob.pdf`.
@@ -120,6 +131,22 @@ good
 2. After t6: ✓ tracker red ("Limit reached…"), deductible card $720 of $1,500.
 
 **Cost:** 3 audits.
+
+## D1 — Bills & coverage dashboard, incl. cross-bill duplicate
+**Use case:** the cumulative view — what's worth disputing across all bills, what coverage is left, and the one finding no single audit can produce (the same visit billed on two statements).
+**Data:** `series/t2-bill.pdf` + `t2-eob.pdf`, then `series/t2-bill-rebill.pdf` + `t2-eob.pdf` (a second statement for the same 2026-02-12 visit — same provider, same 90837, different statement date and account number), with `fake-sbc.pdf` on file.
+
+1. Audit the t2 pair, then audit the re-bill pair. Return to the audit page.
+2. ✓ **Hero card** at the top of "Bills & coverage": a yellow ribbon "FOUND BY COMPARING YOUR BILLS TO EACH OTHER", **$175.00 at stake**, "The same visit is on two statements", naming the provider, 90837, and Feb 12 2026, with **Statement A / Statement B** each showing its audited date and amount (never a statement number — those are redacted), plus a "Why this was flagged" explainer. Clicking a statement opens that audit.
+3. ✓ **Your bills**: one group per provider — the same provider under different extraction casing must be **one** group — sorted by amount at stake, header pill "$110.00 worth disputing across 1 provider", each row showing date · plain-English finding summary · amount · ✕.
+4. ✓ **Your coverage**: Deductible "$240.00 of $1,500.00" sourced "**Target from your plan (SBC).** As stated on your most recent EOB (2026-02-12)." with "$1,260.00 to go"; **Out-of-pocket maximum** card present ("$0.00 of $6,000.00 · 0%"); tracker cards below.
+5. ✓ Negative control: the t-series alone (same code, *different* dates) must produce **no** duplicate hero. Auditing the same bill twice must also produce none.
+
+**Cost:** 2 audits (+1 plan upload if no SBC on file).
+
+---
+
+# Remaining exceptions
 
 ## E2 — No EOB (bill-only) with SBC on file
 **Use case:** bill-only audits still get plan checks; the no-EOB note explains the hierarchy.
@@ -156,21 +183,7 @@ good
 
 **Cost:** 1 plan upload (3/3 for the day after M1 + E4 + E5).
 
----
-
-## D1 — Bills & coverage dashboard, incl. cross-bill duplicate
-**Use case:** the cumulative view — what's worth disputing across all bills, what coverage is left, and the one finding no single audit can produce (the same visit billed on two statements).
-**Data:** `series/t2-bill.pdf` + `t2-eob.pdf`, then `series/t2-bill-rebill.pdf` + `t2-eob.pdf` (a second statement for the same 2026-02-12 visit — same provider, same 90837, different statement date and account number), with `fake-sbc.pdf` on file.
-
-1. Audit the t2 pair, then audit the re-bill pair. Return to the audit page.
-2. ✓ **Hero card** at the top of "Bills & coverage": a yellow ribbon "FOUND BY COMPARING YOUR BILLS TO EACH OTHER", **$175.00 at stake**, "The same visit is on two statements", naming the provider, 90837, and Feb 12 2026, with **Statement A / Statement B** each showing its audited date and amount (never a statement number — those are redacted), plus a "Why this was flagged" explainer. Clicking a statement opens that audit.
-3. ✓ **Your bills**: one group per provider — the same provider under different extraction casing must be **one** group — sorted by amount at stake, header pill "$110.00 worth disputing across 1 provider", each row showing date · plain-English finding summary · amount · ✕.
-4. ✓ **Your coverage**: Deductible "$240.00 of $1,500.00" sourced "**Target from your plan (SBC).** As stated on your most recent EOB (2026-02-12)." with "$1,260.00 to go"; **Out-of-pocket maximum** card present ("$0.00 of $6,000.00 · 0%"); tracker cards below.
-5. ✓ Negative control: the t-series alone (same code, *different* dates) must produce **no** duplicate hero. Auditing the same bill twice must also produce none.
-
-**Cost:** 2 audits (+1 plan upload if no SBC on file).
-
-## E7 — Wrong EOB paired with a bill
+## E6 — Wrong EOB paired with a bill
 **Use case:** pairing the wrong EOB must be called out, not silently reported as "you may not owe the whole bill".
 **Data:** copies of two unrelated fixtures given matching stems so they pair by filename — e.g. `mixup-bill.pdf` (copy of `fake-bill.pdf`, ED visit 2026-06-12) + `mixup-eob.pdf` (copy of `series/p1-eob.pdf`, PT 2026-03-20).
 
@@ -183,7 +196,7 @@ good
 
 **Cost:** 0 audits for steps 1–4 (back out with **Start over**); 1 audit for step 5.
 
-## E6 — Reset account returns you to onboarding
+## E7 — Reset account returns you to onboarding (destructive — run last)
 **Use case:** "erase all my data" means a genuinely fresh account, including the first-run setup screen.
 **Data:** none (destructive — run it last, or on a scratch account).
 
@@ -192,6 +205,7 @@ good
    ✓ The skip link reads the first-visit wording ("Skip for now — audit a bill first").
    ✓ Audits, saved EOBs, trackers, and the plan are all gone; today's usage counters are intentionally NOT reset.
 2. Contrast with **E3 (Remove the plan)**: removing just the plan leaves you on the audit page with the dashed "No plan on file · Add now" reminder — deliberate, since removing a plan is a deliberate act, not a fresh start.
+3. ✓ Daily counters survive: immediately after a reset, the audit and plan-upload allowances are unchanged (reset is not a way to buy more audits).
 
 **Cost:** 0 audits.
 
@@ -207,6 +221,9 @@ good
    ✓ The original text returns, the `MANUAL_n` chip is gone, Undo hides, status reads "Undid — restored."
 4. Select text OUTSIDE the panes (e.g. the page heading). ✓ No chip appears.
 5. The "Hide selection" button below the panes still works — kept as the keyboard/fallback path.
+6. **Undo stack**: hide three different strings, then click Undo three times. ✓ Each click restores exactly one hide, most recent first; after the last one, Undo disappears.
+7. **Applies to every open document**: on a batch review (M4's 3-tab screen), hide a string that appears in more than one document, then switch tabs. ✓ It's hidden in all of them, and one Undo restores all of them together.
+8. Leave and re-enter a review (**Start over**, then Prepare again). ✓ Undo is gone and the status line is clear — the stack does not leak across documents.
 
 **Cost:** 0 audits.
 
@@ -237,3 +254,7 @@ Chrome freezes `requestAnimationFrame` in hidden tabs. Two features broke on thi
 - Older-SBC replace confirmation (needs a second SBC fixture with an earlier coverage period).
 - Expired-plan renewal banner (needs a past-dated SBC fixture or a clock change).
 - Emulator rules tests (need Java).
+- `loadPlan()` failing soft (a Firestore error should leave the empty plan card and no unhandled rejection) — needs network throttling or an injected failure.
+- Mobile / narrow widths: nothing in this suite checks the 720px breakpoint, the dashboard grids, or the feedback bubble against the report's action row on a phone.
+- The planted **$18 cost-share error** in `fake-eob` (see E1's known gap) — currently not reported as `cost_share_error`.
+- Cross-bill duplicates spanning **different providers for the same visit** (e.g. facility + physician billing the same date) — the detector deliberately keys on provider, so this is out of scope by design, not an oversight.
