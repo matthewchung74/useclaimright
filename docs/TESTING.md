@@ -14,6 +14,8 @@ Fixtures: `test-fixtures/` (regenerate HTML: `node test-fixtures/gen-series.mjs`
 
 **Automated tests first:** `cd functions && npm test`. Rules tests need the emulator + Java: `firebase emulators:exec --only firestore "npm --prefix functions test"`.
 
+**Reading the totals tables:** every plan that spends an audit states its four totals cards in the same table — Billed, EOB allowed, Your responsibility, Worth disputing — with the arithmetic behind "Worth disputing" spelled out in the last column, followed by the findings that produce it. Amounts are model-extracted: treat them as ± a few dollars, but the **relationships must hold exactly** — Worth disputing equals its listed findings summed (nothing else folded in), and EOB allowed is $0.00 whenever there is no EOB.
+
 **Moving between plans:**
 - **Bills & coverage is home** — every sign-in lands there, and so does every batch. The audit form is reached from its "**Audit a new bill**" card; "← Back to bills" on the form and on any report goes back.
 - From a **report** → **New audit** goes straight to the audit form and clears staged files, the saved-EOB selection, and any error (it's a full reset of the upload form, not of your data).
@@ -35,9 +37,9 @@ Fixtures: `test-fixtures/` (regenerate HTML: `node test-fixtures/gen-series.mjs`
 3. Click **Prepare audit →**. ✓ Processing (first run: "Downloading privacy model… N%", ~1–2 min, one-time).
 4. Review both tabs. ✓ Canary PHI chipped: Jane Q. Testpatient, DOB 03/14/1985, MRN TESTMRN-424242, AHX-55512345.
 5. Click **Looks right — analyze**.
-   ✓ **The four totals cards** read (observed 2026-08-10; amounts are model-extracted so treat as ±, but the relationships must hold):
+   ✓ **The four totals cards** (observed 2026-08-10):
 
-   | Card | Value | Where it comes from |
+   | Card | Expected | Why |
    |---|---|---|
    | Billed | **$2,115.00** | sum of the bill's line items |
    | EOB allowed | **$841.75** | the plan's allowed amount |
@@ -59,7 +61,7 @@ Fixtures: `test-fixtures/` (regenerate HTML: `node test-fixtures/gen-series.mjs`
 **Getting here:** on E1's report, click **← Back to bills**, then **Audit a new bill**. (**New audit** on the report goes to the same form directly; either route clears E1's files.)
 
 1. On the audit page: ✓ both dropzones read "**Drop one or more files**, or click to choose"; the SBC dropzone reads "Drop it here" — one plan only.
-2. Drop two bills one at a time. ✓ They accumulate as rows, nothing is replaced, and the button becomes "Start 2 audits →".
+2. Drop two bills one at a time. ✓ They accumulate as rows, nothing is replaced, the button becomes "Start 2 audits →", and the summary reads "**2 audits**: 0 bill+EOB pairs, 2 with no EOB" (no saved EOB exists yet on a fresh account).
 3. Open **☰**. ✓ Your full email wraps without breaking mid-word; **Sign out**; then **Reset account — erase all my data** below a divider, in red, with a red (not teal) hover.
 4. ✓ The "What's an EOB, and where do I find it?" explainer sits under **step 1**, not after the bill section.
 5. **Clean up before M1**: remove both staged bills with their **✕**. ✓ The rows disappear and the button returns to "Prepare audit →".
@@ -90,10 +92,18 @@ Fixtures: `test-fixtures/` (regenerate HTML: `node test-fixtures/gen-series.mjs`
 **Data:** `series/p1-bill.pdf` + `series/p1-eob.pdf` (PT 97110, 2026-03-20; EOB member responsibility $95 vs SBC's "$60 copay, deductible does not apply").
 
 1. Upload both, Prepare, review, analyze.
-   ✓ **Totals cards**: Billed **$210.00** · EOB allowed **$95.00** · Your responsibility **$95.00** · Worth disputing **$150.00**.
+   ✓ **The four totals cards**:
+
+   | Card | Expected | Why |
+   |---|---|---|
+   | Billed | **$210.00** | the bill's line items |
+   | EOB allowed | **$95.00** | what the plan allowed |
+   | Your responsibility | **$95.00** | what the EOB says you owe |
+   | Worth disputing | **$150.00** | $115.00 billed-above-allowed + $35.00 copay mismatch — and nothing else |
+
    ✓ "**Copay doesn't match your plan**" ($35.00, medium confidence): mono `SBC` quote of the rehab row, mono `BILL` quote, sentence ending in yellow-highlighted "**$35.00 you may not owe**".
    ✓ "**Billed above EOB allowed**" ($115, high confidence — bill demands $210, EOB says $95).
-   ✓ Worth disputing = $115 + $35 = $150 exactly. ✓ Tracker line "Rehabilitation…: visit 1 of 20". ✓ NO "not checked" footer.
+   ✓ Tracker line "Rehabilitation…: visit 1 of 20". ✓ NO "not checked" footer.
    ✓ Dispute email includes `My plan (SBC) states: "…$60 copay…"`.
 
 **Cost:** 1 audit.
@@ -103,7 +113,15 @@ Fixtures: `test-fixtures/` (regenerate HTML: `node test-fixtures/gen-series.mjs`
 **Data:** `series/t1-bill.pdf` + `series/t1-eob.pdf` (90837, $175 billed, $120 to deductible — consistent with the SBC's "$0 coinsurance after deductible" row).
 
 1. Upload both, Prepare, review, analyze.
-   ✓ **Totals cards**: Billed **$175.00** · EOB allowed **$120.00** · Your responsibility **$120.00** · Worth disputing **$55.00**.
+   ✓ **The four totals cards** — this is the "t-series shape" other plans refer back to:
+
+   | Card | Expected | Why |
+   |---|---|---|
+   | Billed | **$175.00** | the bill's line items |
+   | EOB allowed | **$120.00** | what the plan allowed |
+   | Your responsibility | **$120.00** | applied to the deductible, per the SBC |
+   | Worth disputing | **$55.00** | billed-above-allowed only ($175 − $120); no plan-mismatch finding |
+
    ✓ NO plan-mismatch findings. (One "Billed above EOB allowed" $55 finding is expected — the fixture bill demands the full $175.)
    ✓ Mental-health tracker: "visit 1 of 6".
    ✓ Deductible card: "**$120.00 of $1,500.00** — Target from your plan (SBC). As stated on your most recent EOB (2026-01-15)."
@@ -118,7 +136,15 @@ Fixtures: `test-fixtures/` (regenerate HTML: `node test-fixtures/gen-series.mjs`
 2. Start. ✓ Per-document redaction progress, then ONE review screen with 3 tabs + "Reviewing <name> — document N of 3".
 3. Confirm once. ✓ "Analyzing audit 1 of 2… 2 of 2" with no pauses, then the batch **lands on the Bills & coverage page — not on one audit's report**. (Before this change it showed whichever audit the queue ordered last, with no signal the other existed.)
    ✓ A **highlighter-ribboned "JUST AUDITED" block** sits above "Your bills": "JUST AUDITED · **2 bills** · **$110.00** worth disputing", then one row per audit — date · plain-English finding · amount. Each t-audit is $55 (bill demands $175, EOB responsibility $120), so the block's total is the real batch total; no screen shows $55 as if it were the answer for the whole batch.
-   ✓ Clicking either row opens **that** audit's own report (Billed $175.00 · EOB allowed $120.00 · Your responsibility $120.00 · Worth disputing $55.00), and "← Back to bills" returns with the block still pinned.
+   ✓ Clicking either row opens **that** audit's own report, and "← Back to bills" returns with the block still pinned. Both reports carry the t-series shape:
+
+   | Card | Expected (each audit) | Why |
+   |---|---|---|
+   | Billed | **$175.00** | that bill's line items |
+   | EOB allowed | **$120.00** | that bill's claim line in the consolidated EOB |
+   | Your responsibility | **$120.00** | applied to the deductible, per the SBC |
+   | Worth disputing | **$55.00** | billed-above-allowed only — **$110.00 across the batch**, which is what the JUST AUDITED block states |
+
    ✓ The same two bills **also appear below in their provider group** — the block is a lens on the list, not a second list, so nothing is hidden from the permanent view.
    ✓ The block is session-scoped: it survives navigating to a report and back, and disappears once a new audit run starts or the page is reloaded.
    ✓ Each audit matches its claim line in the consolidated EOB (no false `not_in_eob` for t2/t3); mental-health tracker reaches 3/6; deductible $360.
@@ -136,7 +162,16 @@ Fixtures: `test-fixtures/` (regenerate HTML: `node test-fixtures/gen-series.mjs`
 3. Prepare, review, analyze.
    ✓ On the review screen, the label above reads "Using saved EOB: … — **matched by provider and service date**" (or "most recent in your library" if no content match) — the auto-pick is explained, and an explicit dropdown choice is never overridden.
    ✓ "**On the bill, missing from the EOB**" (`not_in_eob`) — mental-health tracker 4/6.
-   ✓ **Totals cards** (observed in an earlier run, not re-verified since): Billed **$175.00** · EOB allowed **$0.00** · Your responsibility **$175.00** · Worth disputing **$175.00**. The signature of a claim the EOB never adjudicated is *allowed $0 with the full bill at stake* — the same signature as a mismatched pair (E6), which is why E6's warning matters: here it's genuine, there it isn't.
+   ✓ **The four totals cards** (re-verified 2026-08-11):
+
+   | Card | Expected | Why |
+   |---|---|---|
+   | Billed | **$175.00** | the bill's line items |
+   | EOB allowed | **$0.00** | the EOB never adjudicated this April visit |
+   | Your responsibility | **$175.00** | with nothing allowed, the whole bill lands on you |
+   | Worth disputing | **$175.00** | the entire bill — one `not_in_eob` finding |
+
+   ⚠️ *Allowed $0 with the full bill at stake* is also exactly what a **mismatched pair** looks like (E6). Here it's genuine; there it isn't. The totals alone cannot tell them apart — that's why E6's warning banner exists.
 
 **Cost:** 1 audit.
 
@@ -153,7 +188,16 @@ Fixtures: `test-fixtures/` (regenerate HTML: `node test-fixtures/gen-series.mjs`
 **Use case:** when an EOB remark prints the limit, one click tracks it — no typing. (With an SBC on file the trackers already exist; to see this path, delete the mental-health tracker first or run without a plan.)
 **Data:** `series/t4-bill.pdf`+`t4-eob.pdf`, `t5-bill.pdf`+`t5-eob.pdf`, `t6-bill.pdf`+`t6-eob.pdf`.
 
-*Totals per pair are the t-series shape from M3 (Billed $175 · allowed $120 · responsibility $120 · disputing $55); this plan is about the tracker, not the cards.*
+✓ **The four totals cards** — each of the three pairs carries the t-series shape:
+
+| Card | Expected (each pair) | Why |
+|---|---|---|
+| Billed | **$175.00** | the bill's line items |
+| EOB allowed | **$120.00** | what the plan allowed |
+| Your responsibility | **$120.00** | applied to the deductible |
+| Worth disputing | **$55.00** | billed-above-allowed only |
+
+*This plan is about the tracker, not the cards — but if a pair's cards drift from the shape above, that's a finding worth chasing before trusting the tracker numbers.*
 
 1. Audit the pairs in order. After t5 (remark "5 of 6 visits used"), if its codes are untracked:
    ✓ The 💡 banner offers "Track it" — ONE click creates the tracker fully configured (codes, limit 6, plan year) with no form. The manual form is labeled "**Add a custom limit**" and remains the fallback for unprinted limits.
@@ -166,7 +210,16 @@ Fixtures: `test-fixtures/` (regenerate HTML: `node test-fixtures/gen-series.mjs`
 **Data:** `series/t2-bill.pdf` + `t2-eob.pdf`, then `series/t2-bill-rebill.pdf` + `t2-eob.pdf` (a second statement for the same 2026-02-12 visit — same provider, same 90837, different statement date and account number), with `fake-sbc.pdf` on file.
 
 1. Audit the t2 pair, then audit the re-bill pair. Each single audit ends on its own report — click **← Back to bills** to reach the dashboard. (The dashboard is also where you land on every sign-in: it is the home screen, and the audit form is reached from its "Audit a new bill" card.)
-   *(Each individual report shows the t-series totals from M3: Billed $175 · allowed $120 · responsibility $120 · disputing $55. Verified 2026-08-10. The dashboard figures below are what this plan actually tests.)*
+   ✓ **The four totals cards** — both reports carry the t-series shape (verified 2026-08-10):
+
+   | Card | Expected (each audit) | Why |
+   |---|---|---|
+   | Billed | **$175.00** | that statement's line items |
+   | EOB allowed | **$120.00** | what the plan allowed for the Feb 12 visit |
+   | Your responsibility | **$120.00** | applied to the deductible |
+   | Worth disputing | **$55.00** | billed-above-allowed only — the **duplicate is not in either report**, because no single audit can see it |
+
+   *That last row is the point of this plan: the $175 duplicate appears only on the dashboard, never in an individual report.*
 2. ✓ **Hero card** at the top of "Bills & coverage": a yellow ribbon "FOUND BY COMPARING YOUR BILLS TO EACH OTHER", **$175.00 at stake**, "The same visit is on two statements", naming the provider, 90837, and Feb 12 2026, with **Statement A / Statement B** each showing its audited date and amount (never a statement number — those are redacted), plus a "Why this was flagged" explainer. Clicking a statement opens that audit.
 3. ✓ **Your bills**: one group per provider — the same provider under different extraction casing must be **one** group — sorted by amount at stake, header pill "$110.00 worth disputing across 1 provider", each row showing date · plain-English finding summary · amount · ✕.
 4. ✓ **Your coverage**: Deductible "$240.00 of $1,500.00" sourced "**Target from your plan (SBC).** As stated on your most recent EOB (2026-02-12)." with "$1,260.00 to go"; **Out-of-pocket maximum** card present ("$0.00 of $6,000.00 · 0%"); tracker cards below.
@@ -185,7 +238,14 @@ Fixtures: `test-fixtures/` (regenerate HTML: `node test-fixtures/gen-series.mjs`
 1. Upload the bill, tick the checkbox. ✓ Note appears: bill-only checks + "if your Summary of Benefits is on file (top of this page)… the audit gets stronger when the EOB arrives."
 2. Prepare, review (Bill tab only), analyze.
    ✓ Audit completes; NO EOB-comparison finding types (billed_vs_allowed / not_in_eob / cost_share_error).
-   ✓ **Totals cards**: Billed = the bill's total; **EOB allowed $0.00** and **Your responsibility $0.00** — both forced to zero by design when there's no EOB, so the app never implies it knows what you owe. Worth disputing counts bill-only findings (duplicates/coding) and is $0.00 when the bill is clean.
+   ✓ **The four totals cards**:
+
+   | Card | Expected | Why |
+   |---|---|---|
+   | Billed | **$175.00** | the bill's line items — the only figure a bill alone can support |
+   | EOB allowed | **$0.00** | forced to zero by design with no EOB; the app never implies it knows what the plan allowed |
+   | Your responsibility | **$0.00** | likewise forced to zero — no EOB means no statement of what you owe |
+   | Worth disputing | **$0.00** | bill-only findings (duplicates/coding) only; $0.00 when the bill is clean, as t5 is |
    ✓ Plan checks may still fire from the bill alone (medium/low confidence at most); no "not checked" footer (service date 2026-05-13 is in-period).
 
 **Cost:** 1 audit.
@@ -224,7 +284,16 @@ Fixtures: `test-fixtures/` (regenerate HTML: `node test-fixtures/gen-series.mjs`
 3. Repeat with a genuine pair (`p1-bill.pdf` + `p1-eob.pdf`). ✓ **No banner** — a real pair shares dates and codes.
 4. Note: files with clearly different stems (`fake-bill.pdf` + `p1-eob.pdf`) never pair at all — the filename router keeps them separate and the audit reports "1 bill-only, 1 EOB has no matching bill".
 5. Backstop (needs a real audit): if a mismatched pair is analyzed anyway and **every** finding comes back `not_in_eob`, the report shows "⚠️ Every line on this bill came back missing from the EOB…" above the totals.
-   ✓ **The failure signature the banner exists for**: EOB allowed **$0.00** and Worth disputing ≈ the **entire bill**. Identical numbers to M5 — but there the claim genuinely wasn't adjudicated, here the documents just don't match. The totals alone cannot tell those apart, which is exactly why the warning is needed.
+   ✓ **The four totals cards** — the failure signature the banner exists for:
+
+   | Card | Expected | Why |
+   |---|---|---|
+   | Billed | the ED bill's total (**~$2,115.00**) | the bill's line items |
+   | EOB allowed | **$0.00** | the PT EOB adjudicated nothing on this bill |
+   | Your responsibility | ≈ the **entire bill** | nothing allowed, so everything lands on you |
+   | Worth disputing | ≈ the **entire bill** | every finding is `not_in_eob` |
+
+   ⚠️ These are the same numbers as **M5**, where the missing claim was genuine. The totals cannot distinguish "your insurer never processed this" from "you paired the wrong two documents" — the banner in step 2 is the only thing that can, which is why it must fire *before* the audit is spent.
 
 **Cost:** 0 audits for steps 1–4 (back out with **Start over**); 1 audit for step 5.
 
@@ -259,17 +328,22 @@ Fixtures: `test-fixtures/` (regenerate HTML: `node test-fixtures/gen-series.mjs`
 
 **Cost:** 0 audits.
 
-## R2 — Home routing and the short "Worth disputing" label
-**Use case:** the bills list is the app's home, and the found-money card says one thing.
-**Data:** none — run against whatever audits already exist.
+## R2 — Home routing, the short "Worth disputing" label, and the pairing summary
+**Use case:** the bills list is the app's home, the found-money card says one thing, and the pairing summary names the EOB a run would actually use.
+**Data:** none — run against whatever audits already exist. Needs a saved EOB in the library (any pass after M4).
 
 1. Sign out and back in (with a plan on file). ✓ You land on **Bills & coverage**, never on the audit form, and the list is already populated — no flash of "No bills audited yet" while the query runs.
 2. ✓ The feedback bubble is visible here, as it is on the audit form and reports.
 3. Open any report. ✓ The fourth totals card reads exactly "**Worth disputing**" — not "Worth disputing — money you may not owe; hold off paying this part".
 4. ✓ Both exits work: "← Back to bills" returns to the list; "New audit" goes to the form, whose "← Back to bills" also returns.
 5. ✓ From the list, "**Audit a new bill**" shows "EOB on file: …" when the library has one, and its "Start an audit →" opens the form with the previous run's files cleared.
+6. **Pairing summary tells the truth about the EOB.** On the audit form, stage two bills with no EOB file, and confirm a saved EOB is selected in the dropdown.
+   ✓ The summary reads "**2 audits**: 0 bill+EOB pairs, 2 **with your saved EOB**" — not "no matching EOB", which is what it used to say even though the run does attach the saved EOB to every bill.
+   ✓ Tick "**I don't have an EOB**": the summary changes in place to "2 with **no** EOB". Untick it, re-pick the saved EOB: it changes back. The summary and the run must never disagree about which EOB is in play.
+   ✓ Confirm on the review screen that the saved EOB is actually there — it appears as its own tab, labelled "saved: …".
+7. **Clean up**: remove both staged bills with their **✕**.
 
-**Cost:** 0 audits.
+**Cost:** 0 audits (back out of step 6 with **Start over** if you got as far as a review).
 
 ## F1 — Feedback widget
 **Use case:** in-app feedback reaches the founder without leaving the app.
