@@ -200,8 +200,8 @@ $("no-eob").onchange = () => {
   if (skip) {
     batchFiles = batchFiles.filter((b) => b.role !== "eob");
     $("eob-picked").textContent = "";
-    renderFiles();
   }
+  renderFiles(); // the summary names the EOB in play, so it changes with this
 };
 
 // Every file lands in one list, shown under the zone that matches its role.
@@ -253,6 +253,13 @@ function addFiles(files, zoneKind) {
   renderFiles();
 }
 
+// The saved EOB that a run would actually use — the same condition run-audit
+// applies, so the pairing summary and the run agree.
+const appliedSavedEob = () =>
+  !$("no-eob").checked && $("saved-eob").value
+    ? savedEobs.find((e) => e.id === $("saved-eob").value)
+    : null;
+
 function renderFiles() {
   const { pairs, billOnly, orphanEobs } = pairFiles(batchFiles);
   for (const kind of ["bill", "eob"]) {
@@ -274,7 +281,10 @@ function renderFiles() {
   summary.hidden = batchFiles.length < 2;
   if (!summary.hidden) {
     summary.innerHTML = [
-      `<b>${audits} audit${audits === 1 ? "" : "s"}</b>: ${pairs.length} bill+EOB pair${pairs.length === 1 ? "" : "s"}${billOnly.length ? `, ${billOnly.length} bill-only (no matching EOB)` : ""}.`,
+      // Bills without an uploaded EOB are not necessarily bill-only: a selected
+      // saved EOB is attached to each of them at run time, so say so here
+      // rather than reporting "no matching EOB" for a bill that has one.
+      `<b>${audits} audit${audits === 1 ? "" : "s"}</b>: ${pairs.length} bill+EOB pair${pairs.length === 1 ? "" : "s"}${billOnly.length ? `, ${billOnly.length} with ${appliedSavedEob() ? "your saved EOB" : "no EOB"}` : ""}.`,
       orphanEobs.length ? `⚠️ ${orphanEobs.length} EOB${orphanEobs.length === 1 ? " has" : "s have"} no matching bill and won't be audited.` : "",
       audits > 10 ? "⚠️ The server allows 10 audits per day — anything beyond that will fail until tomorrow." : "",
     ].filter(Boolean).join("<br>");
@@ -312,9 +322,7 @@ function batchBackToPanel() {
 $("run-audit").onclick = async () => {
   const { pairs, billOnly } = pairFiles(batchFiles);
   const skipEob = $("no-eob").checked;
-  const savedEob = !skipEob && $("saved-eob").value
-    ? savedEobs.find((e) => e.id === $("saved-eob").value)
-    : null;
+  const savedEob = appliedSavedEob();
   const audits = pairs.length + billOnly.length;
   if (!audits) {
     return setError("upload-error", "The itemized bill is required.");
@@ -1182,6 +1190,7 @@ $("saved-eob").onchange = () => {
   } else {
     $("eob-picked").textContent = "";
   }
+  renderFiles();
 };
 
 async function maybeSaveEob(redactedText, data) {

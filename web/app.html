@@ -133,10 +133,15 @@
   .back-link{color:var(--brand-dark);font-size:14px;text-decoration:none}
   .back-link:hover{text-decoration:underline}
   .just-block{background:#fff;border:1px solid var(--line);border-radius:12px;margin:14px 0;overflow:hidden}
-  .just-head{background:#E8F25C;color:var(--ink);display:flex;align-items:center;gap:10px;padding:10px 16px;
-    font-size:11.5px;font-weight:800;letter-spacing:.6px;text-transform:uppercase}
-  .just-head .count,.just-head .muted{font-size:13px;font-weight:400;letter-spacing:0;text-transform:none;color:var(--ink)}
-  .just-head .money-pill{background:#fff;margin-left:auto;text-transform:none;letter-spacing:0}
+  /* Highlighter as an underline, not a fill: the duplicate hero above owns the
+     full ribbon, and two solid yellow bands would compete for the same "look
+     here first". */
+  .just-head{color:var(--ink);display:flex;align-items:center;gap:10px;padding:12px 16px 10px;
+    font-size:11.5px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;
+    box-shadow:inset 0 -3px 0 #E8F25C}
+  .just-head .count,.just-head .muted{background:none;padding:0;font-size:13px;font-weight:400;
+    letter-spacing:0;text-transform:none;color:var(--ink-soft)}
+  .just-head .money-pill{margin-left:auto;text-transform:none;letter-spacing:0}
   .just-block .bill-row:first-of-type{border-top:none}
   /* floating redaction chip — appears at the selection inside the review panes */
   #hide-chip{position:absolute;z-index:25;background:var(--ink);color:#fff;border:none;border-radius:8px;
