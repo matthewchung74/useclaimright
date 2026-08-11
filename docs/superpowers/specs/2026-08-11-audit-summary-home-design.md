@@ -45,7 +45,7 @@ JUST AUDITED · 2 bills · $110.00 worth disputing
 - Cleared when a new audit run starts (`prepareAudit`/`prepareBatch`), so it never shows stale results.
 - Rows are identical in structure to the grouped rows (date · finding summary · amount · ✕) and click through to the report.
 - The same bills also appear below in their provider groups — this is a *lens*, not a separate list, so nothing is hidden from the permanent view.
-- Marked visually as transient: teal left rule and an uppercase "JUST AUDITED" label, not the highlighter (which means found money, not recency).
+- Marked with the **highlighter ribbon** and an uppercase "JUST AUDITED" label (user decision, overriding an initial teal-rule proposal — the block leads with money found in this run, so the highlighter reads as continuous with the rest of the found-money language).
 
 ## Changes by file
 

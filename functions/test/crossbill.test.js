@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { crossBillDuplicates, runningTotals, groupAuditsByProvider } from "../../web/js/crossbill.js";
+import { crossBillDuplicates, runningTotals, groupAuditsByProvider, splitJustAudited } from "../../web/js/crossbill.js";
 
 // Client-normalized audit shape (see loadHistory in web/js/app.js).
 const audit = (id, billKey, provider, code, dates, amount, extra = {}) => ({
@@ -131,4 +131,27 @@ test("a blank provider becomes its own labelled bucket, never dropped", () => {
   ]);
   assert.equal(groups.length, 1);
   assert.equal(groups[0].provider, "Provider not read");
+});
+
+// --- splitJustAudited ---
+
+test("pins only the just-audited ids, in list order", () => {
+  const audits = [
+    audit("a3", "b3", "Clinic", "90837", ["2026-03-11"], 175, { atStake: 55 }),
+    audit("a2", "b2", "Clinic", "90837", ["2026-02-12"], 175, { atStake: 55 }),
+    audit("a1", "b1", "Clinic", "90837", ["2026-01-14"], 175, { atStake: 0 }),
+  ];
+  const just = splitJustAudited(audits, ["a2", "a3"]);
+  assert.deepEqual(just.map((a) => a.id), ["a3", "a2"]);
+});
+
+test("an id with no surviving audit is dropped, not rendered as a hole", () => {
+  const audits = [audit("a1", "b1", "Clinic", "90837", ["2026-01-14"], 175, { atStake: 0 })];
+  assert.deepEqual(splitJustAudited(audits, ["a1", "deleted"]).map((a) => a.id), ["a1"]);
+});
+
+test("no just-audited ids means no pinned section", () => {
+  const audits = [audit("a1", "b1", "Clinic", "90837", ["2026-01-14"], 175, {})];
+  assert.deepEqual(splitJustAudited(audits, []), []);
+  assert.deepEqual(splitJustAudited(audits, undefined), []);
 });
