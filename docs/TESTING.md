@@ -14,6 +14,12 @@ Fixtures: `test-fixtures/` (regenerate HTML: `node test-fixtures/gen-series.mjs`
 
 **Automated tests first:** `cd functions && npm test`. Rules tests need the emulator + Java: `firebase emulators:exec --only firestore "npm --prefix functions test"`.
 
+**Moving between plans:**
+- From a **report** → **New audit** returns to the audit page and clears staged files, the saved-EOB selection, and any error (it's a full reset of the upload form, not of your data).
+- From a **review** screen you don't want to analyze → **Start over** (costs no audit — use this whenever a plan says to back out).
+- Already on the audit page → just scroll; nothing needs resetting.
+- Staged files you no longer want → the **✕** on each row. Worth doing at the end of any plan that leaves files staged (E1b), so they don't follow you into the next one.
+
 ---
 
 # Exception first (needs the no-plan state)
@@ -48,11 +54,13 @@ Fixtures: `test-fixtures/` (regenerate HTML: `node test-fixtures/gen-series.mjs`
 
 ## E1b — Intake and account-menu details (no audits)
 **Use case:** the small copy and affordance fixes a full audit pass wouldn't catch.
+**Getting here:** press **New audit** on E1's report (clears E1's files). You can equally run this right after E1's step 1, before uploading anything.
 
 1. On the audit page: ✓ both dropzones read "**Drop one or more files**, or click to choose"; the SBC dropzone reads "Drop it here" — one plan only.
 2. Drop two bills one at a time. ✓ They accumulate as rows, nothing is replaced, and the button becomes "Start 2 audits →".
 3. Open **☰**. ✓ Your full email wraps without breaking mid-word; **Sign out**; then **Reset account — erase all my data** below a divider, in red, with a red (not teal) hover.
 4. ✓ The "What's an EOB, and where do I find it?" explainer sits under **step 1**, not after the bill section.
+5. **Clean up before M1**: remove both staged bills with their **✕**. ✓ The rows disappear and the button returns to "Prepare audit →".
 
 **Cost:** 0 audits.
 
