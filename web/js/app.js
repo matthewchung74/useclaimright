@@ -5,8 +5,8 @@ import {
   connectAuthEmulator,
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 import {
-  getFirestore, collection, query, orderBy, getDocs, doc, getDoc, deleteDoc, addDoc,
-  updateDoc, serverTimestamp, connectFirestoreEmulator,
+  getFirestore, collection, query, orderBy, getDocs, getDocsFromServer, doc, getDoc,
+  getDocFromServer, deleteDoc, addDoc, updateDoc, serverTimestamp, connectFirestoreEmulator,
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 import {
   planYearWindow, visitsUsed, latestAccumulators, suggestedTrackers, warningLevel,
@@ -99,12 +99,26 @@ $("reset-account").onclick = async () => {
   $("menu").hidden = true;
   if (!confirm("Erase ALL your data — audits, saved EOBs, trackers, and your plan? This cannot be undone. (Today's usage counters stay.)")) return;
   const uid = auth.currentUser.uid;
+  const colls = ["audits", "eobs", "trackers"];
   try {
-    for (const coll of ["audits", "eobs", "trackers"]) {
-      const snap = await getDocs(collection(db, `users/${uid}/${coll}`));
+    for (const coll of colls) {
+      // Read from the server, not the cache: a stale or partial cache would
+      // hand us fewer documents than exist and the wipe would quietly miss them.
+      const snap = await getDocsFromServer(collection(db, `users/${uid}/${coll}`));
       for (const d of snap.docs) await deleteDoc(d.ref);
     }
     await deleteDoc(doc(db, `users/${uid}/plan/active`));
+
+    // Verify before claiming success. "Erase all my data" must never reload
+    // into a screen that still lists the data it promised to delete.
+    const left = [];
+    for (const coll of colls) {
+      const n = (await getDocsFromServer(collection(db, `users/${uid}/${coll}`))).size;
+      if (n) left.push(`${n} ${coll}`);
+    }
+    if ((await getDocFromServer(doc(db, `users/${uid}/plan/active`))).exists()) left.push("your plan");
+    if (left.length) throw new Error(`${left.join(", ")} could not be deleted`);
+
     // "Treat it like a fresh account" includes the onboarding gate: without
     // this the skip flag survives the wipe and drops you on the audit page.
     localStorage.removeItem("ucr-skip-onboarding");
@@ -113,8 +127,10 @@ $("reset-account").onclick = async () => {
     console.error(e);
     // Reset is reached from the account menu, so the error has to land on the
     // home screen — the audit form's error slot would be on a hidden section.
+    // Deliberately no reload: reloading here is what makes a failed wipe look
+    // like a successful one.
     show("bills");
-    setError("bills-error", `Reset failed partway: ${e.message} — reload and try again.`);
+    setError("bills-error", `Erase did not finish: ${e.message}. Your data is unchanged or partly deleted — try again, and tell us if it keeps failing.`);
   }
 };
 
