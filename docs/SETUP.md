@@ -5,7 +5,7 @@
 > $25/mo budget with 50/90/100% alerts; GEMINI_API_KEY secret set (validated,
 > `gemini-3.6-flash` confirmed live); hosting + rules + analyze Function deployed to
 > https://useclaimright.web.app with public invoker + in-function auth verified.
-> REMAINING: step 3 (Auth providers — Console), step 5 (GoatCounter), step 7 (App Check),
+> REMAINING: step 3 (Auth providers — Console), step 7 (App Check),
 > custom-domain reconnect (Namecheap), and the verification runs below.
 
 Everything in the codebase is done; these are the steps that need your accounts/consoles,
@@ -29,9 +29,13 @@ in order. Items marked ☐ are yours; ▶ are commands I (or you) can run once t
 - ☐ Get a key from Google AI Studio
 - ▶ `firebase functions:secrets:set GEMINI_API_KEY`
 
-## 5. Analytics
-- ☐ Create a free GoatCounter account → note your site code
-- ▶ Replace `YOURCODE` in the GoatCounter tag in `web/index.html`, `web/privacy.html`, `web/app.html`
+## 5. Analytics — DONE (Google Analytics, not GoatCounter)
+- ✅ Google Analytics `G-WYHQ778H14` is live. `web/index.html` and `web/privacy.html` load
+  `gtag.js` directly; `web/app.html` has no tag — the app page reports through **Firebase
+  Analytics** in `web/js/app.js` (`getAnalytics(app)`), which uses the same measurement ID
+  from `firebase-config.js`.
+- Nothing to do here. (This step originally specified GoatCounter; the project shipped GA
+  instead, and no `YOURCODE` placeholder exists in any page.)
 
 ## 6. Deploy
 - ▶ `firebase deploy` (hosting + functions + firestore rules)
