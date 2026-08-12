@@ -100,15 +100,26 @@ function tokenSpan(chunk, cursor, word) {
   return { start: idx, end: idx + clean.length };
 }
 
+const isWordChar = (c) => typeof c === "string" && /[A-Za-z0-9]/.test(c);
+
+// A reconstructed span that cuts into a word is evidence the cursor walk
+// matched the wrong occurrence: with ignore_labels:["O"] only entity tokens
+// come back, so a short token is searched for across the whole chunk and can
+// land almost anywhere. A live audit stored "Therape[COORDINATE_1]tic
+// exercises" this way. Spans carrying real offsets are trusted as-is.
+const wordAligned = (chunk, { start, end }) =>
+  !(isWordChar(chunk[start - 1]) && isWordChar(chunk[start])) &&
+  !(isWordChar(chunk[end]) && isWordChar(chunk[end - 1]));
+
 function spansFromTokens(chunk, tokens) {
   const spans = [];
   let cursor = 0;
   for (const t of tokens) {
-    let start = t.start, end = t.end;
+    let start = t.start, end = t.end, reconstructed = false;
     if (typeof start !== "number" || typeof end !== "number" || end <= start) {
       const s = tokenSpan(chunk, cursor, t.word ?? "");
       if (!s) continue;
-      start = s.start; end = s.end;
+      start = s.start; end = s.end; reconstructed = true;
     }
     cursor = Math.max(cursor, end);
     const rawLabel = (t.entity || t.entity_group || "").replace(/^[BIES]-/, "");
@@ -116,11 +127,14 @@ function spansFromTokens(chunk, tokens) {
     // Merge adjacent same-label tokens (allow 1-char gaps for spaces/punct).
     if (last && last.rawLabel === rawLabel && start <= last.end + 2) {
       last.end = Math.max(last.end, end);
+      last.reconstructed = last.reconstructed || reconstructed;
     } else {
-      spans.push({ start, end, rawLabel });
+      spans.push({ start, end, rawLabel, reconstructed });
     }
   }
-  return spans;
+  // Validated after merging: subword pieces of one entity ("John" + "##son")
+  // are only word-aligned once joined, so filtering earlier would drop them.
+  return spans.filter((s) => !s.reconstructed || wordAligned(chunk, s));
 }
 
 const CHUNK = 1500; // chars per NER call; keeps token counts within model limits
