@@ -105,7 +105,10 @@ const STRUCTURED = {
   planName: "Acme Silver PPO", planYearStart: "2026-01-01", planYearEnd: "2026-12-31",
   deductible: { individual: 1500, family: 3000 }, oopMax: { individual: 6000, family: 12000 },
   limits: [{ label: "Outpatient mental health", codesHint: ["90837"], visitsPerYear: 6 }],
-  costShares: [{ category: "Rehabilitation services", verbatim: "Rehabilitation services — $60 copay/visit, deductible does not apply", copay: 60, coinsurancePct: null, deductibleApplies: false }],
+  // verbatim holds ONLY the cost-share phrase, as real extractions do — the
+  // service name lives in `category`. A fixture that inlined the category here
+  // hid a digest bug that dropped it entirely.
+  costShares: [{ category: "Rehabilitation services", verbatim: "$60 copay/visit, deductible does not apply", copay: 60, coinsurancePct: null, deductibleApplies: false }],
 };
 
 test("planSchema validates the structured shape; rejects extra properties", () => {
@@ -143,6 +146,30 @@ test("buildDigest is deterministic, contains verbatim rows and key numbers, caps
   assert.ok(d1.length <= 2000);
   const bloated = { ...STRUCTURED, costShares: Array.from({ length: 100 }, (_, i) => ({ category: `C${i}`, verbatim: "x".repeat(80), copay: null, coinsurancePct: null, deductibleApplies: null })) };
   assert.ok(buildDigest(bloated).length <= 2000);
+});
+
+test("buildDigest names each row's service category, keeping identical cost shares distinct", () => {
+  // Live SBC: "Specialist visit" and "Rehabilitation services" carry the SAME
+  // cost-share text. Without the category the digest is two identical lines and
+  // nothing can map a billed PT code to the right one — the model then correctly
+  // stays silent, and a real copay mismatch goes unreported.
+  const d = buildDigest({
+    ...STRUCTURED,
+    costShares: [
+      { category: "Specialist visit", verbatim: "$60 copay/visit, deductible does not apply", copay: 60, coinsurancePct: null, deductibleApplies: false },
+      { category: "Rehabilitation services (physical, occupational therapy)", verbatim: "$60 copay/visit, deductible does not apply", copay: 60, coinsurancePct: null, deductibleApplies: false },
+    ],
+  });
+  assert.ok(d.includes("Specialist visit"));
+  assert.ok(d.includes("Rehabilitation services (physical, occupational therapy)"));
+  const rows = d.split("\n").filter((l) => l.startsWith("Row: "));
+  assert.equal(rows.length, 2);
+  assert.equal(new Set(rows).size, 2, "rows must be distinguishable from each other");
+});
+
+test("buildDigest tolerates a row with no category", () => {
+  const d = buildDigest({ ...STRUCTURED, costShares: [{ category: null, verbatim: "$40 copay", copay: 40, coinsurancePct: null, deductibleApplies: null }] });
+  assert.ok(d.includes("$40 copay"));
 });
 
 test("replaceDecision: store fresh/newer/forced; confirm on older", () => {

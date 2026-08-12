@@ -119,9 +119,13 @@ export const analyze = onCall(
     }
 
     const opts = { modelId: MODEL_ID, apiKey: GEMINI_API_KEY.value() };
+    // Build the digest here rather than reading the copy stored at upload time:
+    // it is a derived view of `structured`, so a stored one silently freezes the
+    // format the day the SBC was uploaded and no fix reaches existing plans.
+    const planDigest = plan?.structured ? buildDigest(plan.structured) : plan?.digest || null;
     let result;
     try {
-      result = await runAudit(redactedBill, redactedEob, opts, plan?.digest || null);
+      result = await runAudit(redactedBill, redactedEob, opts, planDigest);
       if (!validate(result)) {
         // One retry with the validation errors appended so the model can self-correct.
         const errText = ajv.errorsText(validate.errors);
@@ -129,7 +133,7 @@ export const analyze = onCall(
           redactedBill,
           `${redactedEob}\n\n[SYSTEM NOTE: your previous response failed schema validation: ${errText}. Return valid JSON matching the schema exactly.]`,
           opts,
-          plan?.digest || null
+          planDigest
         );
         if (!validate(result)) {
           throw new HttpsError("internal", "Analysis produced invalid output. Please try again.");

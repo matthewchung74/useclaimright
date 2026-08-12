@@ -77,3 +77,46 @@ test("manualRedact replaces every occurrence and reuses the registry", () => {
   const out = manualRedact("code X99 then X99 again", "X99", registry);
   assert.equal(out, "code [MANUAL_1] then [MANUAL_1] again");
 });
+
+// --- span reconstruction (the live path: the real model returns no offsets) ---
+
+// Mock NER with NO char offsets, only token text — what transformers.js
+// actually returns. Spans must be reconstructed by walking the chunk.
+const offsetlessNer = (tokens) => async () => tokens;
+
+test("a subword match landing inside a word is dropped, not redacted", async () => {
+  // Live failure: an audit stored "Therape[COORDINATE_1]tic exercises". With
+  // ignore_labels:["O"] only entity tokens come back, so the cursor walk
+  // searched the whole chunk for "u" and hit the one inside "Therapeutic".
+  const { redacted } = await deidentify(
+    "97110 Therapeutic exercises, 15 min",
+    offsetlessNer([{ entity: "B-COORDINATE", word: "u" }]),
+    createRegistry()
+  );
+  assert.equal(redacted, "97110 Therapeutic exercises, 15 min");
+  assert.ok(!redacted.includes("COORDINATE"));
+});
+
+test("subword tokens spanning a whole word still redact it", async () => {
+  // The guard must not cost us real entities: "Johnson" arrives as two pieces
+  // that merge into one word-aligned span.
+  const { redacted } = await deidentify(
+    "Patient Johnson owes $50.",
+    offsetlessNer([
+      { entity: "B-PATIENT", word: "John" },
+      { entity: "I-PATIENT", word: "##son" },
+    ]),
+    createRegistry()
+  );
+  assert.match(redacted, /Patient \[NAME_1\] owes/);
+  assert.ok(!redacted.includes("Johnson"));
+});
+
+test("a whole-word offsetless match still redacts", async () => {
+  const { redacted } = await deidentify(
+    "Seen by Alice today.",
+    offsetlessNer([{ entity: "B-PATIENT", word: "Alice" }]),
+    createRegistry()
+  );
+  assert.match(redacted, /Seen by \[NAME_1\] today\./);
+});

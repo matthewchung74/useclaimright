@@ -80,7 +80,10 @@ export function buildDigest(structured) {
     lines.push(`Limit: ${l.label} — ${l.visitsPerYear ?? "?"} visits/year`);
   }
   for (const c of structured.costShares || []) {
-    lines.push(`Row: ${c.verbatim}`);
+    // The category is what makes a row matchable to a billed service. Without
+    // it an SBC where "Specialist visit" and "Rehabilitation services" share
+    // the same cost-share text becomes two identical, unusable lines.
+    lines.push(`Row: ${c.category ? `${c.category} — ` : ""}${c.verbatim}`);
   }
   let out = "";
   for (const line of lines) {
