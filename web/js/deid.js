@@ -100,6 +100,13 @@ function tokenSpan(chunk, cursor, word) {
   return { start: idx, end: idx + clean.length };
 }
 
+// Confidence floor for model spans. A working token classifier scores real
+// entities well above this; anything near chance is the model guessing, and
+// acting on a guess redacts the wrong text (a live audit stored
+// "Therape[COORDINATE_1]tic exercises" from a 0.04-confidence span). Tokens
+// with no score are trusted — offsets-bearing callers and tests supply none.
+const MIN_SCORE = 0.5;
+
 const isWordChar = (c) => typeof c === "string" && /[A-Za-z0-9]/.test(c);
 
 // A reconstructed span that cuts into a word is evidence the cursor walk
@@ -115,6 +122,7 @@ function spansFromTokens(chunk, tokens) {
   const spans = [];
   let cursor = 0;
   for (const t of tokens) {
+    if (typeof t.score === "number" && t.score < MIN_SCORE) continue;
     let start = t.start, end = t.end, reconstructed = false;
     if (typeof start !== "number" || typeof end !== "number" || end <= start) {
       const s = tokenSpan(chunk, cursor, t.word ?? "");
