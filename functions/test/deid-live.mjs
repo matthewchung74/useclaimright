@@ -44,17 +44,30 @@ console.log("Loading model (first run downloads it)...");
 const nerPipe = await pipeline("token-classification", MODEL, { dtype: "q8" });
 const ner = (chunk, opts) => nerPipe(chunk, opts);
 
+// A no-op NER, so every run can separate what the model caught from what the
+// labeled-field harvest and regex backstop would have caught anyway. Without
+// this the harness scored 7/7 while the model contributed NOTHING — the
+// fixtures label every PII field, so the deterministic layers alone pass every
+// canary and the model's failure is invisible.
+const noNer = async () => [];
+
 const registry = createRegistry();
+let totalEntities = 0;
 for (const file of ["fake-bill", "fake-eob"]) {
   const text = htmlToText(new URL(`../../test-fixtures/${file}.html`, import.meta.url).pathname);
   const t0 = Date.now();
   const { redacted, entityCount } = await deidentify(text, ner, registry);
+  const baseline = (await deidentify(text, noNer, createRegistry())).redacted;
+  totalEntities += entityCount;
   console.log(`\n===== ${file} (${entityCount} NER entities, ${((Date.now()-t0)/1000).toFixed(1)}s) =====`);
   let pass = 0, fail = 0;
   for (const [label, canary] of CANARIES) {
     const leaked = redacted.toLowerCase().includes(canary.toLowerCase());
     if (!text.toLowerCase().includes(canary.toLowerCase())) continue; // not present in this doc
-    console.log(`  ${leaked ? "✖ LEAKED " : "✔ redacted"}  ${label}: ${canary}`);
+    // Attribute the catch: only canaries the deterministic layers MISS are
+    // evidence the model is doing anything.
+    const onlyNer = !leaked && baseline.toLowerCase().includes(canary.toLowerCase());
+    console.log(`  ${leaked ? "✖ LEAKED " : "✔ redacted"}  ${label}: ${canary}${onlyNer ? "   [caught by NER only]" : ""}`);
     leaked ? fail++ : pass++;
   }
   for (const [label, keep] of KEEP) {
@@ -67,3 +80,16 @@ for (const file of ["fake-bill", "fake-eob"]) {
   console.log("  --- redacted sample (first 500 chars) ---");
   console.log("  " + redacted.slice(0, 500).replace(/\n/g, "\n  "));
 }
+
+// The harness exists to grade the MODEL. A run where the model produced no
+// spans is not a pass — it is a run that graded the regex layers and told you
+// nothing. Fail loudly rather than printing a green score.
+if (totalEntities === 0) {
+  console.error("\n✖ FAIL: the NER model produced 0 entities across every fixture.");
+  console.error("  The canary scores above come from the labeled-field harvest and regex");
+  console.error("  backstop alone — this run did NOT test the model. Check that the ONNX");
+  console.error("  weights loaded and that the pipeline options still match the installed");
+  console.error("  @huggingface/transformers version.");
+  process.exit(1);
+}
+console.log(`\nNER contributed ${totalEntities} spans across the fixtures.`);
