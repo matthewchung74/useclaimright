@@ -120,3 +120,35 @@ test("a whole-word offsetless match still redacts", async () => {
   );
   assert.match(redacted, /Seen by \[NAME_1\] today\./);
 });
+
+// --- confidence floor ---
+
+test("a near-chance model span never redacts", async () => {
+  // The live model returns garbage at ~0.04: "Jane" tagged phone_number,
+  // "Alice" tagged certificate_license_number. Acting on that is how a single
+  // letter inside "Therapeutic" became a placeholder.
+  const { redacted } = await deidentify(
+    "97110 Therapeutic exercises, 15 min",
+    async () => [{ entity: "B-COORDINATE", word: "Therapeutic", score: 0.042 }],
+    createRegistry()
+  );
+  assert.equal(redacted, "97110 Therapeutic exercises, 15 min");
+});
+
+test("a confident model span still redacts", async () => {
+  const { redacted } = await deidentify(
+    "Seen by Alice today.",
+    async () => [{ entity: "B-PATIENT", word: "Alice", score: 0.97 }],
+    createRegistry()
+  );
+  assert.match(redacted, /Seen by \[NAME_1\] today\./);
+});
+
+test("scoreless tokens are trusted (offset-bearing callers and mocks)", async () => {
+  const { redacted } = await deidentify(
+    "Seen by Alice today.",
+    async () => [{ entity: "B-PATIENT", word: "Alice" }],
+    createRegistry()
+  );
+  assert.match(redacted, /Seen by \[NAME_1\] today\./);
+});
