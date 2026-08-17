@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import Ajv from "ajv";
-import { findingsSchema } from "../schema.js";
+import { findingsSchema, computeAtStake } from "../schema.js";
 
 const ajv = new Ajv({ allErrors: true });
 const validate = ajv.compile(findingsSchema);
@@ -76,4 +76,31 @@ test("stated accumulators validate as numbers", () => {
   withAcc.accumulators = { deductibleToDate: 720, deductibleLimit: 1500, oopToDate: 900, oopLimit: 6000, deductibleAppliedThisClaim: 120 };
   withAcc.payerRemarks = ["BENEFIT MAXIMUM REACHED: your plan covers 6 outpatient mental health visits per calendar year."];
   assert.equal(validate(withAcc), true, ajv.errorsText(validate.errors));
+});
+
+// --- computeAtStake ---
+
+test("E1: charity care is excluded from the at-stake total", () => {
+  // The live regression: a run returned $990.50 — $804.15 plus the $186.35
+  // charity figure, which IS the patient responsibility and so double-counts it.
+  const findings = [
+    { type: "duplicate_charge", amountAtStake: 145.5 },
+    { type: "billed_vs_allowed_mismatch", amountAtStake: 658.65 },
+    { type: "charity_care_eligible", amountAtStake: 186.35 },
+  ];
+  assert.equal(Number(computeAtStake(findings).toFixed(2)), 804.15);
+});
+
+test("computeAtStake sums plan findings and tolerates missing amounts", () => {
+  assert.equal(computeAtStake([
+    { type: "billed_vs_allowed_mismatch", amountAtStake: 115 },
+    { type: "copay_mismatch", amountAtStake: 35 },
+  ]), 150);
+  assert.equal(computeAtStake([{ type: "wrong_code", amountAtStake: null }]), 0);
+  assert.equal(computeAtStake([]), 0);
+  assert.equal(computeAtStake(undefined), 0);
+});
+
+test("an all-advisory audit is worth $0 to dispute", () => {
+  assert.equal(computeAtStake([{ type: "charity_care_eligible", amountAtStake: 186.35 }]), 0);
 });
