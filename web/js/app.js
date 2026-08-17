@@ -201,6 +201,15 @@ function resetState() {
   batchIndex = 0;
   batchDocs = null;
   batchDocIndex = 0;
+  // "I don't have an EOB" is a choice about ONE audit, not a standing
+  // preference. Left ticked it disabled the EOB dropzone for every later
+  // audit, suppressed saved-EOB pre-selection, and quietly forced bill-only
+  // runs — the user just hit this mid-suite. Unticked before the selection
+  // below, which bails out while it is checked.
+  if ($("no-eob").checked) {
+    $("no-eob").checked = false;
+    $("no-eob").dispatchEvent(new Event("change"));
+  }
   // After the file list is cleared — a stale EOB row from the previous audit
   // would otherwise suppress the saved-EOB pre-selection (bug found live).
   defaultEobSelection();
