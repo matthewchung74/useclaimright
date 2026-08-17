@@ -128,3 +128,33 @@ test("warning thresholds", () => {
   assert.equal(warningLevel(7, 6), "over");
   assert.equal(warningLevel(3, 0), "ok"); // invalid limit
 });
+
+// --- limit remarks with words between "covered" and "visits" ---
+
+// The real t5/t6 EOB remarks name the benefit before the word "visits". The
+// original patterns required "visits" to follow "N of M covered" immediately,
+// so zero-entry tracking never fired on the fixtures it was written for.
+const REAL_T5 = "5 of 6 covered outpatient mental health visits used this plan year.";
+const REAL_T6 = "BENEFIT MAXIMUM REACHED: 6 of 6 covered outpatient mental health visits used.";
+
+test("a remark naming the benefit between 'covered' and 'visits' still suggests a tracker", () => {
+  const audits = [{ payerRemarks: [REAL_T5], occurrenceTable: [{ code: "90837", description: "Psychotherapy, 60 minutes" }] }];
+  const s = suggestedTrackers(audits, []);
+  assert.equal(s.length, 1);
+  assert.equal(s[0].code, "90837");
+  assert.equal(s[0].limit, 6, "the printed limit must be extracted so 'Track it' needs no form");
+});
+
+test("the benefit-maximum variant is suggested and carries its limit", () => {
+  const s = suggestedTrackers(
+    [{ payerRemarks: [REAL_T6], occurrenceTable: [{ code: "90837", description: "Psychotherapy" }] }], []);
+  assert.equal(s.length, 1);
+  assert.equal(s[0].limit, 6);
+});
+
+test("an already-tracked code is not re-suggested", () => {
+  const s = suggestedTrackers(
+    [{ payerRemarks: [REAL_T5], occurrenceTable: [{ code: "90837" }] }],
+    [{ codes: ["90837"], limit: 6 }]);
+  assert.deepEqual(s, []);
+});

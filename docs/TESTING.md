@@ -200,8 +200,11 @@ done
 
 *This plan is about the tracker, not the cards — but if a pair's cards drift from the shape above, that's a finding worth chasing before trusting the tracker numbers.*
 
-1. Audit the pairs in order. After t5 (remark "5 of 6 visits used"), if its codes are untracked:
-   ✓ The 💡 banner offers "Track it" — ONE click creates the tracker fully configured (codes, limit 6, plan year) with no form. The manual form is labeled "**Add a custom limit**" and remains the fallback for unprinted limits.
+**Cheaper route (1 audit):** with an SBC on file, delete the mental-health tracker first, then audit the **t5 pair only** — the remark path fires on that single audit.
+
+1. Audit the pairs in order. After t5 (remark "5 of 6 covered outpatient mental health visits used"), if its codes are untracked:
+   ✓ The 💡 banner offers "Track it" — ONE click creates the tracker fully configured (codes, limit 6, plan year, `source:"remark"`) with no form. The manual form is labeled "**Add a custom limit**" and remains the fallback for unprinted limits.
+   *(Regression guard, fixed 2026-08-16: the remark matcher required "visits" to follow "N of M covered" immediately, so the real remark — which names the benefit in between — never matched and this banner never appeared. `web/js/usage.js` now allows up to 5 words there.)*
 2. After t6: ✓ tracker red ("Limit reached…"), deductible card $720 of $1,500.
 
 **Cost:** 3 audits.
@@ -285,7 +288,8 @@ done
 3. Repeat with a genuine pair (`p1-bill.pdf` + `p1-eob.pdf`). ✓ **No banner** — a real pair shares dates and codes.
 4. Note: files with clearly different stems (`fake-bill.pdf` + `p1-eob.pdf`) never pair at all — the filename router keeps them separate and the audit reports "1 bill-only, 1 EOB has no matching bill".
 5. Backstop (needs a real audit): if a mismatched pair is analyzed anyway and **every** finding comes back `not_in_eob`, the report shows "⚠️ Every line on this bill came back missing from the EOB…" above the totals.
-   ⚠️ **Known gap (observed 2026-08-16):** it did **not** fire on this fixture. The model returned `duplicate_charge` and `charity_care_eligible` alongside `not_in_eob`, and the condition (`findings.length >= 2 && every(not_in_eob)`, `web/js/app.js`) requires *every* finding to be `not_in_eob`. A real mismatched pair usually yields bill-only findings too, so this backstop rarely triggers in practice. The **pre-send banner in step 2 is the effective defence** — it did fire. Treat the backstop as a bonus, not a requirement, until the condition is broadened.
+   ✓ **Fixed 2026-08-16.** It originally failed here: the model returned `duplicate_charge` and `charity_care_eligible` alongside `not_in_eob`, and the old condition demanded *every* finding be `not_in_eob`. The report now also fires when the two documents share **no dates and no codes** — the same `documentsRelated()` evidence the step-2 banner uses — and the wording adapts: "**This EOB may not cover this bill.** They share no service dates and no procedure codes…".
+   ✓ The discrimination that matters: this audit shows the warning, while **M5's genuine missing claim does not** (its bill and EOB do share a code). Verified live on both.
    ✓ **The four totals cards** — the failure signature the banner exists for:
 
    | Card | Expected | Why |

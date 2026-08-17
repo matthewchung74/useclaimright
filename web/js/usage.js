@@ -92,13 +92,19 @@ export function latestAccumulators(audits, window) {
   return { snapshot, asOf, summedApplied: anyApplied ? summedApplied : null, disagreement };
 }
 
-const LIMIT_REMARK = /(benefit\s+maximum|maximum\s+reached|visit\s+limit|visits?\s+(?:per|allowed)|\d+\s+of\s+\d+\s+(?:covered\s+)?visits)/i;
+// Real EOB remarks name the benefit between the count and the word "visits"
+// ("5 of 6 covered outpatient mental health visits used"), so allow a few words
+// there — requiring "visits" to follow "covered" immediately meant the fixtures
+// this feature was built for never matched.
+const VISIT_WORDS = String.raw`(?:[A-Za-z-]+\s+){0,5}visits?`;
+const LIMIT_REMARK = new RegExp(
+  String.raw`(benefit\s+maximum|maximum\s+reached|visit\s+limit|visits?\s+(?:per|allowed)|\d+\s+of\s+\d+\s+${VISIT_WORDS})`, "i");
 
 // When the remark PRINTS the limit ("5 of 6 visits used", "covers 6 ... visits
 // per calendar year"), extract it so tracking needs zero typing. Null when the
 // remark only hints that a limit exists.
 const LIMIT_FROM_REMARK = [
-  /\d+\s*of\s*(\d+)\s*(?:covered\s+)?visits/i,
+  new RegExp(String.raw`\d+\s*of\s*(\d+)\s*${VISIT_WORDS}`, "i"),
   /(?:covers|allows|limited\s+to)\s+(\d+)\b[^.]*?visits/i,
   /(\d+)\s+visits?\s+per\s+(?:calendar\s+|plan\s+)?year/i,
 ];
