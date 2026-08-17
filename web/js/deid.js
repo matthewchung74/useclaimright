@@ -59,8 +59,15 @@ export function loadNer(onProgress) {
       const { pipeline } = await import(
         "https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.2.0"
       );
+      // q4, not q8: the q8 weights in this repo are broken — they return
+      // near-chance scores with nonsense labels ("Jane" as a phone number),
+      // which is why the NER layer caught nothing while appearing to run.
+      // q4 (~500MB) matches fp32 (~700MB) on the fixtures and catches the
+      // unlabeled prose names the harvest and regex layers cannot. The other
+      // small variants are unusable: fp16 and q4f16 fail to load outright
+      // (float16/float type mismatch in the published ONNX graph).
       return pipeline("token-classification", NER_MODEL, {
-        dtype: "q8",
+        dtype: "q4",
         progress_callback: onProgress,
       });
     })();
