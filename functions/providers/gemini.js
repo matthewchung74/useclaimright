@@ -54,7 +54,16 @@ any EOB comparison — every eobQuote must be an empty string, finding types
 billed_vs_allowed_mismatch / not_in_eob / cost_share_error must not appear, and set
 totals.eobAllowed and totals.patientResponsibility to 0.`;
 
-// Provider adapter contract: runAudit(redactedBill, redactedEob, opts) -> validated-shape object.
+// Token counts as the API reports them. Null rather than 0 when absent, so a
+// provider that reports nothing is distinguishable from a genuinely free call.
+const usageOf = (response) => ({
+  input: response?.usageMetadata?.promptTokenCount ?? null,
+  output: response?.usageMetadata?.candidatesTokenCount ?? null,
+  total: response?.usageMetadata?.totalTokenCount ?? null,
+});
+
+// Provider adapter contract: runAudit(redactedBill, redactedEob, opts)
+//   -> { data: validated-shape object, usage: {input, output, total} }.
 // Swapping providers means adding a sibling file with the same signature.
 export async function runAudit(redactedBill, redactedEob, { modelId, apiKey }, planDigest = null) {
   const ai = new GoogleGenAI({ apiKey });
@@ -80,7 +89,7 @@ export async function runAudit(redactedBill, redactedEob, { modelId, apiKey }, p
       temperature: 0,
     },
   });
-  return JSON.parse(response.text);
+  return { data: JSON.parse(response.text), usage: usageOf(response) };
 }
 
 // Same adapter contract as runAudit: returns the parsed structured plan.
@@ -100,5 +109,5 @@ export async function runPlanExtract(redactedSbc, { modelId, apiKey }) {
       temperature: 0,
     },
   });
-  return JSON.parse(response.text);
+  return { data: JSON.parse(response.text), usage: usageOf(response) };
 }
