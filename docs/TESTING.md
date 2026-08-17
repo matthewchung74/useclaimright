@@ -34,7 +34,7 @@ Fixtures: `test-fixtures/` (regenerate HTML: `node test-fixtures/gen-series.mjs`
 1. A fresh account lands on the **onboarding screen** first: "Set up your plan" card (560px, teal top rule), payoff pitch with mono `$60`/`$175` figures, SBC dropzone with 📄, "What's an SBC?" explainer, and a centered "**Skip for now — audit a bill first**" link. Click **Skip**.
    ✓ The **Bills & coverage** page appears — this is home. The "**Audit a new bill**" card is the first thing on it, above "No bills audited yet…", so the primary action is never hidden behind the empty state. Scroll to "Your coverage": the **dashed one-line reminder** "No plan on file — add your Summary of Benefits · Add now" sits there (not a big card, not a gold banner).
 2. Click **Start an audit →**. ✓ The audit form appears with a "← Back to bills" link above the heading; step 1 (EOB) is the first big element and its explainer ("What's an EOB…") sits directly under it. Drag `fake-eob.pdf` onto the EOB zone, `fake-bill.pdf` onto the bill zone. ✓ One "✓ file ✕" row under each zone.
-3. Click **Prepare audit →**. ✓ Processing (first run: "Downloading privacy model… N%", ~1–2 min, one-time).
+3. Click **Prepare audit →**. ✓ Processing (first run: "Downloading privacy model… N%" — **~500MB, 1–3 min, one-time then cached**; the q4 weights, since this repo's smaller q8 build is broken).
 4. Review both tabs. ✓ Canary PHI chipped: Jane Q. Testpatient, DOB 03/14/1985, MRN TESTMRN-424242, AHX-55512345.
 5. Click **Looks right — analyze**.
    ✓ **The four totals cards** (observed 2026-08-10):
@@ -365,6 +365,7 @@ done
 
 ## Always-on checks (every pass)
 - **PHI canary:** every review chips Jane Q. Testpatient / 03/14/1985 / TESTMRN-424242 / AHX-55512345; "Hide selection" redacts across all open documents.
+- **NER is actually contributing:** the redacted pane should show placeholder types the labeled-field harvest and regex backstop cannot produce — `POSTCODE_n`, `TAX_ID_n`, `EMAIL_n`. If only NAME/DOB/MRN/ACCOUNT/PLAN_ID/SSN appear, the model is loading but detecting nothing (that was the q8 failure). `node functions/test/deid-live.mjs` fails loudly on the same condition.
 - **Originals destroyed at confirm** — reports and history never show unredacted values.
 - **Limits:** 11th audit → "Daily limit of 10 audits reached."; 4th plan upload → "Daily limit of 3 plan uploads reached."
 

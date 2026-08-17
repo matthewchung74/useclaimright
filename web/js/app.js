@@ -396,7 +396,7 @@ async function prepareAudit(billFile, eobFile, savedEob = null) {
         : `Using saved EOB: ${savedEob.label} — most recent in your library`);
     }
 
-    setStatus("Loading the privacy model (first run downloads ~90MB, cached after)…");
+    setStatus("Loading the privacy model (first run downloads ~500MB, cached after)…");
     const ner = await loadNer((p) => {
       if (p.status === "progress" && p.total) {
         setStatus(`Downloading privacy model… ${Math.round((p.loaded / p.total) * 100)}%`);
@@ -471,7 +471,7 @@ async function prepareBatch() {
     for (const d of docs) {
       if (d.file && d.file.size > 20e6) throw new Error(`${d.file.name} is over 20MB`);
     }
-    setStatus("Loading the privacy model (first run downloads ~90MB, cached after)…");
+    setStatus("Loading the privacy model (first run downloads ~500MB, cached after)…");
     const ner = await loadNer((p) => {
       if (p.status === "progress" && p.total) {
         setStatus(`Downloading privacy model… ${Math.round((p.loaded / p.total) * 100)}%`);
@@ -1349,7 +1349,7 @@ async function prepareSbc(file) {
     setStatus("Reading your Summary of Benefits…");
     const ex = await extractText(file);
     // Free duplicate check happens after redaction (compare redacted text).
-    setStatus("Loading the privacy model (first run downloads ~90MB, cached after)…");
+    setStatus("Loading the privacy model (first run downloads ~500MB, cached after)…");
     const ner = await loadNer((p) => {
       if (p.status === "progress" && p.total) setStatus(`Downloading privacy model… ${Math.round((p.loaded / p.total) * 100)}%`);
     });

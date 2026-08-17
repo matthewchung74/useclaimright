@@ -41,7 +41,9 @@ const KEEP = [
 ];
 
 console.log("Loading model (first run downloads it)...");
-const nerPipe = await pipeline("token-classification", MODEL, { dtype: "q8" });
+// Must match web/js/deid.js — a harness grading a different quantization than
+// the browser loads is how q8's broken weights went unnoticed.
+const nerPipe = await pipeline("token-classification", MODEL, { dtype: "q4" });
 const ner = (chunk, opts) => nerPipe(chunk, opts);
 
 // A no-op NER, so every run can separate what the model caught from what the
