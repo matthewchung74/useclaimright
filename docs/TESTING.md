@@ -8,7 +8,8 @@ Fixtures: `test-fixtures/` (regenerate HTML: `node test-fixtures/gen-series.mjs`
 
 **Budget — the full suite does NOT fit in one day.** Core plans (E1, M1–M6, D1, E2, E4–E7) cost **10 audits + 3 plan uploads**, exactly the daily ceiling, leaving no room for the rate-limit check. Optional **M7** adds 3 more. Run it as:
 
-- **Day 1 (core):** E1 → M1 → M2 → M3 → M4 → M5 → M6 → D1, then the zero-cost plans (E3, E5*, R1, F1). *E5 needs a plan upload.
+- **Day 1 (core):** E1 → **E1b** → M1 → M2 → M3 → M4 → M5 → M6 → D1, then the zero-cost plans (E3, E5*, R1, F1, R2). *E5 needs a plan upload.
+  **E1b is not optional and not movable:** it costs no audits, but it starts from E1's report and ends by clearing the files M1 needs gone, so it only works in that slot.
 - **Day 2 (edges):** M7, E2, E4, E6, E7, and the rate-limit check in Always-on.
 - Or use **☰ → Reset account** between passes: it clears data and returns you to onboarding, but **daily counters intentionally survive**, so it does not buy more audits.
 
