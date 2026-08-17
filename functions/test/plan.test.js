@@ -221,7 +221,9 @@ test("applyPlanGate: applies in-window (inclusive bounds), strips straggler plan
   assert.deepEqual(r.result.findings, [normalFinding]);
   assert.equal(r.result.totals.totalAtStake, 145.5);
 
-  // clamp: stragglers larger than the stated total never go negative
+  // stripping everything leaves nothing at stake. (Formerly a clamp against a
+  // negative subtraction; the total is now re-derived from the surviving
+  // findings, so there is no subtraction to go negative.)
   r = applyPlanGate(mk(["2025-06-01"], [{ type: "deductible_misapplied", amountAtStake: 999 }], 10), STRUCTURED);
   assert.equal(r.result.totals.totalAtStake, 0);
 

@@ -1,6 +1,8 @@
 // Plan (SBC) server-side pure logic: extraction schema + prompt, digest
 // builder, and the replace decision. Mirrors schema.js conventions.
 
+import { computeAtStake } from "./schema.js";
+
 const nullableNumber = { type: ["number", "null"] };
 const nullableString = { type: ["string", "null"] };
 const nullableBool = { type: ["boolean", "null"] };
@@ -116,15 +118,12 @@ export function applyPlanGate(result, structured) {
     } else planReason = "out_of_period";
   }
   if (!planApplied && (result.findings || []).some((f) => PLAN_FINDING_TYPES.has(f.type))) {
-    const dropped = result.findings.filter((f) => PLAN_FINDING_TYPES.has(f.type));
-    result = {
-      ...result,
-      findings: result.findings.filter((f) => !PLAN_FINDING_TYPES.has(f.type)),
-      totals: {
-        ...result.totals,
-        totalAtStake: Math.max(0, result.totals.totalAtStake - dropped.reduce((s, f) => s + (f.amountAtStake || 0), 0)),
-      },
-    };
+    const kept = result.findings.filter((f) => !PLAN_FINDING_TYPES.has(f.type));
+    // Re-derive from what survives rather than subtracting from the model's
+    // figure. Subtracting was a second, weaker formula for the same number: it
+    // inherited whatever the model asserted, so it kept advisory findings in the
+    // total that computeAtStake excludes. One formula, one place.
+    result = { ...result, findings: kept, totals: { ...result.totals, totalAtStake: computeAtStake(kept) } };
   }
   return { planApplied, planReason, result };
 }
