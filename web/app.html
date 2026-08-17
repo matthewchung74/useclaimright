@@ -147,6 +147,11 @@
   .cta-card{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
   .cta-card .btn{margin-left:auto}
   #cta-eob{font-size:13px}
+  /* Remaining audits: mono, because it is a count the user is spending. Muted
+     until it runs low, then it earns attention — never alarming at 10/10. */
+  #cta-quota{font-family:ui-monospace,Menlo,monospace;font-size:13px;color:var(--ink-soft)}
+  #cta-quota.low{color:var(--gold);font-weight:700}
+  #cta-quota.out{color:var(--bad);font-weight:700}
   .back-link{color:var(--brand-dark);font-size:14px;text-decoration:none}
   .back-link:hover{text-decoration:underline}
   .just-block{background:#fff;border:1px solid var(--line);border-radius:12px;margin:14px 0;overflow:hidden}
@@ -296,6 +301,7 @@
         <div class="muted">Personal details are removed on your device before anything is analyzed.</div>
       </div>
       <span class="muted" id="cta-eob"></span>
+      <span id="cta-quota"></span>
       <button id="go-audit" class="btn">Start an audit →</button>
     </div>
 

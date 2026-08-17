@@ -55,9 +55,16 @@ if (!EMULATOR) {
     await assertFails(alice.doc("users/alice/audits/a2").update({ findings: [{ fake: true }] }));
   });
 
-  test("clients cannot touch rate-limit counters", async () => {
-    await assertFails(alice.doc("users/alice/meta/usage").get());
+  test("owner reads their own rate-limit counter but can never write it", async () => {
+    // Read is allowed so the app can show remaining audits; a client that could
+    // write would simply zero the count and audit without limit.
+    await assertSucceeds(alice.doc("users/alice/meta/usage").get());
     await assertFails(alice.doc("users/alice/meta/usage").set({ count: 0 }));
+    await assertFails(alice.doc("users/alice/meta/usage").update({ count: 0 }));
+  });
+
+  test("another user's counter stays unreadable", async () => {
+    await assertFails(mallory.doc("users/alice/meta/usage").get());
   });
 
   test("owner can create, read, and delete their trackers", async () => {

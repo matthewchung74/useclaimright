@@ -24,8 +24,12 @@ service cloud.firestore {
       allow create, update: if false;
     }
     // Rate-limit counters are Function-managed; clients never touch them.
+    // Rate-limit counters are Function-managed. The owner may READ their own so
+    // the app can show "N audits left today" before they hit the wall; writes
+    // stay denied so the count can never be reset from the client.
     match /users/{uid}/meta/{docId} {
-      allow read, write: if false;
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow write: if false;
     }
     // In-app feedback is written exclusively by the submitFeedback Function;
     // read in the console. No client access at all.
