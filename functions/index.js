@@ -3,7 +3,7 @@ import { defineSecret } from "firebase-functions/params";
 import { initializeApp } from "firebase-admin/app";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import Ajv from "ajv";
-import { findingsSchema } from "./schema.js";
+import { findingsSchema, computeAtStake } from "./schema.js";
 import { runAudit, runPlanExtract } from "./providers/gemini.js";
 import { planSchema, buildDigest, replaceDecision, applyPlanGate } from "./plan.js";
 import { validateFeedback } from "./feedback.js";
@@ -148,6 +148,11 @@ export const analyze = onCall(
     const gated = applyPlanGate(result, plan?.structured ?? null);
     result = gated.result;
     const { planApplied, planReason } = gated;
+
+    // The headline number is ours to compute, not the model's to assert: it must
+    // equal the findings actually shown, minus advisory ones. Runs after the
+    // plan gate so stripped plan findings are already gone.
+    result = { ...result, totals: { ...result.totals, totalAtStake: computeAtStake(result.findings) } };
 
     const auditRef = db.collection(`users/${uid}/audits`).doc();
     await auditRef.set({
