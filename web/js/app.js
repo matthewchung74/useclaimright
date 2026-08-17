@@ -172,6 +172,31 @@ $("skip-onboarding").onclick = (e) => {
   show("bills");
 };
 
+// The daily caps exist because the app is free and every audit is a real model
+// call we pay for. A one-line red error made that read as a malfunction, so the
+// limit gets its own dialog that says what the cap is and why it exists.
+// Server counters roll over on the UTC date (functions/index.js checkRateLimit),
+// so the reset is shown in the user's own timezone rather than as "UTC".
+function showLimitDialog(kind) {
+  const audits = kind !== "plans";
+  const reset = new Date();
+  reset.setUTCHours(24, 0, 0, 0);
+  const sameDayLocal = reset.toDateString() === new Date().toDateString();
+  $("ld-title").textContent = audits ? "That's today's 10 audits" : "That's today's 3 plan uploads";
+  $("ld-lead").innerHTML = audits
+    ? `UseClaimRight is free, and every audit is a real AI reading of your documents line by line —
+       which costs us money each time. Capping it at <b>10 a day</b> is what keeps it free for
+       everyone, and stops an automated script from running the bill up.`
+    : `Reading a Summary of Benefits is the same kind of paid AI call as an audit, so plan uploads
+       get their own smaller cap of <b>3 a day</b>. You only need one per plan year, so this is
+       usually only hit while testing.`;
+  $("ld-reset-local").textContent =
+    reset.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) +
+    (sameDayLocal ? " today" : ` on ${reset.toLocaleDateString([], { weekday: "long" })}`);
+  const dlg = $("limit-dialog");
+  if (typeof dlg.showModal === "function") dlg.showModal();
+}
+
 function setError(id, msg) {
   const el = $(id);
   el.textContent = msg;
@@ -566,6 +591,7 @@ async function runBatch() {
     show("bills");
   } catch (e) {
     console.error(e);
+    if (e.code === "functions/resource-exhausted") showLimitDialog("audits");
     setError("upload-error",
       `Audit ${batchIndex + 1} of ${total} failed: ${e.code === "functions/resource-exhausted" ? e.message : "analysis error — please try again."} The remaining documents are back below.`);
     show("upload");
@@ -746,6 +772,7 @@ $("confirm-review").onclick = async () => {
     renderReportUsage(data);
   } catch (e) {
     console.error(e);
+    if (e.code === "functions/resource-exhausted") showLimitDialog("audits");
     setError("upload-error",
       e.code === "functions/resource-exhausted" ? e.message : "Analysis failed — please try again.");
     show("upload");
@@ -756,6 +783,8 @@ $("confirm-review").onclick = async () => {
 $("back-to-upload").onclick = () => { resetState(); show("upload"); };
 
 $("go-audit").onclick = () => { resetState(); show("upload"); };
+$("ld-close").onclick = () => $("limit-dialog").close();
+$("ld-bills").onclick = () => { $("limit-dialog").close(); show("bills"); };
 for (const el of document.querySelectorAll(".back-link")) {
   el.onclick = (e) => { e.preventDefault(); show("bills"); };
 }
@@ -1407,6 +1436,7 @@ async function runSbcExtraction(force = false) {
     $("plan-card").scrollIntoView({ behavior: "smooth" });
   } catch (e) {
     console.error(e);
+    if (e.code === "functions/resource-exhausted") showLimitDialog("plans");
     setError(sbcErrTarget(), e.code === "functions/resource-exhausted" || e.code === "functions/invalid-argument"
       ? e.message : "Plan extraction failed — please try again.");
     show(state.sbcOrigin); setBatchLabels(null);
