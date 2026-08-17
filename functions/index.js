@@ -4,6 +4,7 @@ import { initializeApp } from "firebase-admin/app";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import Ajv from "ajv";
 import { findingsSchema, computeAtStake } from "./schema.js";
+import { addUsage, estimateCostUsd } from "./cost.js";
 import { runAudit, runPlanExtract } from "./providers/gemini.js";
 import { planSchema, buildDigest, replaceDecision, applyPlanGate } from "./plan.js";
 import { validateFeedback } from "./feedback.js";
@@ -123,18 +124,23 @@ export const analyze = onCall(
     // it is a derived view of `structured`, so a stored one silently freezes the
     // format the day the SBC was uploaded and no fix reaches existing plans.
     const planDigest = plan?.structured ? buildDigest(plan.structured) : plan?.digest || null;
-    let result;
+    let result, usage = null;
     try {
-      result = await runAudit(redactedBill, redactedEob, opts, planDigest);
+      const first = await runAudit(redactedBill, redactedEob, opts, planDigest);
+      usage = addUsage(null, first.usage);
+      result = first.data;
       if (!validate(result)) {
         // One retry with the validation errors appended so the model can self-correct.
+        // It bills a second time, which is why usage accumulates rather than replaces.
         const errText = ajv.errorsText(validate.errors);
-        result = await runAudit(
+        const retry = await runAudit(
           redactedBill,
           `${redactedEob}\n\n[SYSTEM NOTE: your previous response failed schema validation: ${errText}. Return valid JSON matching the schema exactly.]`,
           opts,
           planDigest
         );
+        usage = addUsage(usage, retry.usage);
+        result = retry.data;
         if (!validate(result)) {
           throw new HttpsError("internal", "Analysis produced invalid output. Please try again.");
         }
@@ -154,6 +160,12 @@ export const analyze = onCall(
     // plan gate so stripped plan findings are already gone.
     result = { ...result, totals: { ...result.totals, totalAtStake: computeAtStake(result.findings) } };
 
+    // What this audit actually cost, in the log and on the document. Counts are
+    // the durable record; the dollar figure is derived at read time from a
+    // price list that changes.
+    const costUsd = estimateCostUsd(usage, MODEL_ID);
+    console.log("audit usage", { uid, model: MODEL_ID, ...usage, costUsd });
+
     const auditRef = db.collection(`users/${uid}/audits`).doc();
     await auditRef.set({
       redactedBill,
@@ -166,6 +178,7 @@ export const analyze = onCall(
       payerRemarks: result.payerRemarks,
       accumulators: result.accumulators,
       model: MODEL_ID,
+      tokens: usage, // {input, output, total, calls} — calls > 1 means a retry billed twice
       ocrConfidence: typeof ocrConfidence === "number" ? ocrConfidence : null,
       planApplied,
       planReason,
@@ -195,19 +208,24 @@ export const extractPlan = onCall(
     await checkPlanRateLimit(uid);
 
     const opts = { modelId: MODEL_ID, apiKey: GEMINI_API_KEY.value() };
-    let structured;
+    let structured, planUsage = null;
     try {
-      structured = await runPlanExtract(redactedSbc, opts);
+      const first = await runPlanExtract(redactedSbc, opts);
+      planUsage = addUsage(null, first.usage);
+      structured = first.data;
       if (!validatePlan(structured)) {
         const errText = ajv.errorsText(validatePlan.errors);
-        structured = await runPlanExtract(
+        const retry = await runPlanExtract(
           `${redactedSbc}\n\n[SYSTEM NOTE: your previous response failed schema validation: ${errText}. Return valid JSON matching the schema exactly.]`,
           opts
         );
+        planUsage = addUsage(planUsage, retry.usage);
+        structured = retry.data;
         if (!validatePlan(structured)) {
           throw new HttpsError("internal", "Plan extraction produced invalid output. Please try again.");
         }
       }
+      console.log("plan usage", { uid, model: MODEL_ID, ...planUsage, costUsd: estimateCostUsd(planUsage, MODEL_ID) });
     } catch (err) {
       if (err instanceof HttpsError) throw err;
       console.error("runPlanExtract failed", { uid, model: MODEL_ID, message: err.message });
@@ -235,7 +253,7 @@ export const extractPlan = onCall(
     await ref.set({
       structured, digest, redactedText: redactedSbc,
       sourceName: typeof sourceName === "string" ? sourceName.slice(0, 200) : "",
-      model: MODEL_ID, createdAt: FieldValue.serverTimestamp(),
+      model: MODEL_ID, tokens: planUsage, createdAt: FieldValue.serverTimestamp(),
     });
     return { status: "stored", structured, digest };
   }
