@@ -838,13 +838,13 @@ function renderReport(data, { ocrLow, model, planApplied, planReason, pairUnrela
   if (showPairWarn) {
     // Say which evidence fired: "every line missing" is untrue when the trigger
     // was two documents that simply don't correspond.
-    $("report-pair-warning").innerHTML = pairUnrelated
-      ? `⚠️ <b>This EOB may not cover this bill.</b> They share no service dates and no procedure codes,
-         so charges here may be marked "missing from the EOB" only because your insurer never processed
-         this bill. Check you paired the right EOB before acting on the total below.`
-      : `⚠️ <b>Every line on this bill came back missing from the EOB.</b>
-         That usually means these two documents don't go together — check you paired the right EOB before
-         acting on the total below.`;
+    const why = pairUnrelated
+      ? `<b>This EOB may not cover this bill.</b> They share no service dates and no procedure codes,
+         so charges here may be marked "missing from the EOB" only because your insurer never processed this bill.`
+      : `<b>Every line on this bill came back missing from the EOB.</b>
+         That usually means these two documents don't go together.`;
+    $("report-pair-warning").innerHTML =
+      `⚠️ ${why} Check you paired the right EOB before acting on the total below.`;
   }
 
   $("report-totals").innerHTML = `
