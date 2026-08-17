@@ -146,7 +146,12 @@
   .bill-row .rm{border:none;background:none;cursor:pointer;color:var(--bad);font-size:14px}
   .cta-card{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
   .cta-card .btn{margin-left:auto}
+  /* One left-hand column: title, privacy line, EOB on file, audits left —
+     each on its own line under the description rather than sharing a cramped
+     baseline row with the button. */
+  .cta-text{display:flex;flex-direction:column;gap:4px}
   #cta-eob{font-size:13px}
+  #cta-eob:empty,#cta-quota:empty{display:none}
   /* Remaining audits: mono, because it is a count the user is spending. Muted
      until it runs low, then it earns attention — never alarming at 10/10. */
   #cta-quota{font-family:ui-monospace,Menlo,monospace;font-size:13px;color:var(--ink-soft)}
@@ -296,12 +301,12 @@
     <p class="muted" id="dash-subtitle" style="margin-bottom:14px"></p>
 
     <div class="card cta-card">
-      <div>
+      <div class="cta-text">
         <b>Audit a new bill</b>
         <div class="muted">Personal details are removed on your device before anything is analyzed.</div>
+        <div class="muted" id="cta-eob"></div>
+        <div id="cta-quota"></div>
       </div>
-      <span class="muted" id="cta-eob"></span>
-      <span id="cta-quota"></span>
       <button id="go-audit" class="btn">Start an audit →</button>
     </div>
 
