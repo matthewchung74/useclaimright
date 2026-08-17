@@ -726,7 +726,8 @@ $("confirm-review").onclick = async () => {
   try {
     const { data } = await analyzeFn(payload);
     lastAuditId = data.auditId || null;
-    renderReport(data, { ocrLow, model: data.model, planApplied: data.planApplied, planReason: data.planReason });
+    renderReport(data, { ocrLow, model: data.model, planApplied: data.planApplied, planReason: data.planReason,
+      pairUnrelated: unrelatedPair(payload.redactedBill, payload.redactedEob) });
     show("report");
     track("audit_completed");
     if (state.eob && !state.eob.saved && $("save-eob").checked) {
@@ -807,22 +808,34 @@ $("fb-send").onclick = async () => {
 
 const PLAN_TYPES = new Set(["copay_mismatch", "coinsurance_mismatch", "deductible_misapplied", "not_covered_per_plan"]);
 
-function renderReport(data, { ocrLow, model, planApplied, planReason } = {}) {
+function renderReport(data, { ocrLow, model, planApplied, planReason, pairUnrelated } = {}) {
   const { findings = [], totals = {}, occurrenceTable = [] } = data;
   lastReport = { findings, totals, occurrenceTable };
   $("email-card").hidden = true;
 
   $("report-caveat").hidden = !ocrLow;
 
-  // Backstop for a mismatched pair that got past the pre-send warning: if every
-  // finding is "missing from the EOB", the documents almost certainly don't
-  // correspond — say so before the user reads the total as money owed to them.
+  // Backstop for a mismatched pair that got past the pre-send warning.
+  //
+  // "Every finding is not_in_eob" alone proved too narrow: a real mismatched
+  // pair also yields bill-only findings (a duplicate line, a charity-care
+  // flag), so the E6 fixture reported $2,260.50 with no warning at all. The
+  // decisive evidence is the same one the pre-send banner uses — whether the
+  // two documents share any dates or codes — so it is carried through here.
+  const anyMissing = findings.some((f) => f.type === "not_in_eob");
   const allMissing = findings.length >= 2 && findings.every((f) => f.type === "not_in_eob");
-  $("report-pair-warning").hidden = !allMissing;
-  if (allMissing) {
-    $("report-pair-warning").innerHTML = `⚠️ <b>Every line on this bill came back missing from the EOB.</b>
-      That usually means these two documents don't go together — check you paired the right EOB before
-      acting on the total below.`;
+  const showPairWarn = anyMissing && (pairUnrelated || allMissing);
+  $("report-pair-warning").hidden = !showPairWarn;
+  if (showPairWarn) {
+    // Say which evidence fired: "every line missing" is untrue when the trigger
+    // was two documents that simply don't correspond.
+    $("report-pair-warning").innerHTML = pairUnrelated
+      ? `⚠️ <b>This EOB may not cover this bill.</b> They share no service dates and no procedure codes,
+         so charges here may be marked "missing from the EOB" only because your insurer never processed
+         this bill. Check you paired the right EOB before acting on the total below.`
+      : `⚠️ <b>Every line on this bill came back missing from the EOB.</b>
+         That usually means these two documents don't go together — check you paired the right EOB before
+         acting on the total below.`;
   }
 
   $("report-totals").innerHTML = `
@@ -1025,12 +1038,22 @@ function summarizeFindings(findings) {
   return labels.slice(0, 2).join(" · ") + (labels.length > 2 ? ` +${labels.length - 2}` : "");
 }
 
+// True when a bill and EOB share no service dates and no procedure codes, i.e.
+// they very likely don't belong together. Unreadable documents return related,
+// so a doc we couldn't parse never raises a false alarm.
+function unrelatedPair(billText, eobText) {
+  if (!billText || !eobText) return false;
+  const rel = documentsRelated(billText, eobText);
+  return !rel.related && rel.confident;
+}
+
 async function openAudit(id) {
   const full = await getDoc(doc(db, `users/${auth.currentUser.uid}/audits/${id}`));
   const data = full.data();
   renderReport(data, {
     ocrLow: (data.ocrConfidence ?? 100) < OCR_CONFIDENCE_THRESHOLD,
     planApplied: data.planApplied, planReason: data.planReason,
+    pairUnrelated: unrelatedPair(data.redactedBill, data.redactedEob),
   });
   renderReportUsage(data);
   show("report");
