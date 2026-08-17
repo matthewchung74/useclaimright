@@ -1,7 +1,11 @@
 # Upstream bug report — OpenMed-PII-SuperClinical ONNX variants
 
-**Where to post:** https://huggingface.co/onnx-community/OpenMed-PII-SuperClinical-Base-184M-v1-ONNX/discussions/new
-**Status:** drafted 2026-08-16, not yet posted (needs a Hugging Face account).
+**FILED:** https://github.com/huggingface/transformers.js/issues/1749 (2026-08-16, as matthewchung74)
+
+Filed against the library repo rather than the model's Hugging Face discussions —
+these are conversion-tooling defects, and #1707 there is a near-identical report
+about another `onnx-community` q8 artifact. The text below is the original draft;
+the filed issue is the same content with a size table and a pointer to #1707.
 
 Paste everything below the line as the discussion body. Title:
 
@@ -15,9 +19,13 @@ Reporting three broken variants, since two of them fail *silently* and cost us a
 
 ## Environment
 
-- `@huggingface/transformers` 4.2.0 (also reproduced in-browser via the jsDelivr build)
+- `@huggingface/transformers` 4.2.0
 - `onnxruntime-node` 1.24.3
 - Node v23.6.1, macOS (Darwin arm64)
+
+All three failures below were reproduced in Node. The `q8` behaviour and the
+`q4` fix were additionally confirmed in-browser with the same library version
+loaded from jsDelivr; `fp16` and `q4f16` were not retested in a browser.
 
 ## Summary
 
