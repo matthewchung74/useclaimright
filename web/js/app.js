@@ -1019,6 +1019,37 @@ let allTrackers = []; // {id, label, codes, limit, planYearStartMonth}
 const isoDate = (d) => d.toISOString().slice(0, 10);
 const todayISO = () => isoDate(new Date());
 
+// Mirrors DAILY_LIMIT in functions/index.js. The server is the authority — this
+// is only for showing what is left, so a drift here costs a wrong label, never
+// a wrong decision: the callable still rejects the 11th audit either way.
+const DAILY_AUDIT_LIMIT = 10;
+
+// Show what's left before the wall, not only at it. The counter is
+// Function-owned and read-only to clients; it rolls over on the UTC date, so a
+// stored day that isn't today means the allowance is untouched.
+async function renderQuota() {
+  const el = $("cta-quota");
+  if (!el || !auth.currentUser) return;
+  let used = 0;
+  try {
+    const snap = await getDoc(doc(db, `users/${auth.currentUser.uid}/meta/usage`));
+    const d = snap.exists() ? snap.data() : null;
+    if (d && d.day === todayUtc()) used = d.count || 0;
+  } catch {
+    el.textContent = ""; // never let a counter read block the page
+    return;
+  }
+  const left = Math.max(0, DAILY_AUDIT_LIMIT - used);
+  el.textContent = left === 0
+    ? `0 of ${DAILY_AUDIT_LIMIT} audits left today`
+    : `${left} of ${DAILY_AUDIT_LIMIT} audits left today`;
+  el.className = left === 0 ? "out" : left <= 3 ? "low" : "";
+}
+
+// The server counts by UTC date (checkRateLimit), so the client must too —
+// todayISO() is local and would roll over at the wrong moment.
+const todayUtc = () => new Date().toISOString().slice(0, 10);
+
 async function loadHistory() {
   const user = auth.currentUser;
   if (!user) return;
@@ -1050,6 +1081,7 @@ async function loadHistory() {
     });
   });
   renderDashboard();
+  renderQuota();
   renderUsage();
 }
 
