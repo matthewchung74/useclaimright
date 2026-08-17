@@ -343,12 +343,19 @@ $("run-audit").onclick = async () => {
   if (!audits) {
     return setError("upload-error", "The itemized bill is required.");
   }
+  // Every bill that would run without an EOB needs an explicit acknowledgement.
+  // This used to sit inside the single-audit branch, so a batch of two bills
+  // with no EOB skipped the check entirely and audited them bill-only in
+  // silence — spending the day's allowance on the weakest kind of audit.
+  if (billOnly.length && !savedEob && !skipEob) {
+    return setError("upload-error", billOnly.length === audits
+      ? "Add your EOB (step 1), pick a saved one, or check “I don't have an EOB”."
+      : `${billOnly.length} of these bills ${billOnly.length === 1 ? "has" : "have"} no matching EOB. ` +
+        "Add the missing EOB, pick a saved one, or check “I don't have an EOB”.");
+  }
   if (audits === 1) {
     const billFile = (pairs[0]?.bill ?? billOnly[0]).file;
     const eobFile = pairs[0]?.eob.file ?? null;
-    if (!eobFile && !savedEob && !skipEob) {
-      return setError("upload-error", "Add your EOB (step 1), pick a saved one, or check “I don't have an EOB”.");
-    }
     return prepareAudit(billFile, eobFile, eobFile ? null : savedEob);
   }
   batchQueue = [
@@ -997,10 +1004,16 @@ async function loadHistory() {
 
 // Cheap, stable identity for a bill's redacted text (djb2). Two audits of the
 // same paper share it; two genuinely different statements do not.
+//
+// Whitespace and case are normalized first: the SAME document extracted from
+// HTML and from PDF differs in spacing, and without this those two extractions
+// get different keys — which reads to crossBillDuplicates() as one charge on
+// two statements and produces a duplicate finding for a bill that exists once.
 function billKeyOf(text) {
   if (!text) return "";
+  const norm = text.toLowerCase().replace(/\s+/g, " ").trim();
   let h = 5381;
-  for (let i = 0; i < text.length; i++) h = ((h << 5) + h + text.charCodeAt(i)) | 0;
+  for (let i = 0; i < norm.length; i++) h = ((h << 5) + h + norm.charCodeAt(i)) | 0;
   return `b${h >>> 0}`;
 }
 
