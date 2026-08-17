@@ -21,7 +21,10 @@
   .logo .mark{width:26px;height:26px;border-radius:7px;background:linear-gradient(135deg,var(--brand),var(--brand-dark));
     display:inline-flex;align-items:center;justify-content:center;color:#fff;font-size:15px;font-weight:800}
   [hidden]{display:none!important}
-  .btn{display:inline-block;background:var(--brand);color:#fff;font-weight:700;padding:12px 22px;border-radius:10px;
+  /* font-family too: buttons do not inherit it, so every .btn was rendering in
+     the browser default (Arial) while the rest of the app used the system stack. */
+  .btn{display:inline-block;background:var(--brand);color:#fff;font-family:inherit;font-weight:700;
+    padding:12px 22px;border-radius:10px;
     border:none;cursor:pointer;font-size:15px;transition:.15s;box-shadow:0 2px 0 var(--brand-dark)}
   .btn:hover{background:var(--brand-dark)}
   .btn.ghost{background:transparent;color:var(--brand-dark);box-shadow:none;border:1px solid var(--line)}
@@ -329,11 +332,22 @@
     <h1>Audit a medical bill</h1>
     <p class="lead">Personal details are removed <b>on your device</b> before anything is analyzed — you'll review exactly what gets sent.</p>
     <div class="card">
-      <div class="step-row"><span class="step-n">1</span><div><b>Add the EOB from your insurance</b><div class="muted">The EOB is the answer key — it says what your plan allowed and what you actually owe.</div></div></div>
+      <div class="step-row"><span class="step-n">1</span><div><b>Add your bill</b><div class="muted">The one from the hospital or doctor asking you for money. Ask for the <b>itemized</b> version — line by line, not just a total. Several bills? Add them all; each becomes its own audit.</div></div></div>
+      <div class="dropzones" style="grid-template-columns:1fr">
+        <label class="dz" id="dz-bill">
+          <span class="ico">🧾</span>
+          <b>Your bill</b>
+          <div class="hint">Drop one or more files, or click to choose<br>PDF, photo, HTML, or text · up to 20MB</div>
+          <input id="bill-file" type="file" multiple accept="application/pdf,image/*,text/html,.html,.htm,text/plain,.txt">
+        </label>
+      </div>
+      <div id="bill-list"></div>
+
+      <div class="step-row" style="margin-top:22px"><span class="step-n">2</span><div><b>Add the letter from your insurance, if you have it</b><div class="muted">The one headed “this is not a bill” — it says what your plan allowed and what you actually owe. It's the answer key we check the bill against. No luck finding it? Tick the box below and we'll audit the bill on its own.</div></div></div>
       <div class="dropzones" style="grid-template-columns:1fr">
         <label class="dz" id="dz-eob">
           <span class="ico">📋</span>
-          <b>EOB (Explanation of Benefits)</b>
+          <b>Insurance letter (EOB)</b>
           <div class="hint">Drop one or more files, or click to choose<br>PDF, photo, HTML, or text · up to 20MB</div>
           <div class="picked" id="eob-picked"></div>
           <input id="eob-file" type="file" multiple accept="application/pdf,image/*,text/html,.html,.htm,text/plain,.txt">
@@ -363,16 +377,6 @@
         <p><b>The itemized bill</b> comes from your provider: their portal → <i>Billing</i> → request or download the <i>itemized statement</i> (line-by-line charges with codes — not just a total).</p>
       </details>
 
-      <div class="step-row" style="margin-top:22px"><span class="step-n">2</span><div><b>Add your itemized bill</b><div class="muted">From the hospital or doctor — the line-by-line version with codes, not just a total. Several bills? Add them all — each becomes its own audit.</div></div></div>
-      <div class="dropzones" style="grid-template-columns:1fr">
-        <label class="dz" id="dz-bill">
-          <span class="ico">🧾</span>
-          <b>Itemized bill</b>
-          <div class="hint">Drop one or more files, or click to choose<br>PDF, photo, HTML, or text · up to 20MB</div>
-          <input id="bill-file" type="file" multiple accept="application/pdf,image/*,text/html,.html,.htm,text/plain,.txt">
-        </label>
-      </div>
-      <div id="bill-list"></div>
       <p class="muted" style="margin-top:8px">With several documents we pair each bill to its EOB by filename, review all redactions once, then run the audits back to back.</p>
 
       <p class="banner">📄 <b>Best results with digital PDFs</b> downloaded from your portals. Photos and scans work, but reading accuracy may suffer — check the review screen carefully.</p>
