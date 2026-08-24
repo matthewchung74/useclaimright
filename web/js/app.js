@@ -15,7 +15,6 @@ import { getFunctions, httpsCallable, connectFunctionsEmulator } from "https://w
 import { getAnalytics, logEvent } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-analytics.js";
 import { firebaseConfig } from "./firebase-config.js";
 import { extractText } from "./extract.js";
-import { loadNer, deidentify, createRegistry, manualRedact } from "./deid.js";
 import { pairFiles, classifyFile, uniqueDocs } from "./batch.js";
 import { planYearStartMonthFrom, mergeSbcTrackers, deductibleTarget, oopTarget } from "./plan.js";
 import { crossBillDuplicates, runningTotals, groupAuditsByProvider, splitJustAudited } from "./crossbill.js";
@@ -211,8 +210,7 @@ let state = null;
 
 function resetState() {
   state = {
-    registry: createRegistry(),
-    bill: null, // {originalText, redacted, method, confidence}
+    bill: null, // {text, previews, method, confidence}
     eob: null,
     activeDoc: "bill",
   };
@@ -401,7 +399,7 @@ $("run-audit").onclick = async () => {
   prepareBatch();
 };
 
-// eobFile: freshly uploaded File; savedEob: library entry (already redacted).
+// eobFile: freshly uploaded File; savedEob: library entry (text already stored).
 // At most one is non-null; both null means bill-only.
 async function prepareAudit(billFile, eobFile, savedEob = null) {
   setBatchLabels(null);
@@ -430,22 +428,12 @@ async function prepareAudit(billFile, eobFile, savedEob = null) {
         : `Using saved EOB: ${savedEob.label} — most recent in your library`);
     }
 
-    setStatus("Loading the privacy model (first run downloads ~500MB, cached after)…");
-    const ner = await loadNer((p) => {
-      if (p.status === "progress" && p.total) {
-        setStatus(`Downloading privacy model… ${Math.round((p.loaded / p.total) * 100)}%`);
-      }
-    });
-
-    setStatus("Hiding your personal information — on your device…");
-    state.bill = { originalText: bill.text, previews: bill.previews, method: bill.method, confidence: bill.confidence };
-    state.bill.redacted = (await deidentify(bill.text, ner, state.registry)).redacted;
+    state.bill = { text: bill.text, previews: bill.previews, method: bill.method, confidence: bill.confidence };
     if (savedEob) {
-      // Library EOB: already redacted in a previous session; original never stored.
-      state.eob = { originalText: null, previews: null, saved: true, confidence: 100, redacted: savedEob.redactedText };
+      // Library EOB: text stored from a previous session; the file itself was never kept.
+      state.eob = { text: savedEobText(savedEob), previews: null, saved: true, confidence: 100 };
     } else if (eob) {
-      state.eob = { originalText: eob.text, previews: eob.previews, method: eob.method, confidence: eob.confidence };
-      state.eob.redacted = (await deidentify(eob.text, ner, state.registry)).redacted;
+      state.eob = { text: eob.text, previews: eob.previews, method: eob.method, confidence: eob.confidence };
     } else {
       state.eob = null;
     }
@@ -485,14 +473,10 @@ function showPairWarning(pairs) {
 }
 
 function resetStatePreservingFiles() {
-  state = { registry: createRegistry(), bill: null, eob: null, activeDoc: "bill" };
-  redactUndoStack = [];
-  setRedactStatus("");
-  $("hide-chip").hidden = true;
+  state = { bill: null, eob: null, activeDoc: "bill" };
 }
 
-// Review-all batch flow: every unique document is extracted and redacted up
-// front (one shared registry, so placeholders match across documents), the
+// Review-all batch flow: every unique document is extracted up front, the
 // user reviews them all once, then the audits run without pausing.
 async function prepareBatch() {
   resetStatePreservingFiles();
@@ -505,24 +489,17 @@ async function prepareBatch() {
     for (const d of docs) {
       if (d.file && d.file.size > 20e6) throw new Error(`${d.file.name} is over 20MB`);
     }
-    setStatus("Loading the privacy model (first run downloads ~500MB, cached after)…");
-    const ner = await loadNer((p) => {
-      if (p.status === "progress" && p.total) {
-        setStatus(`Downloading privacy model… ${Math.round((p.loaded / p.total) * 100)}%`);
-      }
-    });
     const prepared = [];
     for (const [i, d] of docs.entries()) {
       if (d.savedEob) {
         prepared.push({ name: `saved: ${d.savedEob.label}`, kind: "eob", saved: true,
-          savedEob: d.savedEob, confidence: 100, redacted: d.savedEob.redactedText });
+          savedEob: d.savedEob, confidence: 100, text: savedEobText(d.savedEob) });
         continue;
       }
-      setStatus(`Hiding personal info in ${d.file.name} (${i + 1} of ${docs.length}) — on your device…`);
+      setStatus(`Reading ${d.file.name} (${i + 1} of ${docs.length})…`);
       const ex = await extractText(d.file);
-      const redacted = (await deidentify(ex.text, ner, state.registry)).redacted;
-      prepared.push({ file: d.file, name: d.file.name, kind: d.kind, originalText: ex.text,
-        previews: ex.previews, method: ex.method, confidence: ex.confidence, redacted });
+      prepared.push({ file: d.file, name: d.file.name, kind: d.kind,
+        previews: ex.previews, method: ex.method, confidence: ex.confidence, text: ex.text });
     }
     batchDocs = prepared;
     batchDocIndex = 0;
@@ -533,7 +510,7 @@ async function prepareBatch() {
       .filter((it) => it.eob)
       .map((it) => ({
         name: it.bill.name,
-        rel: documentsRelated(byFileDoc.get(it.bill)?.originalText || "", byFileDoc.get(it.eob)?.originalText || ""),
+        rel: documentsRelated(byFileDoc.get(it.bill)?.text || "", byFileDoc.get(it.eob)?.text || ""),
       })));
     $("save-eob").checked = true;
     $("save-eob-wrap").hidden = !batchDocs.some((d) => d.kind === "eob" && !d.saved);
@@ -550,11 +527,11 @@ async function prepareBatch() {
   }
 }
 
-// The uninterrupted run after the combined review: originals are destroyed
+// The uninterrupted run after the combined review: page images are released
 // first, then each audit is sent in turn. On failure the unprocessed
 // remainder (including the failed item) goes back to the pairing panel.
 async function runBatch() {
-  for (const d of batchDocs) { d.originalText = null; d.previews = null; }
+  for (const d of batchDocs) { d.previews = null; }
   $("original-pane").textContent = "";
   const byFile = new Map(batchDocs.filter((d) => d.file).map((d) => [d.file, d]));
   const bySaved = new Map(batchDocs.filter((d) => d.savedEob).map((d) => [d.savedEob.id, d]));
@@ -567,15 +544,15 @@ async function runBatch() {
       const eobDoc = it.eob ? byFile.get(it.eob) : it.savedEob ? bySaved.get(it.savedEob.id) : null;
       setStatus(`Analyzing audit ${batchIndex + 1} of ${total} — ${it.bill.name}…`);
       const payload = {
-        redactedBill: billDoc.redacted,
-        redactedEob: eobDoc ? eobDoc.redacted : "",
+        bill: billDoc.text,
+        eob: eobDoc ? eobDoc.text : "",
         ocrConfidence: Math.min(billDoc.confidence, eobDoc ? eobDoc.confidence : 100),
       };
       const { data } = await analyzeFn(payload);
       lastAuditId = data.auditId || null;
       if (data.auditId) justAuditedIds.push(data.auditId);
       if (eobDoc && !eobDoc.saved && $("save-eob").checked) {
-        await maybeSaveEob(eobDoc.redacted, data);
+        await maybeSaveEob(eobDoc.text, data);
         eobDoc.saved = true; // shared EOB: save once, not once per audit
       }
       track("audit_completed");
@@ -610,11 +587,12 @@ const tidy = (s) => (s ?? "").replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\
 
 function renderReview() {
   const docState = batchDocs ? batchDocs[batchDocIndex] : state[state.activeDoc];
-  // Original pane: show the ACTUAL document (rendered pages) when we have it —
-  // far easier to read than extracted text. Falls back to text for HTML/txt.
+  // Left pane: the ACTUAL document (rendered pages) when we have it, so the
+  // text on the right can be checked against it. This is the only place a bad
+  // OCR pass is catchable before an audit is spent on it.
   const orig = $("original-pane");
   if (docState.saved) {
-    orig.textContent = "This is a saved EOB — it was redacted when you first uploaded it, and the original was never stored. Review the redacted version on the right.";
+    orig.textContent = "This is a saved EOB — its text was stored when you first uploaded it; the file itself was not.";
   } else if (docState.previews?.length) {
     orig.textContent = "";
     for (const src of docState.previews) {
@@ -624,11 +602,9 @@ function renderReview() {
       orig.appendChild(img);
     }
   } else {
-    orig.textContent = tidy(docState.originalText);
+    orig.textContent = "Text was read straight from the file — no page images to show.";
   }
-  // Redacted pane: placeholders rendered as visible chips for human scanning.
-  $("redacted-pane").innerHTML = escapeHtml(tidy(docState.redacted))
-    .replace(/\[([A-Z][A-Z0-9_]*_\d+)\]/g, '<span class="chip">$1</span>');
+  $("sent-pane").textContent = tidy(docState.text);
   const rd = $("review-doc");
   rd.hidden = !batchDocs;
   if (batchDocs) {
@@ -662,96 +638,20 @@ function renderReviewTabs() {
 $("tab-bill").onclick = () => { state.activeDoc = "bill"; renderReview(); };
 $("tab-eob").onclick = () => { state.activeDoc = "eob"; renderReview(); };
 
-// Manual redaction: a floating chip appears at the selection (no travelling to
-// a button), every hide is undoable, and a hide always applies to every open
-// document so shared strings stay consistent.
-let redactUndoStack = [];
-
-function redactionSnapshot() {
-  return batchDocs
-    ? { batch: batchDocs.map((d) => d.redacted) }
-    : { bill: state.bill?.redacted ?? null, eob: state.eob?.redacted ?? null };
-}
-
-function restoreRedactions(snap) {
-  if (snap.batch) {
-    snap.batch.forEach((t, i) => { if (batchDocs?.[i]) batchDocs[i].redacted = t; });
-    return;
-  }
-  if (state.bill && snap.bill !== null) state.bill.redacted = snap.bill;
-  if (state.eob && snap.eob !== null) state.eob.redacted = snap.eob;
-}
-
-function setRedactStatus(msg) {
-  $("redact-status").textContent = msg || "";
-  $("undo-redaction").hidden = redactUndoStack.length === 0;
-}
-
-function applyManualRedaction() {
-  const sel = window.getSelection().toString();
-  if (!sel.trim()) return;
-  redactUndoStack.push(redactionSnapshot());
-  if (batchDocs) {
-    for (const d of batchDocs) d.redacted = manualRedact(d.redacted, sel, state.registry);
-  } else {
-    const docState = state[state.activeDoc];
-    docState.redacted = manualRedact(docState.redacted, sel, state.registry);
-    const other = state.activeDoc === "bill" ? state.eob : state.bill;
-    if (other) other.redacted = manualRedact(other.redacted, sel, state.registry);
-  }
-  window.getSelection().removeAllRanges();
-  $("hide-chip").hidden = true;
-  renderReview();
-  setRedactStatus("Hidden everywhere in these documents.");
-}
-
-$("redact-selection").onclick = applyManualRedaction;
-$("hide-chip").onclick = applyManualRedaction;
-// Clicking the chip must not clear the selection before the handler reads it.
-$("hide-chip").addEventListener("mousedown", (e) => e.preventDefault());
-
-$("undo-redaction").onclick = () => {
-  const snap = redactUndoStack.pop();
-  if (!snap) return;
-  restoreRedactions(snap);
-  renderReview();
-  setRedactStatus("Undid — restored.");
-};
-
-// Position the chip just above whatever is selected inside the review panes.
-function positionHideChip() {
-  const chip = $("hide-chip");
-  const sel = window.getSelection();
-  if ($("review").hidden || !sel || sel.isCollapsed || !sel.toString().trim()) {
-    chip.hidden = true;
-    return;
-  }
-  const node = sel.anchorNode?.nodeType === 3 ? sel.anchorNode.parentElement : sel.anchorNode;
-  if (!node?.closest?.(".panes")) { chip.hidden = true; return; }
-  const r = sel.getRangeAt(0).getBoundingClientRect();
-  if (!r.width && !r.height) { chip.hidden = true; return; }
-  chip.hidden = false;
-  chip.style.top = `${window.scrollY + r.top - chip.offsetHeight - 8}px`;
-  chip.style.left = `${window.scrollX + r.left + r.width / 2 - chip.offsetWidth / 2}px`;
-}
-// setTimeout, not requestAnimationFrame: rAF is frozen in background tabs, so
-// an rAF-gated chip silently never appears there (same trap as the PDF render).
-document.addEventListener("selectionchange", () => setTimeout(positionHideChip, 0));
 
 $("confirm-review").onclick = async () => {
   if (state.sbcFlow) return runSbcExtraction();
   if (batchDocs) return runBatch();
   const payload = {
-    redactedBill: state.bill.redacted,
-    redactedEob: state.eob ? state.eob.redacted : "",
+    bill: state.bill.text,
+    eob: state.eob ? state.eob.text : "",
     ocrConfidence: Math.min(state.bill.confidence, state.eob ? state.eob.confidence : 100),
   };
   const ocrLow = payload.ocrConfidence < OCR_CONFIDENCE_THRESHOLD;
 
-  // Discard originals — this is the moment they cease to exist.
-  state.bill.originalText = null;
+  // Release the rendered page images; the text itself is what we are sending.
   state.bill.previews = null;
-  if (state.eob) { state.eob.originalText = null; state.eob.previews = null; }
+  if (state.eob) state.eob.previews = null;
   $("original-pane").textContent = "";
   $("bill-file").value = "";
   $("eob-file").value = "";
@@ -762,11 +662,11 @@ $("confirm-review").onclick = async () => {
     const { data } = await analyzeFn(payload);
     lastAuditId = data.auditId || null;
     renderReport(data, { ocrLow, model: data.model, planApplied: data.planApplied, planReason: data.planReason,
-      pairUnrelated: unrelatedPair(payload.redactedBill, payload.redactedEob) });
+      pairUnrelated: unrelatedPair(payload.bill, payload.eob) });
     show("report");
     track("audit_completed");
     if (state.eob && !state.eob.saved && $("save-eob").checked) {
-      await maybeSaveEob(state.eob.redacted, data);
+      await maybeSaveEob(state.eob.text, data);
     }
     await loadHistory(); // refreshes allAudits (incl. this audit) + usage cards
     renderReportUsage(data);
@@ -1075,7 +975,7 @@ async function loadHistory() {
       createdAtDate: created ? isoDate(created) : "",
       // Dashboard fields: identity of the paper (so the same bill audited twice
       // is never mistaken for a double-bill), money, and a human summary.
-      billKey: billKeyOf(a.redactedBill),
+      billKey: billKeyOf(auditText(a, 'bill')),
       atStake: a.totals?.totalAtStake || 0,
       findingTypes: findings.map((f) => f.type),
       summary: summarizeFindings(findings),
@@ -1086,7 +986,7 @@ async function loadHistory() {
   renderUsage();
 }
 
-// Cheap, stable identity for a bill's redacted text (djb2). Two audits of the
+// Cheap, stable identity for a bill's text (djb2). Two audits of the
 // same paper share it; two genuinely different statements do not.
 //
 // Whitespace and case are normalized first: the SAME document extracted from
@@ -1124,7 +1024,7 @@ async function openAudit(id) {
   renderReport(data, {
     ocrLow: (data.ocrConfidence ?? 100) < OCR_CONFIDENCE_THRESHOLD,
     planApplied: data.planApplied, planReason: data.planReason,
-    pairUnrelated: unrelatedPair(data.redactedBill, data.redactedEob),
+    pairUnrelated: unrelatedPair(auditText(data, 'bill'), auditText(data, 'eob')),
   });
   renderReportUsage(data);
   show("report");
@@ -1253,9 +1153,18 @@ async function loadTrackers() {
   snap.forEach((d) => allTrackers.push({ id: d.id, ...d.data() }));
 }
 
-// ---------- Saved EOBs (redacted-only library for reuse across bills) ----------
+// Field names changed when on-device redaction was removed: `redactedText` and
+// `redactedBill`/`redactedEob` described a step that no longer happens. Stored
+// documents written before that change still carry the old names, so read both.
+// Delete these once nothing pre-rename remains.
+const savedEobText = (e) => e?.text ?? e?.redactedText ?? "";
+const planText = (p) => p?.text ?? p?.redactedText ?? "";
+const auditText = (a, which) =>
+  (which === "bill" ? a?.bill ?? a?.redactedBill : a?.eob ?? a?.redactedEob) ?? "";
 
-let savedEobs = []; // {id, label, redactedText}
+// ---------- Saved EOBs (text library for reuse across bills) ----------
+
+let savedEobs = []; // {id, label, text}
 
 async function loadEobs() {
   const user = auth.currentUser;
@@ -1316,11 +1225,11 @@ $("saved-eob").onchange = () => {
   renderFiles();
 };
 
-async function maybeSaveEob(redactedText, data) {
-  if (savedEobs.some((e) => e.redactedText === redactedText)) return; // already saved
+async function maybeSaveEob(text, data) {
+  if (savedEobs.some((e) => savedEobText(e) === text)) return; // already saved
   const label = `${data.provider || "EOB"} · ${(data.serviceDates || [])[0] || todayISO()}`;
   await addDoc(collection(db, `users/${auth.currentUser.uid}/eobs`), {
-    label, redactedText, createdAt: serverTimestamp(),
+    label, text, createdAt: serverTimestamp(),
     // Matching metadata: lets future lone bills find this EOB by content.
     provider: data.provider || "",
     serviceDates: data.serviceDates || [],
@@ -1332,7 +1241,7 @@ async function maybeSaveEob(redactedText, data) {
 
 // ---------- Your plan (SBC) ----------
 
-let activePlan = null; // {structured, digest, redactedText, sourceName, createdAt}
+let activePlan = null; // {structured, digest, text, sourceName, createdAt}
 
 async function loadPlan() {
   const user = auth.currentUser;
@@ -1374,7 +1283,7 @@ function renderPlanCard() {
     $("plan-view").onclick = (e) => {
       e.preventDefault();
       const full = $("plan-full");
-      full.querySelector("pre").textContent = activePlan.redactedText || "No stored text.";
+      full.querySelector("pre").textContent = planText(activePlan) || "No stored text.";
       full.hidden = !full.hidden;
     };
     $("plan-remove").onclick = async (e) => {
@@ -1419,16 +1328,10 @@ async function prepareSbc(file) {
   try {
     setStatus("Reading your Summary of Benefits…");
     const ex = await extractText(file);
-    // Free duplicate check happens after redaction (compare redacted text).
-    setStatus("Loading the privacy model (first run downloads ~500MB, cached after)…");
-    const ner = await loadNer((p) => {
-      if (p.status === "progress" && p.total) setStatus(`Downloading privacy model… ${Math.round((p.loaded / p.total) * 100)}%`);
-    });
-    setStatus("Hiding your personal information — on your device…");
-    state.bill = { originalText: ex.text, previews: ex.previews, method: ex.method, confidence: ex.confidence };
-    state.bill.redacted = (await deidentify(ex.text, ner, state.registry)).redacted;
+    state.bill = { text: ex.text, previews: ex.previews, method: ex.method, confidence: ex.confidence };
     state.sbcName = file.name;
-    if (activePlan && activePlan.redactedText === state.bill.redacted) {
+    // Free duplicate check: same text means the same document.
+    if (activePlan && planText(activePlan) === state.bill.text) {
       show(state.sbcOrigin);
       return setError(sbcErrTarget(), "This plan is already on file.");
     }
@@ -1447,14 +1350,14 @@ async function prepareSbc(file) {
 }
 
 async function runSbcExtraction(force = false) {
-  const redactedSbc = state.bill.redacted;
+  const sbc = state.bill.text;
   const sourceName = state.sbcName || "";
-  state.bill.originalText = null; state.bill.previews = null;
+  state.bill.previews = null;
   $("original-pane").textContent = "";
   show("processing");
   setStatus("Reading your plan's terms…");
   try {
-    const { data } = await extractPlanFn({ redactedSbc, sourceName, force });
+    const { data } = await extractPlanFn({ sbc, sourceName, force });
     if (data.status === "confirm_older") {
       const msg = `The plan on file covers ${data.existingPeriod.start} → ${data.existingPeriod.end}; ` +
         `this document covers ${data.incomingPeriod.start} → ${data.incomingPeriod.end}. Replace anyway?`;

@@ -100,13 +100,13 @@ export const analyze = onCall(
       throw new HttpsError("unauthenticated", "Sign in to run an audit.");
     }
     const uid = request.auth.uid;
-    const { redactedBill, redactedEob, ocrConfidence } = request.data || {};
+    const { bill, eob, ocrConfidence } = request.data || {};
 
-    if (typeof redactedBill !== "string" || !redactedBill.trim() ||
-        typeof redactedEob !== "string") {
-      throw new HttpsError("invalid-argument", "The redacted bill is required.");
+    if (typeof bill !== "string" || !bill.trim() ||
+        typeof eob !== "string") {
+      throw new HttpsError("invalid-argument", "The bill text is required.");
     }
-    if (redactedBill.length > MAX_DOC_CHARS || redactedEob.length > MAX_DOC_CHARS) {
+    if (bill.length > MAX_DOC_CHARS || eob.length > MAX_DOC_CHARS) {
       throw new HttpsError("invalid-argument", "Document too large.");
     }
 
@@ -126,7 +126,7 @@ export const analyze = onCall(
     const planDigest = plan?.structured ? buildDigest(plan.structured) : plan?.digest || null;
     let result, usage = null;
     try {
-      const first = await runAudit(redactedBill, redactedEob, opts, planDigest);
+      const first = await runAudit(bill, eob, opts, planDigest);
       usage = addUsage(null, first.usage);
       result = first.data;
       if (!validate(result)) {
@@ -134,8 +134,8 @@ export const analyze = onCall(
         // It bills a second time, which is why usage accumulates rather than replaces.
         const errText = ajv.errorsText(validate.errors);
         const retry = await runAudit(
-          redactedBill,
-          `${redactedEob}\n\n[SYSTEM NOTE: your previous response failed schema validation: ${errText}. Return valid JSON matching the schema exactly.]`,
+          bill,
+          `${eob}\n\n[SYSTEM NOTE: your previous response failed schema validation: ${errText}. Return valid JSON matching the schema exactly.]`,
           opts,
           planDigest
         );
@@ -159,7 +159,7 @@ export const analyze = onCall(
     // is a string; only this proves it is real. Findings that fail are dropped
     // before anything is shown or written, because they end up in a letter the
     // member sends to a provider.
-    const verified = verifyEvidence(result, { bill: redactedBill, eob: redactedEob, sbc: planDigest });
+    const verified = verifyEvidence(result, { bill: bill, eob: eob, sbc: planDigest });
     result = verified.result;
     if (verified.dropped.length) {
       // Loud, because the drop is silent to the user: this is the only place a
@@ -180,8 +180,8 @@ export const analyze = onCall(
 
     const auditRef = db.collection(`users/${uid}/audits`).doc();
     await auditRef.set({
-      redactedBill,
-      redactedEob,
+      bill,
+      eob,
       findings: result.findings,
       totals: result.totals,
       occurrenceTable: result.occurrenceTable,
@@ -213,23 +213,23 @@ export const extractPlan = onCall(
   async (request) => {
     if (!request.auth) throw new HttpsError("unauthenticated", "Sign in to add your plan.");
     const uid = request.auth.uid;
-    const { redactedSbc, sourceName, force } = request.data || {};
-    if (typeof redactedSbc !== "string" || !redactedSbc.trim()) {
-      throw new HttpsError("invalid-argument", "The redacted SBC text is required.");
+    const { sbc, sourceName, force } = request.data || {};
+    if (typeof sbc !== "string" || !sbc.trim()) {
+      throw new HttpsError("invalid-argument", "The SBC text is required.");
     }
-    if (redactedSbc.length > MAX_DOC_CHARS) throw new HttpsError("invalid-argument", "Document too large.");
+    if (sbc.length > MAX_DOC_CHARS) throw new HttpsError("invalid-argument", "Document too large.");
     await checkPlanRateLimit(uid);
 
     const opts = { modelId: MODEL_ID, apiKey: GEMINI_API_KEY.value() };
     let structured, planUsage = null;
     try {
-      const first = await runPlanExtract(redactedSbc, opts);
+      const first = await runPlanExtract(sbc, opts);
       planUsage = addUsage(null, first.usage);
       structured = first.data;
       if (!validatePlan(structured)) {
         const errText = ajv.errorsText(validatePlan.errors);
         const retry = await runPlanExtract(
-          `${redactedSbc}\n\n[SYSTEM NOTE: your previous response failed schema validation: ${errText}. Return valid JSON matching the schema exactly.]`,
+          `${sbc}\n\n[SYSTEM NOTE: your previous response failed schema validation: ${errText}. Return valid JSON matching the schema exactly.]`,
           opts
         );
         planUsage = addUsage(planUsage, retry.usage);
@@ -264,7 +264,7 @@ export const extractPlan = onCall(
 
     const digest = buildDigest(structured);
     await ref.set({
-      structured, digest, redactedText: redactedSbc,
+      structured, digest, text: sbc,
       sourceName: typeof sourceName === "string" ? sourceName.slice(0, 200) : "",
       model: MODEL_ID, tokens: planUsage, createdAt: FieldValue.serverTimestamp(),
     });

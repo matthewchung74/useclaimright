@@ -1,5 +1,10 @@
 # Upstream bug report — OpenMed-PII-SuperClinical ONNX variants
 
+> **Status 2026-08-23:** UseClaimRight no longer ships this model — on-device
+> redaction was removed from the product. This report is kept because the bug is
+> real and still affects anyone loading these ONNX variants through
+> transformers.js. The findings below stand as filed.
+
 **FILED:** https://github.com/huggingface/transformers.js/issues/1749 (2026-08-16, as matthewchung74)
 
 Filed against the library repo rather than the model's Hugging Face discussions —

@@ -119,11 +119,11 @@
 <div class="hero wrap">
   <span class="eyebrow">Free medical bill audit</span>
   <h1>Find out if your medical bill is wrong — <span class="hl">in minutes.</span></h1>
-  <p class="sub">Upload your itemized bill and insurance EOB. Our AI checks every charge against what your insurer actually allowed and shows you exactly what's off — with evidence and dollar amounts. Your personal details never leave your device.</p>
+  <p class="sub">Upload your itemized bill and insurance EOB. Our AI checks every charge against what your insurer actually allowed and shows you exactly what's off — with evidence and dollar amounts, each one quoted from your own documents and checked against them.</p>
   <a href="/app" class="btn lg">Audit my bill — free</a>
   <div class="trust-row">
     <span><span class="check">✓</span> Free while in beta</span>
-    <span><span class="check">✓</span> Un-redacted documents never leave your device</span>
+    <span><span class="check">✓</span> Every finding quoted from your documents</span>
     <span><span class="check">✓</span> Delete your data anytime</span>
   </div>
 </div>
@@ -137,7 +137,7 @@
   <p class="lead">Three steps, a few minutes, nothing to install.</p>
   <div class="steps">
     <div class="step"><div class="n">1</div><h3>Upload bill + EOB</h3><p>Your itemized bill and the matching Explanation of Benefits. Digital PDFs from your portals work best; photos and scans work too.</p></div>
-    <div class="step"><div class="n">2</div><h3>Approve the redaction</h3><p>Names, dates of birth, record numbers, and other identifiers are replaced with placeholders — in your browser, on your device, powered by the open-source <a href="https://github.com/maziyarpanahi/openmed" rel="noopener" target="_blank">OpenMed</a> medical privacy models. You see and approve exactly what gets analyzed. The original never leaves your machine.</p></div>
+    <div class="step"><div class="n">2</div><h3>Check we read it right</h3><p>You see the exact text pulled out of your documents, next to the documents themselves, before anything is analyzed. Scans and photos are read with OCR, and OCR makes mistakes — this is where you catch them. The text is then sent to Google's Gemini API to be analyzed.</p></div>
     <div class="step"><div class="n">3</div><h3>Read your findings</h3><p>Duplicate charges, billing above the EOB allowed amount, coding errors, cost-share math — each finding with quoted evidence and a dollar amount. Or a clean result: your bill checks out.</p></div>
   </div>
 </section>
@@ -145,14 +145,14 @@
 <section class="block" style="background:var(--card);border-top:1px solid var(--line);border-bottom:1px solid var(--line)">
   <div class="wrap">
     <h2>Why not just use ChatGPT?</h2>
-    <p class="lead">Chatbots are great — but they can't see your bills. Even ChatGPT's new health integrations connect to <i>medical records</i>, not billing systems. And pasting an un-redacted bill into a chatbot sends your identity along with it.</p>
+    <p class="lead">Chatbots are great — but they can't see your bills. Even ChatGPT's new health integrations connect to <i>medical records</i>, not billing systems. And a chatbot will happily quote a line that isn't in your bill — we check every quoted line against the document it came from, and drop the ones that aren't there.</p>
     <div class="compare">
       <div class="row head"><div>&nbsp;</div><div>ChatGPT</div><div class="us">UseClaimRight</div></div>
       <div class="row"><div>Answers questions about text you paste in</div><div class="yes">✓</div><div class="us"><span class="yes">✓</span></div></div>
       <div class="row"><div>Connects to your bills (health-record integrations don't include billing)</div><div class="no">—</div><div class="us"><span class="yes">✓</span></div></div>
       <div class="row"><div>Cross-checks the bill against your EOB, line by line</div><div class="no">—</div><div class="us"><span class="yes">✓</span></div></div>
-      <div class="row"><div>Removes your identity before analysis — on your device</div><div class="no">—</div><div class="us"><span class="yes">✓</span></div></div>
-      <div class="row"><div>Backs every finding with verbatim quotes from your documents</div><div class="no">—</div><div class="us"><span class="yes">✓</span></div></div>
+      <div class="row"><div>Catches the same charge billed twice across two different statements</div><div class="no">—</div><div class="us"><span class="yes">✓</span></div></div>
+      <div class="row"><div>Backs every finding with a verbatim quote, and verifies the quote is really there</div><div class="no">—</div><div class="us"><span class="yes">✓</span></div></div>
       <div class="row"><div>Saves your audit history — deletable anytime</div><div class="no">—</div><div class="us"><span class="yes">✓</span></div></div>
     </div>
   </div>
@@ -178,7 +178,7 @@
     <h2>See what your bill actually says</h2>
     <p>Most people never check. The ones who do are often glad they did.</p>
     <a href="/app" class="btn lg">Audit my bill — free</a>
-    <div class="fine">On-device redaction · We never sell your data · Delete your audits anytime</div>
+    <div class="fine">Evidence you can check · We never sell your data · Delete your audits anytime</div>
   </div>
 </section>
 
@@ -189,7 +189,7 @@
       <a href="privacy.html">Privacy Policy</a>
     </div>
   </div>
-  <p class="disclaimer">UseClaimRight is a self-help tool that analyzes the documents you provide. We are not a law firm, do not provide legal or medical advice, and do not represent you in disputes or appeals. Findings are generated by automated analysis and may contain errors — verify every quoted amount against your original documents before disputing a charge. Results vary and are not guaranteed.<br><br>On-device de-identification is powered by the open-source <a href="https://github.com/maziyarpanahi/openmed" rel="noopener" target="_blank">OpenMed</a> PII models (Apache-2.0) — thank you to the OpenMed project.</p>
+  <p class="disclaimer">UseClaimRight is a self-help tool that analyzes the documents you provide. We are not a law firm, do not provide legal or medical advice, and do not represent you in disputes or appeals. Findings are generated by automated analysis and may contain errors — verify every quoted amount against your original documents before disputing a charge. Results vary and are not guaranteed.<br><br>Your documents are sent to Google's Gemini API to be analyzed, including the personal details printed on them. Google does not train its models on data sent through that API. See our <a href="/privacy">privacy policy</a>.</p>
 </footer>
 
 </body>
