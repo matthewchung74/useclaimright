@@ -145,6 +145,15 @@ export const findingsSchema = {
   additionalProperties: false,
   required: ["findings", "totals", "occurrenceTable", "serviceDates", "provider", "payerRemarks", "accumulators"],
   properties: {
+    // Present only when the documents arrived as images: the model's own
+    // transcription. Evidence quotes are verified against it, and it stands in
+    // for the extracted text everywhere the client used to need one — the bill
+    // fingerprint, saved-EOB matching, the mismatched-pair backstop. Self-
+    // consistency rather than independent ground truth, so it catches a quote
+    // the model invented but not a page it misread wholesale.
+    billText: { type: "string" },
+    eobText: { type: "string" },
+
     // v2 fields — extracted verbatim from the documents, never inferred.
     serviceDates: { type: "array", items: { type: "string" } }, // ISO YYYY-MM-DD
     provider: { type: "string" },

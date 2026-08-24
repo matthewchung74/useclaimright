@@ -35,7 +35,7 @@ Fixtures: `test-fixtures/` (regenerate HTML: `node test-fixtures/gen-series.mjs`
 1. A fresh account lands on the **onboarding screen** first: "Set up your plan" card (560px, teal top rule), payoff pitch with mono `$60`/`$175` figures, SBC dropzone with 📄, "What's an SBC?" explainer, and a centered "**Skip for now — audit a bill first**" link. Click **Skip**.
    ✓ The **Bills & coverage** page appears — this is home. The "**Audit a new bill**" card is the first thing on it, above "No bills audited yet…", so the primary action is never hidden behind the empty state. Scroll to "Your coverage": the **dashed one-line reminder** "No plan on file — add your Summary of Benefits · Add now" sits there (not a big card, not a gold banner).
 2. Click **Start an audit →**. ✓ The audit form appears with a "← Back to bills" link above the heading. **Step 1 is "Add your bill"** — the document the user actually has — and **step 2 is "Add the letter from your insurance, if you have it"**, with the "What's an EOB…" explainer under it. *(Reordered 2026-08-16: the EOB used to be step 1, putting eight elements and an acronym in front of the bill.)* Drag `fake-bill.pdf` onto the bill zone, `fake-eob.pdf` onto the insurance-letter zone. ✓ One "✓ file ✕" row under each zone.
-3. Click **Prepare audit →**. ✓ Processing is quick — text extraction only, no model download.
+3. Click **Prepare audit →**. ✓ Processing is quick — the PDF's text layer is read directly, no model download.
 4. Review both tabs. ✓ Left pane shows the rendered pages, right pane the extracted text under "What we'll analyze". Text matches the document; no placeholder chips anywhere (redaction was removed 2026-08-23).
 5. Click **Looks right — analyze**.
    ✓ **The four totals cards** (observed 2026-08-10):
@@ -349,6 +349,7 @@ done
 ## Always-on checks (every pass)
 - **Evidence is real:** spot-check two findings per pass — the quoted line must appear verbatim in the document it cites. A finding whose quote is absent should never render; `verifyEvidence` drops it server-side and logs `unverified evidence dropped`. Check the audit doc's `droppedUnverified` count after each run: a non-zero value is the model inventing evidence, and it is worth reading the log.
 - **Disclosure is present:** the audit form shows the "Where your documents go" banner naming Google's Gemini API, above the dropzones.
+- **Scanned documents:** upload a photo or a scanned PDF (no text layer). ✓ The 📷 banner fires, the right-hand review pane explains the pages are sent as images rather than showing text, and the audit still returns findings. The stored audit's `bill`/`eob` hold the model's transcription, so history, the bill fingerprint and saved-EOB matching all still work.
 - **Limits:** 11th audit → "Daily limit of 10 audits reached."; 4th plan upload → "Daily limit of 3 plan uploads reached."
 
 ## Background-tab regression check (both bugs found this way)

@@ -57,6 +57,19 @@ const track = (name) => { try { analytics && logEvent(analytics, name); } catch 
 
 const OCR_CONFIDENCE_THRESHOLD = 75;
 
+// Page images travel as bare base64; the data: prefix is a browser convenience.
+const b64 = (dataUrl) => String(dataUrl).slice(String(dataUrl).indexOf(",") + 1);
+const asDoc = (d) => (d ? { text: d.text || "", images: (d.images || []).map(b64) } : { text: "", images: [] });
+
+// Confidence is a property of TEXT EXTRACTION, and a scanned page has none —
+// the model reads it, and reports no score. Null means "no signal", which is
+// not the same as zero; Math.min would have turned every scan into a low-
+// quality warning.
+const ocrConfidenceOf = (docs) => {
+  const scores = docs.filter(Boolean).map((d) => d.confidence).filter((c) => typeof c === "number");
+  return scores.length ? Math.min(...scores) : 100;
+};
+
 // ---------- Auth ----------
 
 $("google-signin").onclick = () =>
@@ -428,17 +441,17 @@ async function prepareAudit(billFile, eobFile, savedEob = null) {
         : `Using saved EOB: ${savedEob.label} — most recent in your library`);
     }
 
-    state.bill = { text: bill.text, previews: bill.previews, method: bill.method, confidence: bill.confidence };
+    state.bill = { text: bill.text, images: bill.images, previews: bill.previews, method: bill.method, confidence: bill.confidence };
     if (savedEob) {
       // Library EOB: text stored from a previous session; the file itself was never kept.
       state.eob = { text: savedEobText(savedEob), previews: null, saved: true, confidence: 100 };
     } else if (eob) {
-      state.eob = { text: eob.text, previews: eob.previews, method: eob.method, confidence: eob.confidence };
+      state.eob = { text: eob.text, images: eob.images, previews: eob.previews, method: eob.method, confidence: eob.confidence };
     } else {
       state.eob = null;
     }
 
-    $("ocr-banner").hidden = !(bill.method === "ocr" || state.eob?.method === "ocr");
+    $("ocr-banner").hidden = !(bill.method === "image" || state.eob?.method === "image");
     // Wrong-EOB guard: warn BEFORE analysis, since a mismatched pair reports
     // every line as "missing from the EOB" and inflates "worth disputing".
     showPairWarning(
@@ -499,11 +512,11 @@ async function prepareBatch() {
       setStatus(`Reading ${d.file.name} (${i + 1} of ${docs.length})…`);
       const ex = await extractText(d.file);
       prepared.push({ file: d.file, name: d.file.name, kind: d.kind,
-        previews: ex.previews, method: ex.method, confidence: ex.confidence, text: ex.text });
+        previews: ex.previews, method: ex.method, confidence: ex.confidence, text: ex.text, images: ex.images });
     }
     batchDocs = prepared;
     batchDocIndex = 0;
-    $("ocr-banner").hidden = !batchDocs.some((d) => d.method === "ocr");
+    $("ocr-banner").hidden = !batchDocs.some((d) => d.method === "image");
     // Same guard per pair — name the bills whose EOB looks unrelated.
     const byFileDoc = new Map(prepared.filter((d) => d.file).map((d) => [d.file, d]));
     showPairWarning(batchQueue
@@ -544,9 +557,9 @@ async function runBatch() {
       const eobDoc = it.eob ? byFile.get(it.eob) : it.savedEob ? bySaved.get(it.savedEob.id) : null;
       setStatus(`Analyzing audit ${batchIndex + 1} of ${total} — ${it.bill.name}…`);
       const payload = {
-        bill: billDoc.text,
-        eob: eobDoc ? eobDoc.text : "",
-        ocrConfidence: Math.min(billDoc.confidence, eobDoc ? eobDoc.confidence : 100),
+        bill: asDoc(billDoc),
+        eob: asDoc(eobDoc),
+        ocrConfidence: ocrConfidenceOf([billDoc, eobDoc]),
       };
       const { data } = await analyzeFn(payload);
       lastAuditId = data.auditId || null;
@@ -604,7 +617,14 @@ function renderReview() {
   } else {
     orig.textContent = "Text was read straight from the file — no page images to show.";
   }
-  $("sent-pane").textContent = tidy(docState.text);
+  if (docState.method === "image") {
+    $("sent-pane").textContent =
+      "This is a scan, so there is no text to read out of the file. The pages on the left are " +
+      "sent as images and read directly — which is more accurate than reading a photo as text. " +
+      "Check they are the right pages, and the right way up.";
+  } else {
+    $("sent-pane").textContent = tidy(docState.text);
+  }
   const rd = $("review-doc");
   rd.hidden = !batchDocs;
   if (batchDocs) {
@@ -643,9 +663,9 @@ $("confirm-review").onclick = async () => {
   if (state.sbcFlow) return runSbcExtraction();
   if (batchDocs) return runBatch();
   const payload = {
-    bill: state.bill.text,
-    eob: state.eob ? state.eob.text : "",
-    ocrConfidence: Math.min(state.bill.confidence, state.eob ? state.eob.confidence : 100),
+    bill: asDoc(state.bill),
+    eob: asDoc(state.eob),
+    ocrConfidence: ocrConfidenceOf([state.bill, state.eob]),
   };
   const ocrLow = payload.ocrConfidence < OCR_CONFIDENCE_THRESHOLD;
 
@@ -1331,11 +1351,13 @@ async function prepareSbc(file) {
     state.bill = { text: ex.text, previews: ex.previews, method: ex.method, confidence: ex.confidence };
     state.sbcName = file.name;
     // Free duplicate check: same text means the same document.
-    if (activePlan && planText(activePlan) === state.bill.text) {
+    // Duplicate check needs text on both sides; a scanned SBC has none until
+    // the model reads it, so it simply is not checked here.
+    if (activePlan && state.bill.text && planText(activePlan) === state.bill.text) {
       show(state.sbcOrigin);
       return setError(sbcErrTarget(), "This plan is already on file.");
     }
-    $("ocr-banner").hidden = ex.method !== "ocr";
+    $("ocr-banner").hidden = ex.method !== "image";
     state.activeDoc = "bill";
     $("tab-eob").style.display = "none";
     $("save-eob-wrap").hidden = true;
@@ -1350,7 +1372,7 @@ async function prepareSbc(file) {
 }
 
 async function runSbcExtraction(force = false) {
-  const sbc = state.bill.text;
+  const sbc = asDoc(state.bill);
   const sourceName = state.sbcName || "";
   state.bill.previews = null;
   $("original-pane").textContent = "";

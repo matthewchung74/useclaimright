@@ -12,6 +12,9 @@ export const planSchema = {
   additionalProperties: false,
   required: ["planName", "planYearStart", "planYearEnd", "deductible", "oopMax", "limits", "costShares"],
   properties: {
+    // Set only when the SBC arrived as page images: what the model read. Stands
+    // in for the extracted text so "View" can still show the plan's source.
+    sourceText: { type: "string" },
     planName: nullableString,
     planYearStart: nullableString, // ISO YYYY-MM-DD from the SBC "Coverage Period"
     planYearEnd: nullableString,
@@ -52,7 +55,8 @@ export const planSchema = {
 
 export const PLAN_EXTRACT_INSTRUCTIONS = `You are reading the text of a Summary of
 Benefits and Coverage (SBC) — the standardized ACA document with an "Important Questions" table
-and a "Common Medical Events" cost-share grid.
+and a "Common Medical Events" cost-share grid. When the SBC is given as page images rather
+than text, also return what you read in sourceText.
 
 Extract, verbatim from the document, NEVER inferred or guessed:
 - planName: the marketing/plan name as printed (null if absent).
