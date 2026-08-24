@@ -35,8 +35,8 @@ Fixtures: `test-fixtures/` (regenerate HTML: `node test-fixtures/gen-series.mjs`
 1. A fresh account lands on the **onboarding screen** first: "Set up your plan" card (560px, teal top rule), payoff pitch with mono `$60`/`$175` figures, SBC dropzone with 📄, "What's an SBC?" explainer, and a centered "**Skip for now — audit a bill first**" link. Click **Skip**.
    ✓ The **Bills & coverage** page appears — this is home. The "**Audit a new bill**" card is the first thing on it, above "No bills audited yet…", so the primary action is never hidden behind the empty state. Scroll to "Your coverage": the **dashed one-line reminder** "No plan on file — add your Summary of Benefits · Add now" sits there (not a big card, not a gold banner).
 2. Click **Start an audit →**. ✓ The audit form appears with a "← Back to bills" link above the heading. **Step 1 is "Add your bill"** — the document the user actually has — and **step 2 is "Add the letter from your insurance, if you have it"**, with the "What's an EOB…" explainer under it. *(Reordered 2026-08-16: the EOB used to be step 1, putting eight elements and an acronym in front of the bill.)* Drag `fake-bill.pdf` onto the bill zone, `fake-eob.pdf` onto the insurance-letter zone. ✓ One "✓ file ✕" row under each zone.
-3. Click **Prepare audit →**. ✓ Processing (first run: "Downloading privacy model… N%" — **~500MB, 1–3 min, one-time then cached**; the q4 weights, since this repo's smaller q8 build is broken).
-4. Review both tabs. ✓ Canary PHI chipped: Jane Q. Testpatient, DOB 03/14/1985, MRN TESTMRN-424242, AHX-55512345.
+3. Click **Prepare audit →**. ✓ Processing is quick — text extraction only, no model download.
+4. Review both tabs. ✓ Left pane shows the rendered pages, right pane the extracted text under "What we'll analyze". Text matches the document; no placeholder chips anywhere (redaction was removed 2026-08-23).
 5. Click **Looks right — analyze**.
    ✓ **The four totals cards** (observed 2026-08-10):
 
@@ -83,7 +83,7 @@ done
    ✓ The SBC card is replaced by ONE line: `Plan: Acme Silver PPO · 2026-01-01 → 2026-12-31 · View · Replace · Remove`.
    ✓ Coverage usage: two trackers tagged "**from your SBC — check the codes**" (6/yr mental health, 20/yr rehab).
    ✓ Deductible card: "$0.00 of $1,500.00 · Target from your plan (SBC)."
-   ✓ **View** toggles the redacted SBC text; opening a tracker's details clears its tag.
+   ✓ **View** toggles the stored SBC text; opening a tracker's details clears its tag.
    ✓ The review screen in step 2 shows the SBC itself — never a previously uploaded bill. (The tab label used to read "Bill" here, which made it look like an old document was being reused.)
 
 **Cost:** 1 plan upload.
@@ -134,7 +134,7 @@ done
 **Data:** `series/t2-bill.pdf`, `series/t3-bill.pdf`, `series/t-eob.pdf` (consolidated statement covering t1–t3; leave "save this EOB" checked).
 
 1. Add all three files (any order, any zone — filenames route them). ✓ Rows accumulate; summary "2 audits: 2 bill+EOB pairs"; button "Start 2 audits →".
-2. Start. ✓ Per-document redaction progress, then ONE review screen with 3 tabs + "Reviewing <name> — document N of 3".
+2. Start. ✓ Per-document extraction progress, then ONE review screen with 3 tabs + "Reviewing <name> — document N of 3".
 3. Confirm once. ✓ "Analyzing audit 1 of 2… 2 of 2" with no pauses, then the batch **lands on the Bills & coverage page — not on one audit's report**. (Before this change it showed whichever audit the queue ordered last, with no signal the other existed.)
    ✓ A **highlighter-ribboned "JUST AUDITED" block** sits above "Your bills": "JUST AUDITED · **2 bills** · **$110.00** worth disputing", then one row per audit — date · plain-English finding · amount. Each t-audit is $55 (bill demands $175, EOB responsibility $120), so the block's total is the real batch total; no screen shows $55 as if it were the answer for the whole batch.
    ✓ Clicking either row opens **that** audit's own report, and "← Back to bills" returns with the block still pinned. Both reports carry the t-series shape:
@@ -225,7 +225,7 @@ done
    | Worth disputing | **$55.00** | billed-above-allowed only — the **duplicate is not in either report**, because no single audit can see it |
 
    *That last row is the point of this plan: the $175 duplicate appears only on the dashboard, never in an individual report.*
-2. ✓ **Hero card** at the top of "Bills & coverage": a yellow ribbon "FOUND BY COMPARING YOUR BILLS TO EACH OTHER", **$175.00 at stake**, "The same visit is on two statements", naming the provider, 90837, and Feb 12 2026, with **Statement A / Statement B** each showing its audited date and amount (never a statement number — those are redacted), plus a "Why this was flagged" explainer. Clicking a statement opens that audit.
+2. ✓ **Hero card** at the top of "Bills & coverage": a yellow ribbon "FOUND BY COMPARING YOUR BILLS TO EACH OTHER", **$175.00 at stake**, "The same visit is on two statements", naming the provider, 90837, and Feb 12 2026, with **Statement A / Statement B** each showing its audited date and amount (never a statement number), plus a "Why this was flagged" explainer. Clicking a statement opens that audit.
 3. ✓ **Your bills**: one group per provider — the same provider under different extraction casing must be **one** group — sorted by amount at stake, header pill "$110.00 worth disputing across 1 provider", each row showing date · plain-English finding summary · amount · ✕.
 4. ✓ **Your coverage**: Deductible "$240.00 of $1,500.00" sourced "**Target from your plan (SBC).** As stated on your most recent EOB (2026-02-12)." with "$1,260.00 to go"; **Out-of-pocket maximum** card present ("$0.00 of $6,000.00 · 0%"); tracker cards below.
 5. ✓ Negative control: the t-series alone (same code, *different* dates) must produce **no** duplicate hero. Auditing the same bill twice must also produce none.
@@ -317,24 +317,6 @@ done
 
 **Cost:** 0 audits.
 
-## R1 — Manual redaction: floating chip + undo
-**Use case:** hiding something the model missed takes one click at the selection, and mistakes are recoverable.
-**Data:** any review screen (reachable without spending an audit — Prepare, then **Start over** to back out).
-
-1. On a review screen, select any text in either pane (e.g. a claim number).
-   ✓ A dark "**Hide this**" chip appears immediately above the selection.
-2. Click the chip.
-   ✓ The text is replaced by a `MANUAL_n` chip **everywhere in all open documents**; the chip disappears; "**Undo**" appears; status reads "Hidden everywhere in these documents."
-3. Click **Undo**.
-   ✓ The original text returns, the `MANUAL_n` chip is gone, Undo hides, status reads "Undid — restored."
-4. Select text OUTSIDE the panes (e.g. the page heading). ✓ No chip appears.
-5. The "Hide selection" button below the panes still works — kept as the keyboard/fallback path.
-6. **Undo stack**: hide three different strings, then click Undo three times. ✓ Each click restores exactly one hide, most recent first; after the last one, Undo disappears.
-7. **Applies to every open document**: on a batch review (M4's 3-tab screen), hide a string that appears in more than one document, then switch tabs. ✓ It's hidden in all of them, and one Undo restores all of them together.
-8. Leave and re-enter a review (**Start over**, then Prepare again). ✓ Undo is gone and the status line is clear — the stack does not leak across documents.
-
-**Cost:** 0 audits.
-
 ## R2 — Home routing, the short "Worth disputing" label, and the pairing summary
 **Use case:** the bills list is the app's home, the found-money card says one thing, and the pairing summary names the EOB a run would actually use.
 **Data:** none — run against whatever audits already exist. Needs a saved EOB in the library (any pass after M4).
@@ -365,9 +347,8 @@ done
 **Cost:** 0 audits (20 feedback/day limit).
 
 ## Always-on checks (every pass)
-- **PHI canary:** every review chips Jane Q. Testpatient / 03/14/1985 / TESTMRN-424242 / AHX-55512345; "Hide selection" redacts across all open documents.
-- **NER is actually contributing:** the redacted pane should show placeholder types the labeled-field harvest and regex backstop cannot produce — `POSTCODE_n`, `TAX_ID_n`, `EMAIL_n`. If only NAME/DOB/MRN/ACCOUNT/PLAN_ID/SSN appear, the model is loading but detecting nothing (that was the q8 failure). `node functions/test/deid-live.mjs` fails loudly on the same condition.
-- **Originals destroyed at confirm** — reports and history never show unredacted values.
+- **Evidence is real:** spot-check two findings per pass — the quoted line must appear verbatim in the document it cites. A finding whose quote is absent should never render; `verifyEvidence` drops it server-side and logs `unverified evidence dropped`. Check the audit doc's `droppedUnverified` count after each run: a non-zero value is the model inventing evidence, and it is worth reading the log.
+- **Disclosure is present:** the audit form shows the "Where your documents go" banner naming Google's Gemini API, above the dropzones.
 - **Limits:** 11th audit → "Daily limit of 10 audits reached."; 4th plan upload → "Daily limit of 3 plan uploads reached."
 
 ## Background-tab regression check (both bugs found this way)

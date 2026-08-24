@@ -170,10 +170,6 @@
     letter-spacing:0;text-transform:none;color:var(--ink-soft)}
   .just-head .money-pill{margin-left:auto;text-transform:none;letter-spacing:0}
   .just-block .bill-row:first-of-type{border-top:none}
-  /* floating redaction chip — appears at the selection inside the review panes */
-  #hide-chip{position:absolute;z-index:25;background:var(--ink);color:#fff;border:none;border-radius:8px;
-    padding:7px 13px;font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 4px 12px rgba(18,50,50,.3)}
-  #hide-chip:hover{background:var(--brand-dark)}
   /* feedback widget */
   #fb-bubble{position:fixed;right:18px;bottom:18px;width:48px;height:48px;border-radius:50%;background:var(--brand);
     border:none;cursor:pointer;z-index:15;box-shadow:0 4px 14px rgba(18,50,50,.25);display:flex;align-items:center;justify-content:center}
@@ -200,7 +196,6 @@
   .panes{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:14px 0}
   .pane{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px 18px;height:440px;overflow:auto;
     white-space:pre-wrap;font-size:13.5px;line-height:1.7}
-  .pane .chip{background:#134e4a;color:#a7f3d0;border-radius:6px;padding:1px 7px;font-size:12px;font-weight:700;
     font-family:ui-monospace,Menlo,monospace;white-space:nowrap}
   .pane-label{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--ink-soft);margin-bottom:6px}
   .tabs{display:flex;gap:8px;margin-bottom:10px}
@@ -303,7 +298,7 @@
     <div class="card cta-card">
       <div class="cta-text">
         <b>Audit a new bill</b>
-        <div class="muted">Personal details are removed on your device before anything is analyzed.</div>
+        <div class="muted">Upload the bill and the letter from your insurance. Takes a couple of minutes.</div>
         <div class="muted" id="cta-eob"></div>
         <div id="cta-quota"></div>
       </div>
@@ -355,7 +350,13 @@
   <section id="upload" hidden>
     <p><a href="#" class="back-link" id="back-to-bills-upload">← Back to bills</a></p>
     <h1>Audit a medical bill</h1>
-    <p class="lead">Personal details are removed <b>on your device</b> before anything is analyzed — you'll review exactly what gets sent.</p>
+    <p class="lead">Add your bill and, if you have it, the letter from your insurance. You'll see exactly what gets analyzed before anything is sent.</p>
+    <div class="banner" style="background:var(--accent);border-color:var(--brand);color:var(--brand-dark)">
+      <b>Where your documents go:</b> to analyze a bill we send it, and the insurance letter, to Google's
+      Gemini API — including your name and everything else printed on them. Google does not train its models
+      on data sent through that API. We keep the text so you can re-open the audit later, and you can delete
+      any audit, or your whole account, whenever you like.
+    </div>
     <div class="card">
       <div class="step-row"><span class="step-n">1</span><div><b>Add your bill</b><div class="muted">The one from the hospital or doctor asking you for money. Ask for the <b>itemized</b> version — line by line, not just a total. Several bills? Add them all; each becomes its own audit.</div></div></div>
       <div class="dropzones" style="grid-template-columns:1fr">
@@ -383,7 +384,7 @@
         <label for="saved-eob" class="muted" style="font-weight:600">Your most recent saved EOB is pre-selected — new bills audit against it unless you upload a different one</label>
         <select id="saved-eob" style="margin-top:4px"><option value="">— choose a saved EOB —</option></select>
         <details class="explain" style="margin-top:8px"><summary>My saved EOBs</summary>
-          <p>Saved in redacted form only — we never keep the original. Good for consolidated EOBs that cover several bills.</p>
+          <p>We save the text, not the file itself. Good for consolidated EOBs that cover several bills.</p>
           <div id="saved-eob-list"></div>
         </details>
       </div>
@@ -402,11 +403,11 @@
         <p><b>The itemized bill</b> comes from your provider: their portal → <i>Billing</i> → request or download the <i>itemized statement</i> (line-by-line charges with codes — not just a total).</p>
       </details>
 
-      <p class="muted" style="margin-top:8px">With several documents we pair each bill to its EOB by filename, review all redactions once, then run the audits back to back.</p>
+      <p class="muted" style="margin-top:8px">With several documents we pair each bill to its EOB by filename, review them all once, then run the audits back to back.</p>
 
       <p class="banner">📄 <b>Best results with digital PDFs</b> downloaded from your portals. Photos and scans work, but reading accuracy may suffer — check the review screen carefully.</p>
       <div id="upload-error" class="error" hidden></div>
-      <div class="step-row" style="margin-top:10px"><span class="step-n">3</span><div><b>Prepare the audit</b><div class="muted">Next you'll see exactly what gets analyzed — with your personal details already hidden.</div></div></div>
+      <div class="step-row" style="margin-top:10px"><span class="step-n">3</span><div><b>Prepare the audit</b><div class="muted">Next you'll see exactly what gets analyzed, so you can check we read the documents correctly.</div></div></div>
       <div id="audit-summary" class="muted" hidden></div>
       <button id="run-audit" class="btn" style="margin-top:10px">Prepare audit →</button>
     </div>
@@ -463,15 +464,10 @@
 
   <section id="review" hidden>
     <div id="batch-progress-review" class="muted" style="font-weight:700" hidden></div>
-    <h1>We hid your personal info — double-check it</h1>
-    <div class="banner" style="background:var(--accent);border-color:var(--brand);color:var(--brand-dark)">
-      <b>What just happened:</b> before anything gets analyzed, we found the personal details in your documents —
-      your name, birth date, ID numbers, address — and replaced each one with an anonymous tag like
-      <span class="chip" style="background:#134e4a;color:#a7f3d0;border-radius:6px;padding:1px 7px;font-size:12px;font-weight:700">NAME_1</span>.
-      This happened <b>on your device</b>. Only the version on the right is ever sent for analysis, so your identity stays with you.
-    </div>
-    <p class="lead" style="margin-top:14px"><b>Your job:</b> glance over the right side. If you spot anything personal that
-      we missed, select it and click <b>Hide this</b> where it pops up (or the button below). You can undo. The left side shows your actual document for comparison — it never leaves this device.</p>
+    <h1>Check we read it right</h1>
+    <p class="lead"><b>Your job:</b> compare the two sides. The right is the text we'll analyze, read out of
+      the file on the left. If numbers or codes came out wrong, the audit will be wrong too — better to catch
+      that here than to spend an audit on it.</p>
     <div id="ocr-banner" class="banner" hidden>⚠️ <b>This looks like a scan or photo</b> — we've read it with OCR.
       Numbers and codes may contain errors; please verify carefully below.</div>
     <div id="pair-banner" class="banner" hidden></div>
@@ -481,24 +477,19 @@
     </div>
     <div id="review-doc" class="muted" style="font-weight:700;margin:2px 0 8px" hidden></div>
     <div class="panes">
-      <div><div class="pane-label">Your document (never leaves this device)</div><div id="original-pane" class="pane"></div></div>
-      <div><div class="pane-label">What gets analyzed (personal info hidden)</div><div id="redacted-pane" class="pane"></div></div>
-    </div>
-    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-      <button id="redact-selection" class="btn ghost">Hide selection</button>
-      <button id="undo-redaction" class="btn ghost" hidden>Undo</button>
-      <span id="redact-status" class="muted"></span>
+      <div><div class="pane-label">Your document</div><div id="original-pane" class="pane"></div></div>
+      <div><div class="pane-label">What we'll analyze</div><div id="sent-pane" class="pane"></div></div>
     </div>
     <label id="save-eob-wrap" class="muted" style="display:flex;gap:8px;align-items:center;font-weight:600;margin-top:14px" hidden>
       <input type="checkbox" id="save-eob" checked style="width:auto">
-      Save this EOB (redacted) to my account, so future bills can be audited against it
+      Save this EOB to my account, so future bills can be audited against it
     </label>
     <div style="margin-top:18px;display:flex;gap:10px">
       <button id="confirm-review" class="btn">Looks right — analyze</button>
       <button id="back-to-upload" class="btn ghost">Start over</button>
     </div>
-    <p class="muted" style="margin-top:10px">When you press analyze, the original text is discarded.
-      Only the redacted version is transmitted and stored.</p>
+    <p class="muted" style="margin-top:10px">When you press analyze, this text is sent to Google's Gemini API
+      and saved to your account so you can re-open the audit later. Delete it anytime.</p>
   </section>
 
   <section id="report" hidden>
@@ -553,7 +544,6 @@
   </div>
 </dialog>
 
-<button id="hide-chip" class="no-print" hidden>Hide this</button>
 <button id="fb-bubble" class="no-print" aria-label="Send feedback" hidden>
   <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v8a2.5 2.5 0 0 1-2.5 2.5H9.4l-4 3.2c-.6.5-1.4.1-1.4-.6V5.5Z" fill="#fff"/></svg>
 </button>
