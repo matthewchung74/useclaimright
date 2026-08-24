@@ -16,6 +16,10 @@ const GEMINI_API_KEY = defineSecret("GEMINI_API_KEY");
 
 const MODEL_ID = process.env.MODEL_ID || "gemini-3.6-flash";
 const MAX_DOC_CHARS = 200_000;
+// Page images are billed per page and arrive base64-encoded in the callable
+// payload, so both count. Generous for a real bill, bounded against abuse.
+const MAX_PAGES = 20;
+const MAX_IMAGE_BYTES = 12_000_000;
 const DAILY_LIMIT = 10;
 
 const ajv = new Ajv({ allErrors: true });
@@ -100,14 +104,26 @@ export const analyze = onCall(
       throw new HttpsError("unauthenticated", "Sign in to run an audit.");
     }
     const uid = request.auth.uid;
+    // A document arrives one of two ways: as text (it had a text layer), or as
+    // page images (it was a scan or a photo, and the model reads it).
     const { bill, eob, ocrConfidence } = request.data || {};
+    const doc = (d) => ({ text: typeof d?.text === "string" ? d.text : "", images: Array.isArray(d?.images) ? d.images : [] });
+    const billDoc = doc(bill);
+    const eobDoc = doc(eob);
 
-    if (typeof bill !== "string" || !bill.trim() ||
-        typeof eob !== "string") {
-      throw new HttpsError("invalid-argument", "The bill text is required.");
+    if (!billDoc.text.trim() && !billDoc.images.length) {
+      throw new HttpsError("invalid-argument", "The bill is required, as text or page images.");
     }
-    if (bill.length > MAX_DOC_CHARS || eob.length > MAX_DOC_CHARS) {
+    if (billDoc.text.length > MAX_DOC_CHARS || eobDoc.text.length > MAX_DOC_CHARS) {
       throw new HttpsError("invalid-argument", "Document too large.");
+    }
+    const pages = billDoc.images.length + eobDoc.images.length;
+    if (pages > MAX_PAGES) {
+      throw new HttpsError("invalid-argument", `Too many pages (${pages}); the limit is ${MAX_PAGES}.`);
+    }
+    const imageBytes = [...billDoc.images, ...eobDoc.images].reduce((n, d) => n + d.length, 0);
+    if (imageBytes > MAX_IMAGE_BYTES) {
+      throw new HttpsError("invalid-argument", "Those pages are too large. Try a lower-resolution scan.");
     }
 
     await checkRateLimit(uid);
@@ -126,7 +142,7 @@ export const analyze = onCall(
     const planDigest = plan?.structured ? buildDigest(plan.structured) : plan?.digest || null;
     let result, usage = null;
     try {
-      const first = await runAudit(bill, eob, opts, planDigest);
+      const first = await runAudit(billDoc, eobDoc, opts, planDigest);
       usage = addUsage(null, first.usage);
       result = first.data;
       if (!validate(result)) {
@@ -134,8 +150,8 @@ export const analyze = onCall(
         // It bills a second time, which is why usage accumulates rather than replaces.
         const errText = ajv.errorsText(validate.errors);
         const retry = await runAudit(
-          bill,
-          `${eob}\n\n[SYSTEM NOTE: your previous response failed schema validation: ${errText}. Return valid JSON matching the schema exactly.]`,
+          billDoc,
+          { ...eobDoc, text: `${eobDoc.text}\n\n[SYSTEM NOTE: your previous response failed schema validation: ${errText}. Return valid JSON matching the schema exactly.]` },
           opts,
           planDigest
         );
@@ -159,7 +175,12 @@ export const analyze = onCall(
     // is a string; only this proves it is real. Findings that fail are dropped
     // before anything is shown or written, because they end up in a letter the
     // member sends to a provider.
-    const verified = verifyEvidence(result, { bill: bill, eob: eob, sbc: planDigest });
+    // Verify against whatever text we actually have. For a scanned document
+    // that is the model's own transcription: weaker than independent ground
+    // truth, but it still catches a quote the model did not read anywhere.
+    const billSource = billDoc.text.trim() || result.billText || "";
+    const eobSource = eobDoc.text.trim() || result.eobText || "";
+    const verified = verifyEvidence(result, { bill: billSource, eob: eobSource, sbc: planDigest });
     result = verified.result;
     if (verified.dropped.length) {
       // Loud, because the drop is silent to the user: this is the only place a
@@ -180,8 +201,11 @@ export const analyze = onCall(
 
     const auditRef = db.collection(`users/${uid}/audits`).doc();
     await auditRef.set({
-      bill,
-      eob,
+      // The text the audit was actually reasoned over. For scans this is the
+      // model's transcription, which is also what the client's bill fingerprint
+      // and saved-EOB matching run on. Page images are never stored.
+      bill: billSource,
+      eob: eobSource,
       findings: result.findings,
       totals: result.totals,
       occurrenceTable: result.occurrenceTable,
@@ -214,22 +238,30 @@ export const extractPlan = onCall(
     if (!request.auth) throw new HttpsError("unauthenticated", "Sign in to add your plan.");
     const uid = request.auth.uid;
     const { sbc, sourceName, force } = request.data || {};
-    if (typeof sbc !== "string" || !sbc.trim()) {
-      throw new HttpsError("invalid-argument", "The SBC text is required.");
+    const sbcDoc = {
+      text: typeof sbc?.text === "string" ? sbc.text : "",
+      images: Array.isArray(sbc?.images) ? sbc.images : [],
+    };
+    if (!sbcDoc.text.trim() && !sbcDoc.images.length) {
+      throw new HttpsError("invalid-argument", "The SBC is required, as text or page images.");
     }
-    if (sbc.length > MAX_DOC_CHARS) throw new HttpsError("invalid-argument", "Document too large.");
+    if (sbcDoc.text.length > MAX_DOC_CHARS) throw new HttpsError("invalid-argument", "Document too large.");
+    if (sbcDoc.images.length > MAX_PAGES) throw new HttpsError("invalid-argument", `Too many pages; the limit is ${MAX_PAGES}.`);
+    if (sbcDoc.images.reduce((n, d) => n + d.length, 0) > MAX_IMAGE_BYTES) {
+      throw new HttpsError("invalid-argument", "Those pages are too large. Try a lower-resolution scan.");
+    }
     await checkPlanRateLimit(uid);
 
     const opts = { modelId: MODEL_ID, apiKey: GEMINI_API_KEY.value() };
     let structured, planUsage = null;
     try {
-      const first = await runPlanExtract(sbc, opts);
+      const first = await runPlanExtract(sbcDoc, opts);
       planUsage = addUsage(null, first.usage);
       structured = first.data;
       if (!validatePlan(structured)) {
         const errText = ajv.errorsText(validatePlan.errors);
         const retry = await runPlanExtract(
-          `${sbc}\n\n[SYSTEM NOTE: your previous response failed schema validation: ${errText}. Return valid JSON matching the schema exactly.]`,
+          { ...sbcDoc, text: `${sbcDoc.text}\n\n[SYSTEM NOTE: your previous response failed schema validation: ${errText}. Return valid JSON matching the schema exactly.]` },
           opts
         );
         planUsage = addUsage(planUsage, retry.usage);
@@ -264,7 +296,7 @@ export const extractPlan = onCall(
 
     const digest = buildDigest(structured);
     await ref.set({
-      structured, digest, text: sbc,
+      structured, digest, text: sbcDoc.text || structured?.sourceText || "",
       sourceName: typeof sourceName === "string" ? sourceName.slice(0, 200) : "",
       model: MODEL_ID, tokens: planUsage, createdAt: FieldValue.serverTimestamp(),
     });

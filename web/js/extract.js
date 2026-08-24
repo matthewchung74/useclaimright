@@ -1,6 +1,18 @@
-// Text extraction: pdf.js text layer for digital PDFs, tesseract.js OCR fallback
-// for scans/photos. Returns { text, method: "pdf"|"ocr", confidence } where
-// confidence is tesseract's mean word confidence (100 for digital PDFs).
+// Getting a document ready to audit.
+//
+// A digital PDF carries its own text layer, so we read it directly: free,
+// instant, and exact. A scan or a photo carries nothing, and this used to fall
+// back to tesseract.js — a ~20MB download that produced mangled text on
+// anything worse than a clean scanner output, and then fed that mangled text
+// to both the audit AND the checks meant to protect it.
+//
+// Those pages now go to the model as images. It reads a page far better than
+// tesseract does, and returns its transcription with the findings, which gives
+// back everything the extracted text was needed for.
+//
+// Returns { text, images, method, confidence, previews }:
+//   method "pdf" | "html" | "text" — text is authoritative, images empty
+//   method "image"                 — text is "", the model reads `images`
 
 import * as pdfjsLib from "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.min.mjs";
 
@@ -8,25 +20,6 @@ pdfjsLib.GlobalWorkerOptions.workerSrc =
   "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.worker.min.mjs";
 
 const MIN_CHARS_PER_PAGE = 200; // below this average, the PDF has no useful text layer
-
-let tesseractWorkerPromise = null;
-async function getTesseract() {
-  if (!tesseractWorkerPromise) {
-    tesseractWorkerPromise = (async () => {
-      const { createWorker } = await import(
-        "https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.esm.min.js"
-      );
-      return createWorker("eng");
-    })();
-  }
-  return tesseractWorkerPromise;
-}
-
-async function ocrCanvas(canvas) {
-  const worker = await getTesseract();
-  const { data } = await worker.recognize(canvas);
-  return { text: data.text, confidence: data.confidence };
-}
 
 async function renderPageToDataUrl(page, scale = 1.5) {
   const viewport = page.getViewport({ scale });
@@ -44,7 +37,7 @@ async function extractFromPdf(file) {
   const buf = await file.arrayBuffer();
   const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
   const pages = [];
-  const previews = []; // rendered page images — shown locally, never transmitted
+  const previews = []; // rendered pages: shown in the review pane, and sent when there is no text layer
   let totalChars = 0;
 
   for (let i = 1; i <= pdf.numPages; i++) {
@@ -57,19 +50,10 @@ async function extractFromPdf(file) {
   }
 
   if (totalChars / pdf.numPages >= MIN_CHARS_PER_PAGE) {
-    return { text: pages.map((p) => p.text).join("\n\n"), method: "pdf", confidence: 100, previews };
+    return { text: pages.map((p) => p.text).join("\n\n"), images: [], method: "pdf", confidence: 100, previews };
   }
-
-  // No usable text layer — render each page and OCR it.
-  let ocrText = "";
-  let confSum = 0;
-  for (const { page } of pages) {
-    const canvas = await renderPageToDataUrl(page, 2);
-    const { text, confidence } = await ocrCanvas(canvas);
-    ocrText += text + "\n\n";
-    confSum += confidence;
-  }
-  return { text: ocrText, method: "ocr", confidence: confSum / pdf.numPages, previews };
+  // Scanned: no text worth having. Send the pages themselves.
+  return { text: "", images: previews, method: "image", confidence: null, previews };
 }
 
 async function extractFromImage(file) {
@@ -79,8 +63,7 @@ async function extractFromImage(file) {
   canvas.height = bitmap.height;
   canvas.getContext("2d").drawImage(bitmap, 0, 0);
   const previews = [canvas.toDataURL("image/jpeg", 0.85)];
-  const { text, confidence } = await ocrCanvas(canvas);
-  return { text, method: "ocr", confidence, previews };
+  return { text: "", images: previews, method: "image", confidence: null, previews };
 }
 
 function htmlToText(html) {
@@ -99,10 +82,10 @@ export async function extractText(file) {
     return extractFromImage(file);
   }
   if (file.type === "text/html" || name.endsWith(".html") || name.endsWith(".htm")) {
-    return { text: htmlToText(await file.text()), method: "html", confidence: 100, previews: [] };
+    return { text: htmlToText(await file.text()), images: [], method: "html", confidence: 100, previews: [] };
   }
   if (file.type === "text/plain" || name.endsWith(".txt")) {
-    return { text: await file.text(), method: "text", confidence: 100, previews: [] };
+    return { text: await file.text(), images: [], method: "text", confidence: 100, previews: [] };
   }
   throw new Error(`Unsupported file type: ${file.type || file.name}. Use PDF, photo, HTML, or text.`);
 }

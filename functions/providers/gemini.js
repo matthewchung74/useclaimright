@@ -62,47 +62,56 @@ const usageOf = (response) => ({
   total: response?.usageMetadata?.totalTokenCount ?? null,
 });
 
+const IMAGE_NOTE = `The documents are attached as page images, bill first. Read them.
+Also return what you read: put the bill's full text in billText and the EOB's in eobText,
+verbatim, including headers and line items. Every evidence quote you give must appear in
+the text you return.`;
+
 // Provider adapter contract: runAudit(bill, eob, opts)
 //   -> { data: validated-shape object, usage: {input, output, total} }.
 // Swapping providers means adding a sibling file with the same signature.
 export async function runAudit(bill, eob, { modelId, apiKey }, planDigest = null) {
   const ai = new GoogleGenAI({ apiKey });
-  const eobSection = eob.trim()
-    ? `===== EOB =====\n${eob}`
-    : BILL_ONLY_NOTE;
-  const instructions = AUDIT_INSTRUCTIONS + (planDigest ? planTermsBlock(planDigest) : "");
+  const billImages = bill.images || [];
+  const eobImages = eob.images || [];
+  const asImages = billImages.length > 0 || eobImages.length > 0;
+
+  let instructions = AUDIT_INSTRUCTIONS + (planDigest ? planTermsBlock(planDigest) : "");
+  if (!eob.text?.trim() && !eobImages.length) instructions += `\n\n${BILL_ONLY_NOTE}`;
+  if (asImages) instructions += `\n\n${IMAGE_NOTE}`;
+
+  const parts = [];
+  if (asImages) {
+    parts.push({ text: `${instructions}\n\n${billImages.length} bill page(s), then ${eobImages.length} EOB page(s).` });
+    for (const data of [...billImages, ...eobImages]) {
+      parts.push({ inlineData: { mimeType: "image/jpeg", data } });
+    }
+  } else {
+    const eobSection = eob.text.trim() ? `===== EOB =====\n${eob.text}` : "";
+    parts.push({ text: `${instructions}\n\n===== ITEMIZED BILL =====\n${bill.text}\n\n${eobSection}` });
+  }
+
   const response = await ai.models.generateContent({
     model: modelId,
-    contents: [
-      {
-        role: "user",
-        parts: [
-          {
-            text: `${instructions}\n\n===== ITEMIZED BILL =====\n${bill}\n\n${eobSection}`,
-          },
-        ],
-      },
-    ],
-    config: {
-      responseMimeType: "application/json",
-      responseJsonSchema: findingsSchema,
-      temperature: 0,
-    },
+    contents: [{ role: "user", parts }],
+    config: { temperature: 0, responseMimeType: "application/json", responseJsonSchema: findingsSchema },
   });
   return { data: JSON.parse(response.text), usage: usageOf(response) };
 }
 
-// Same adapter contract as runAudit: returns the parsed structured plan.
 export async function runPlanExtract(sbc, { modelId, apiKey }) {
   const ai = new GoogleGenAI({ apiKey });
+  const images = sbc.images || [];
+  const parts = images.length
+    ? [
+        { text: `${PLAN_EXTRACT_INSTRUCTIONS}\n\nThe SBC is attached as ${images.length} page image(s). Read them, and return the text you read in sourceText.` },
+        ...images.map((data) => ({ inlineData: { mimeType: "image/jpeg", data } })),
+      ]
+    : [{ text: `${PLAN_EXTRACT_INSTRUCTIONS}\n\n===== SUMMARY OF BENEFITS =====\n${sbc.text}` }];
+
   const response = await ai.models.generateContent({
     model: modelId,
-    contents: [
-      {
-        role: "user",
-        parts: [{ text: `${PLAN_EXTRACT_INSTRUCTIONS}\n\n===== SUMMARY OF BENEFITS =====\n${sbc}` }],
-      },
-    ],
+    contents: [{ role: "user", parts }],
     config: {
       responseMimeType: "application/json",
       responseJsonSchema: planSchema,
