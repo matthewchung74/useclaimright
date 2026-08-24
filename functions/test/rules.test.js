@@ -86,17 +86,17 @@ if (!EMULATOR) {
   });
 
   test("owner can create, read, and delete their saved EOBs", async () => {
-    await assertSucceeds(alice.doc("users/alice/eobs/e1").set({ label: "Acme · 2026-01-15", redactedText: "[NAME_1] ..." }));
+    await assertSucceeds(alice.doc("users/alice/eobs/e1").set({ label: "Acme · 2026-01-15", text: "..." }));
     await assertSucceeds(alice.doc("users/alice/eobs/e1").get());
     await assertSucceeds(alice.doc("users/alice/eobs/e1").delete());
   });
 
   test("another user cannot read or write my saved EOBs", async () => {
     await env.withSecurityRulesDisabled(async (ctx) => {
-      await ctx.firestore().doc("users/alice/eobs/e2").set({ label: "x", redactedText: "y" });
+      await ctx.firestore().doc("users/alice/eobs/e2").set({ label: "x", text: "y" });
     });
     await assertFails(mallory.doc("users/alice/eobs/e2").get());
-    await assertFails(mallory.doc("users/alice/eobs/e2").set({ redactedText: "forged" }));
+    await assertFails(mallory.doc("users/alice/eobs/e2").set({ text: "forged" }));
     await assertFails(anon.doc("users/alice/eobs/e2").get());
   });
 

@@ -50,9 +50,9 @@ export const planSchema = {
   },
 };
 
-export const PLAN_EXTRACT_INSTRUCTIONS = `You are reading the de-identified text of a Summary of
+export const PLAN_EXTRACT_INSTRUCTIONS = `You are reading the text of a Summary of
 Benefits and Coverage (SBC) — the standardized ACA document with an "Important Questions" table
-and a "Common Medical Events" cost-share grid. Personal identifiers are placeholders like [NAME_1].
+and a "Common Medical Events" cost-share grid.
 
 Extract, verbatim from the document, NEVER inferred or guessed:
 - planName: the marketing/plan name as printed (null if absent).

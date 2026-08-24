@@ -2,11 +2,11 @@ import { GoogleGenAI } from "@google/genai";
 import { findingsSchema } from "../schema.js";
 import { planSchema, PLAN_EXTRACT_INSTRUCTIONS, planTermsBlock } from "../plan.js";
 
-const AUDIT_INSTRUCTIONS = `You are a medical billing auditor. You receive the de-identified text of
-a patient's itemized medical bill and the matching insurance Explanation of Benefits (EOB).
-Personal identifiers have been replaced with placeholders like [NAME_1], [DOB], [MRN] — treat them
-as opaque tokens numbered PER DOCUMENT: [NAME_1] in the bill and [NAME_1] in the EOB do not
-necessarily refer to the same value. Provider, hospital, and insurer names are real.
+const AUDIT_INSTRUCTIONS = `You are a medical billing auditor. You receive the text of a patient's
+itemized medical bill and the matching insurance Explanation of Benefits (EOB), as printed —
+including patient names, member and account numbers, and dates of birth. Never repeat a personal
+identifier in a finding: quote the charge line, not the patient header. A person named identically
+in the bill and the EOB is the same person, which is how a consolidated statement is attributed.
 
 The EOB may be a CONSOLIDATED statement covering several claims, dates, providers, or family
 members. Compare the bill only against the EOB claim lines that match its provider, service dates,
@@ -62,13 +62,13 @@ const usageOf = (response) => ({
   total: response?.usageMetadata?.totalTokenCount ?? null,
 });
 
-// Provider adapter contract: runAudit(redactedBill, redactedEob, opts)
+// Provider adapter contract: runAudit(bill, eob, opts)
 //   -> { data: validated-shape object, usage: {input, output, total} }.
 // Swapping providers means adding a sibling file with the same signature.
-export async function runAudit(redactedBill, redactedEob, { modelId, apiKey }, planDigest = null) {
+export async function runAudit(bill, eob, { modelId, apiKey }, planDigest = null) {
   const ai = new GoogleGenAI({ apiKey });
-  const eobSection = redactedEob.trim()
-    ? `===== EOB =====\n${redactedEob}`
+  const eobSection = eob.trim()
+    ? `===== EOB =====\n${eob}`
     : BILL_ONLY_NOTE;
   const instructions = AUDIT_INSTRUCTIONS + (planDigest ? planTermsBlock(planDigest) : "");
   const response = await ai.models.generateContent({
@@ -78,7 +78,7 @@ export async function runAudit(redactedBill, redactedEob, { modelId, apiKey }, p
         role: "user",
         parts: [
           {
-            text: `${instructions}\n\n===== ITEMIZED BILL =====\n${redactedBill}\n\n${eobSection}`,
+            text: `${instructions}\n\n===== ITEMIZED BILL =====\n${bill}\n\n${eobSection}`,
           },
         ],
       },
@@ -93,14 +93,14 @@ export async function runAudit(redactedBill, redactedEob, { modelId, apiKey }, p
 }
 
 // Same adapter contract as runAudit: returns the parsed structured plan.
-export async function runPlanExtract(redactedSbc, { modelId, apiKey }) {
+export async function runPlanExtract(sbc, { modelId, apiKey }) {
   const ai = new GoogleGenAI({ apiKey });
   const response = await ai.models.generateContent({
     model: modelId,
     contents: [
       {
         role: "user",
-        parts: [{ text: `${PLAN_EXTRACT_INSTRUCTIONS}\n\n===== SUMMARY OF BENEFITS =====\n${redactedSbc}` }],
+        parts: [{ text: `${PLAN_EXTRACT_INSTRUCTIONS}\n\n===== SUMMARY OF BENEFITS =====\n${sbc}` }],
       },
     ],
     config: {
