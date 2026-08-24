@@ -39,7 +39,7 @@ test("documentsRelated: unreadable documents are never flagged (can't judge)", (
 
 const pt = { id: "pt", label: "Testville PT · 2026-03-20", provider: "Testville Physical Therapy Group", serviceDates: ["2026-03-20"], codes: ["97110"] };
 const mh = { id: "mh", label: "Behavioral · 2026-01-15", provider: "Testville Behavioral Health Associates", serviceDates: ["2026-01-15", "2026-02-12"], codes: ["90837"] };
-const bare = { id: "old", label: "Legacy entry", redactedText: "..." }; // pre-metadata library entry
+const bare = { id: "old", label: "Legacy entry", redactedText: "..." }; // pre-metadata entry, and pre-rename: `redactedText` is deliberate here
 
 test("matchSavedEob: provider + date beats provider-only", () => {
   const billText = "TESTVILLE PHYSICAL THERAPY GROUP itemized statement Date of service: 2026-03-20 97110 $210.00";
