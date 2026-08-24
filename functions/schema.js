@@ -57,9 +57,52 @@ const normalizeForMatch = (s) =>
     .replace(/[\u2018\u2019\u201A\u201B]/g, "'")
     .replace(/[\u201C\u201D\u201E\u201F]/g, '"')
     .replace(/[\u2010-\u2015]/g, "-")
+    // Currency notation is the model's choice, not the document's evidence:
+    // a bill printing "145.50" and a quote writing "$145.50" are the same fact,
+    // and so are "2,400.00" and "2400.00".
+    .replace(/\$/g, "")
+    .replace(/(\d),(?=\d{3}(\D|$))/g, "$1")
     .replace(/\s+/g, " ")
     .trim()
     .toLowerCase();
+
+// Distinctive tokens: the ones a fabrication cannot get right. Amounts, codes
+// and dates carry nearly all the evidentiary weight; "the" appearing in a bill
+// proves nothing. Single characters are dropped as noise.
+const tokensOf = (s) =>
+  s.split(" ")
+    .map((t) => t.replace(/^[^a-z0-9]+/, "").replace(/[^a-z0-9%]+$/, ""))
+    .filter((t) => t.length >= 2);
+
+// Does this quote actually come from this document?
+//
+// Exact containment is the common case and the fast path. It is not sufficient
+// on its own, because a model reading a scan does two reasonable things that
+// break a literal match: it cleans up OCR noise, and it joins two lines into
+// one quote. Both were observed on the first real run against a scanned
+// fixture, and both would have dropped a TRUE finding — including a $145.50
+// duplicate charge, the headline number on that audit.
+//
+// So the fallback asks the question that actually matters: are the quote's
+// distinctive tokens in the document? A model that tidies "$l86.35" to
+// "$186.35" still matches. A model that invents "99285 EMERGENCY DEPARTMENT
+// VISIT $2,400.00" for a lab-panel bill does not — its numbers are absent, and
+// numbers are what a fabrication has to invent.
+const NUMERIC_HIT = 0.8; // amounts and codes must be real
+const WORD_HIT = 0.6;    // wording may drift; substance may not
+function quoteIsSupported(quote, doc) {
+  if (!doc) return false;
+  if (doc.includes(quote)) return true;
+  const tokens = [...new Set(tokensOf(quote))];
+  if (!tokens.length) return false;
+  const numeric = tokens.filter((t) => /\d/.test(t));
+  const words = tokens.filter((t) => !/\d/.test(t));
+  const hit = (list) => (list.length ? list.filter((t) => doc.includes(t)).length / list.length : 1);
+  // With no numbers at all there is nothing hard to check against, so the
+  // wording itself has to carry the burden.
+  if (!numeric.length) return hit(words) >= 0.8;
+  return hit(numeric) >= NUMERIC_HIT && hit(words) >= WORD_HIT;
+}
 
 // Each quote field is checked against the document it claims to come from. An
 // empty quote is not a claim — sbcQuote is "" on every non-plan finding — so it
@@ -79,7 +122,7 @@ export function verifyEvidence(result, sources) {
     for (const field of ["billQuote", "eobQuote", "sbcQuote"]) {
       const quote = normalizeForMatch(f?.evidence?.[field]);
       if (!quote) continue;
-      if (!docs[field].includes(quote)) {
+      if (!quoteIsSupported(quote, docs[field])) {
         dropped.push({ type: f.type, field, quote: f.evidence[field] });
         return false;
       }

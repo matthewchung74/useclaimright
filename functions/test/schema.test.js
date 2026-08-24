@@ -183,3 +183,45 @@ test("a clean result is returned untouched", () => {
   const r = verifyEvidence(input, SRC);
   assert.equal(r.result, input); // same reference — no needless copy
 });
+
+// --- verifyEvidence: the cases a scanned document actually produces ---
+// Both of these were observed on the first live run against a rasterized
+// fixture, and exact containment dropped both. They are TRUE findings.
+
+test("a quote composed from two separate lines is supported", () => {
+  // Observed: the model proved a duplicate by quoting both lines as one string.
+  // Every token is in the bill; only the contiguity is the model's.
+  const composed = "1 80053 Comprehensive metabolic panel 1 $145.50 / 2 80053 Comprehensive metabolic panel 1 $145.50";
+  const r = verifyEvidence(resultWith(finding({ billQuote: composed })), SRC);
+  assert.equal(r.result.findings.length, 1, "a composed quote is not a fabrication");
+});
+
+test("a quote that tidies OCR noise is supported", () => {
+  // Observed: the model silently corrected a mangled character. Demanding the
+  // mangling back is demanding the model reproduce a scanning artifact.
+  const ocr = "What you may owe the provider: $186.35 (deductibie $50.00 + coinsurance)";
+  const clean = "What you may owe the provider: $186.35 (deductible $50.00 + coinsurance)";
+  const r = verifyEvidence(resultWith(finding({ eobQuote: clean })), { bill: BILL, eob: ocr, sbc: "" });
+  assert.equal(r.result.findings.length, 1);
+});
+
+test("real numbers with an invented description are still dropped", () => {
+  // The failure mode the looser match must NOT let through: the amounts are
+  // lifted from the bill, the service is imagined.
+  const r = verifyEvidence(resultWith(finding({ billQuote: "80053 emergency department visit 145.50" })), SRC);
+  assert.equal(r.result.findings.length, 0);
+  assert.equal(r.dropped[0].field, "billQuote");
+});
+
+test("a near-miss on the amount is dropped", () => {
+  // One digit different is the whole finding: $41.20 allowed is not $999.99.
+  const r = verifyEvidence(resultWith(finding({ eobQuote: "80053 allowed 999.99" })), SRC);
+  assert.equal(r.result.findings.length, 0);
+});
+
+test("a quote with no numbers at all needs its wording to hold up", () => {
+  const ok = verifyEvidence(resultWith(finding({ eobQuote: "patient responsibility" })), SRC);
+  assert.equal(ok.result.findings.length, 1);
+  const no = verifyEvidence(resultWith(finding({ eobQuote: "prior authorization was never obtained" })), SRC);
+  assert.equal(no.result.findings.length, 0);
+});
