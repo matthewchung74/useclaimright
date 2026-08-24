@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import Ajv from "ajv";
-import { findingsSchema, computeAtStake } from "../schema.js";
+import { findingsSchema, computeAtStake, verifyEvidence } from "../schema.js";
 
 const ajv = new Ajv({ allErrors: true });
 const validate = ajv.compile(findingsSchema);
@@ -103,4 +103,83 @@ test("computeAtStake sums plan findings and tolerates missing amounts", () => {
 
 test("an all-advisory audit is worth $0 to dispute", () => {
   assert.equal(computeAtStake([{ type: "charity_care_eligible", amountAtStake: 186.35 }]), 0);
+});
+
+// --- verifyEvidence ---
+// A quote that is not in the document is a fabrication. computeAtStake exists
+// because the model's arithmetic was not trusted; these cover the same distrust
+// applied to the quotes the arithmetic rests on.
+
+const BILL = `ST. VERIFICATION GENERAL HOSPITAL
+80053  COMPREHENSIVE METABOLIC PANEL      145.50
+80053  COMPREHENSIVE METABOLIC PANEL      145.50`;
+const EOB = `Claim 2026-06-12
+80053 allowed 41.20   patient responsibility 0.00`;
+const SBC = `Specialist visit: $60 copay per visit`;
+const SRC = { bill: BILL, eob: EOB, sbc: SBC };
+
+const finding = (evidence, over = {}) => ({
+  type: "duplicate_charge", lineRef: "Bill lines 2 and 3",
+  description: "billed twice", amountAtStake: 145.5, confidence: "high",
+  evidence: { billQuote: "", eobQuote: "", sbcQuote: "", ...evidence },
+  ...over,
+});
+const resultWith = (...findings) => ({
+  ...structuredClone(validResult), findings,
+  totals: { billed: 2300, eobAllowed: 900, patientResponsibility: 250, totalAtStake: computeAtStake(findings) },
+});
+
+test("a quote present verbatim is kept", () => {
+  const r = verifyEvidence(resultWith(finding({ billQuote: "80053  COMPREHENSIVE METABOLIC PANEL      145.50" })), SRC);
+  assert.equal(r.result.findings.length, 1);
+  assert.equal(r.dropped.length, 0);
+});
+
+test("whitespace and line-break variance still matches", () => {
+  const r = verifyEvidence(resultWith(finding({ billQuote: "80053 COMPREHENSIVE METABOLIC PANEL 145.50" })), SRC);
+  assert.equal(r.result.findings.length, 1);
+});
+
+test("case variance still matches", () => {
+  const r = verifyEvidence(resultWith(finding({ billQuote: "80053 comprehensive metabolic panel 145.50" })), SRC);
+  assert.equal(r.result.findings.length, 1);
+});
+
+test("a fabricated quote drops the finding", () => {
+  const r = verifyEvidence(resultWith(finding({ billQuote: "99285 EMERGENCY DEPARTMENT VISIT 2400.00" })), SRC);
+  assert.equal(r.result.findings.length, 0);
+  assert.equal(r.dropped.length, 1);
+  assert.equal(r.dropped[0].field, "billQuote");
+});
+
+test('an empty quote is not a claim, so it is skipped', () => {
+  // sbcQuote is "" on every non-plan finding — that must not read as unverifiable.
+  const r = verifyEvidence(resultWith(finding({ eobQuote: "80053 allowed 41.20" })), SRC);
+  assert.equal(r.result.findings.length, 1);
+});
+
+test("all three quote fields are checked, not just the bill", () => {
+  const eobLie = verifyEvidence(resultWith(finding({ eobQuote: "80053 allowed 999.99" })), SRC);
+  assert.equal(eobLie.dropped[0].field, "eobQuote");
+  const sbcLie = verifyEvidence(resultWith(finding({ sbcQuote: "Specialist visit: $10 copay per visit" })), SRC);
+  assert.equal(sbcLie.dropped[0].field, "sbcQuote");
+});
+
+test("a finding quoting a document that was never uploaded is dropped", () => {
+  const r = verifyEvidence(resultWith(finding({ eobQuote: "80053 allowed 41.20" })), { bill: BILL, eob: "", sbc: "" });
+  assert.equal(r.result.findings.length, 0);
+});
+
+test("the at-stake total is re-derived from what survives", () => {
+  const real = finding({ billQuote: "80053 COMPREHENSIVE METABOLIC PANEL 145.50" });
+  const fake = finding({ billQuote: "99285 EMERGENCY DEPARTMENT VISIT 2400.00" }, { amountAtStake: 2400 });
+  const r = verifyEvidence(resultWith(real, fake), SRC);
+  assert.equal(r.result.findings.length, 1);
+  assert.equal(r.result.totals.totalAtStake, 145.5); // not 2545.50
+});
+
+test("a clean result is returned untouched", () => {
+  const input = resultWith(finding({ billQuote: "80053 COMPREHENSIVE METABOLIC PANEL 145.50" }));
+  const r = verifyEvidence(input, SRC);
+  assert.equal(r.result, input); // same reference — no needless copy
 });

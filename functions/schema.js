@@ -33,6 +33,68 @@ export function computeAtStake(findings) {
     .reduce((sum, f) => sum + (typeof f.amountAtStake === "number" ? f.amountAtStake : 0), 0);
 }
 
+// Evidence, verified. The schema proves a quote is a STRING; it cannot prove the
+// string is in the document. That gap matters more than it looks: every finding
+// is rendered under its quote, and buildDisputeEmail puts those quotes in a
+// letter the member sends to a provider. A fabricated quote is therefore not a
+// display bug, it is a false accusation with the member's name on it.
+//
+// computeAtStake already exists because the model's arithmetic was not worth
+// trusting. This is the same distrust applied one level down, to the quotes the
+// arithmetic rests on.
+//
+//   model result ──▶ ajv (shape) ──▶ applyPlanGate ──▶ verifyEvidence ──▶ total
+//                                                            │
+//                                          quote not in source ──▶ drop finding
+//
+// Normalization is deliberately light. Whitespace and case vary constantly
+// between a PDF's text layer and a model's rendering of it; the punctuation
+// swaps below are the ones models make silently. Anything more aggressive
+// (stripping digits, punctuation, or short words) would start matching text
+// that is not really there, which defeats the point.
+const normalizeForMatch = (s) =>
+  String(s || "")
+    .replace(/[\u2018\u2019\u201A\u201B]/g, "'")
+    .replace(/[\u201C\u201D\u201E\u201F]/g, '"')
+    .replace(/[\u2010-\u2015]/g, "-")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+
+// Each quote field is checked against the document it claims to come from. An
+// empty quote is not a claim — sbcQuote is "" on every non-plan finding — so it
+// is skipped rather than treated as unverifiable. A quote naming a document that
+// was never uploaded fails, because the model cannot have read it.
+//
+// Returns the input object unchanged when nothing is dropped, so the common case
+// allocates nothing. Drops carry the offending quote for the log.
+export function verifyEvidence(result, sources) {
+  const docs = {
+    billQuote: normalizeForMatch(sources?.bill),
+    eobQuote: normalizeForMatch(sources?.eob),
+    sbcQuote: normalizeForMatch(sources?.sbc),
+  };
+  const dropped = [];
+  const kept = (result?.findings || []).filter((f) => {
+    for (const field of ["billQuote", "eobQuote", "sbcQuote"]) {
+      const quote = normalizeForMatch(f?.evidence?.[field]);
+      if (!quote) continue;
+      if (!docs[field].includes(quote)) {
+        dropped.push({ type: f.type, field, quote: f.evidence[field] });
+        return false;
+      }
+    }
+    return true;
+  });
+  if (!dropped.length) return { result, dropped };
+  // Re-derive rather than subtract, for the reason applyPlanGate re-derives: one
+  // formula, one place. Subtracting would inherit whatever the model asserted.
+  return {
+    result: { ...result, findings: kept, totals: { ...result.totals, totalAtStake: computeAtStake(kept) } },
+    dropped,
+  };
+}
+
 const nullableNumber = { type: ["number", "null"] };
 
 export const findingsSchema = {

@@ -3,7 +3,7 @@ import { defineSecret } from "firebase-functions/params";
 import { initializeApp } from "firebase-admin/app";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import Ajv from "ajv";
-import { findingsSchema, computeAtStake } from "./schema.js";
+import { findingsSchema, computeAtStake, verifyEvidence } from "./schema.js";
 import { addUsage, estimateCostUsd } from "./cost.js";
 import { runAudit, runPlanExtract } from "./providers/gemini.js";
 import { planSchema, buildDigest, replaceDecision, applyPlanGate } from "./plan.js";
@@ -155,9 +155,21 @@ export const analyze = onCall(
     result = gated.result;
     const { planApplied, planReason } = gated;
 
+    // Every quote must be in the document it cites. The schema proves the quote
+    // is a string; only this proves it is real. Findings that fail are dropped
+    // before anything is shown or written, because they end up in a letter the
+    // member sends to a provider.
+    const verified = verifyEvidence(result, { bill: redactedBill, eob: redactedEob, sbc: planDigest });
+    result = verified.result;
+    if (verified.dropped.length) {
+      // Loud, because the drop is silent to the user: this is the only place a
+      // fabrication rate becomes visible.
+      console.error("unverified evidence dropped", { uid, model: MODEL_ID, dropped: verified.dropped });
+    }
+
     // The headline number is ours to compute, not the model's to assert: it must
     // equal the findings actually shown, minus advisory ones. Runs after the
-    // plan gate so stripped plan findings are already gone.
+    // plan gate and the evidence check so stripped findings are already gone.
     result = { ...result, totals: { ...result.totals, totalAtStake: computeAtStake(result.findings) } };
 
     // What this audit actually cost, in the log and on the document. Counts are
@@ -182,6 +194,7 @@ export const analyze = onCall(
       ocrConfidence: typeof ocrConfidence === "number" ? ocrConfidence : null,
       planApplied,
       planReason,
+      droppedUnverified: verified.dropped.length,
       createdAt: FieldValue.serverTimestamp(),
     });
 

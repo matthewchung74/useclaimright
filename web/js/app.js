@@ -966,8 +966,9 @@ function buildDisputeEmail({ findings, totals }) {
   if (findings.some((f) => f.type === "billed_vs_allowed_mismatch")) {
     lines.push(
       `Per the EOB, my total member responsibility for this claim is ${fmt(totals.patientResponsibility)}. ` +
-      "Amounts above the plan's allowed amount are contractual write-offs under your network agreement and " +
-      "may not be billed to me. Please adjust the balance accordingly."
+      "If this provider participates in my plan's network, amounts above the plan's allowed amount are " +
+      "contractual write-offs and may not be billed to me. Please confirm this provider's network status " +
+      "for the date of service and adjust the balance accordingly."
     );
     lines.push("");
   }
