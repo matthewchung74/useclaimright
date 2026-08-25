@@ -63,6 +63,15 @@ Three fixture sets, and they are not interchangeable:
 done
 **Cost:** 1 audit.
 
+**Verified on production 2026-08-25**, from a freshly reset account: every figure matched the
+answer key exactly — billed $2,115.00, EOB allowed $841.75, responsibility $186.35, worth
+disputing **$804.15**, with `duplicate_charge` $145.50, `billed_vs_allowed_mismatch` $658.65
+and `charity_care_eligible` $186.35 at medium confidence. The sanity check holds:
+145.50 + 658.65 = 804.15 exactly, charity care excluded. `droppedUnverified` 0,
+`ocrConfidence` 100, scan caveat correctly hidden, plan footer present. Step 1 also
+confirmed: onboarding first, audit card above the empty state, dashed "No plan on file"
+reminder under Your coverage.
+
 ## E1b — Intake and account-menu details (no audits)
 **Use case:** the small copy and affordance fixes a full audit pass wouldn't catch.
 **Getting here:** on E1's report, click **← Back to bills**, then **Audit a new bill**. (**New audit** on the report goes to the same form directly; either route clears E1's files.)
@@ -336,6 +345,13 @@ dashboard from 5 bills to 4. The other five paths were not individually re-run.
 **Cost:** 0 audits (deletes only).
 
 ## E7 — Reset account returns you to onboarding (destructive — run last)
+
+**Verified on production 2026-08-25:** the confirmation is now the app's own dialog —
+"Erase everything?" / "This deletes every audit, saved EOB, tracker and your plan. It cannot
+be undone. Today's usage counters stay as they are." / red "Erase everything". After
+confirming: 0 audits, 0 saved EOBs, 0 trackers, no plan, back on `onboarding`, and the usage
+counter document survived rather than being deleted — which is the non-obvious part the
+dialog now states up front.
 **Use case:** "erase all my data" means a genuinely fresh account, including the first-run setup screen.
 **Data:** none (destructive — run it last, or on a scratch account).
 
