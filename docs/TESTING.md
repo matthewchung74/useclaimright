@@ -82,6 +82,18 @@ reminder under Your coverage.
 4. ✓ The "What's an EOB, and where do I find it?" explainer sits with the **insurance-letter step (step 2)**, directly under that dropzone — not stranded after the bill section.
 5. **Clean up before M1**: remove both staged bills with their **✕**. ✓ The rows disappear and the button returns to "Prepare audit →".
 
+**Verified on production 2026-08-25 (steps 1, 3, 4):** step 1 — both bill/EOB dropzones read
+"Drop one or more files, or click to choose", the SBC dropzone reads "Drop it here or click to
+choose · PDF or photo". Step 3 — the menu shows the full address `fam-test@useclaimright.test`
+(`word-break: break-word`, no overflow), then **Sign out** in the normal ink `rgb(15, 47, 61)`,
+then **"Reset account — erase all my data"** in red `rgb(178, 59, 59)`. Step 4 — the "What's an
+EOB, and where do I find it?" explainer sits inside the step-2 block, under the EOB dropzone and
+its checkbox, not stranded after the bill section.
+
+Step 2's exact wording ("2 audits: 0 bill+EOB pairs, 2 with no EOB") is **only reachable on a
+fresh account**; once a saved EOB exists the same widget correctly says "with your saved EOB"
+instead. That behaviour is covered by R2 step 6, which was verified. Hover colour was not
+checked — only the resting colours above.
 **Cost:** 0 audits.
 
 ---
@@ -187,6 +199,12 @@ did not fire. `droppedUnverified` 0.
    ✓ Each audit matches its claim line in the consolidated EOB (no false `not_in_eob` for t2/t3); mental-health tracker reaches 3/6; deductible $360.
    ✓ **No `deductible_misapplied`** on either audit. The SBC's mental-health row reads "$0 coinsurance **after** deductible", so applying $120 to the deductible is correct. *(Regression guard: this fired falsely once at $95 — the model had matched psychotherapy to the generic "specialist visit — deductible does not apply" row.)*
    ✓ Each audit's `serviceDates` holds **only its own bill's date** — not all three dates from the consolidated EOB. *(Regression guard: t3's audit once recorded 2026-01-15, 02-12 and 03-11.)*
+
+**Verified on production 2026-08-25:** ran clean. JUST AUDITED read "2 bills · $110.00 worth
+disputing" with $55.00 on each row; both audits carried `planApplied: true`; no
+`deductible_misapplied` on either. Both regression guards held — each audit's `serviceDates`
+held only its own bill's date (`["2026-03-11"]` and `["2026-02-12"]`), not all three from the
+consolidated EOB.
 
 **Cost:** 2 audits.
 
@@ -319,6 +337,10 @@ behaviour after a deploy is very likely cached — prime it with
    | Worth disputing | **$0.00** | bill-only findings (duplicates/coding) only; $0.00 when the bill is clean, as t5 is |
    ✓ Plan checks may still fire from the bill alone (medium/low confidence at most); no "not checked" footer (service date 2026-05-13 is in-period).
 
+**Verified on production 2026-08-25:** billed $175.00, `eobAllowed` $0.00, `patientResponsibility`
+$0.00, `worthDisputing` $0.00, zero findings, no EOB stored against the audit, and
+`planApplied: true` — the plan checks ran from the bill alone, as designed.
+
 **Cost:** 1 audit.
 
 ## E3 — Remove the plan
@@ -327,6 +349,15 @@ behaviour after a deploy is very likely cached — prime it with
 
 1. Click **Remove** on the plan line. ✓ Confirm dialog names the plan and says trackers stay.
 2. Confirm. ✓ The dashed "No plan on file — add your Summary of Benefits · Add now" reminder returns under **Your coverage**; trackers remain (tags still cleared/uncleared as they were); deductible card falls back to EOB-stated values ("$120.00 of $1,500.00" from t-series EOBs, no "Target from your plan" line... EOB-only sourcing).
+
+**Verified on production 2026-08-25:** the dialog read "Remove your plan?" / "Acme Silver PPO
+will be removed, and audits will no longer be checked against it. Trackers you've created
+stay." / "Remove plan" in red, and the renderer stayed responsive. After confirming, the dashed
+"No plan on file — add your Summary of Benefits · Add now" reminder returned, the deductible
+card dropped its "Target from your plan (SBC)." line and fell back to EOB-only sourcing
+("$240.00 of $1,500.00 · As stated on your most recent EOB (2026-04-15)"), and **both trackers
+survived intact** — "Outpatient mental health services 7 / 6" (over limit) and "Rehabilitation
+services 1 / 20", each keeping its contributing-audit count. Exactly what the dialog promised.
 
 **Cost:** 0.
 
@@ -342,6 +373,12 @@ behaviour after a deploy is very likely cached — prime it with
 
 ## E5 — Restore the plan (closes the loop)
 1. Upload `fake-sbc.pdf` again via **Add now** under "Your coverage". ✓ Full M1 checkpoints repeat (plan line, trackers update in place — no duplicates, `source:"sbc"` trackers refreshed).
+
+**Verified on production 2026-08-25:** re-uploading `fake-sbc.pdf` through **Add now** restored
+"✓ Plan on file: Acme Silver PPO · 2026-01-01 → 2026-12-31". The origin-aware skip link read
+"Not now — back to your audits". Trackers updated **in place**: still exactly two, same counts
+(7/6 and 1/20), no duplicates. "Target from your plan (SBC)." returned to the deductible card and
+the out-of-pocket-maximum card came back with it.
 
 **Cost:** 1 plan upload (3/3 for the day after M1 + E4 + E5).
 
@@ -400,10 +437,31 @@ limit · replace a plan with an older one · erase all data**
    because it is not destructive.
 6. ✓ **Cancel, Esc and clicking the backdrop all decline.** Dismissal is never consent.
 
-**Verified on production 2026-08-25:** delete-an-audit showed "Delete this audit?" / "The
-audit and its findings are removed permanently. Your other audits are untouched." /
-"Delete audit" in red, the renderer stayed responsive throughout, and confirming took the
-dashboard from 5 bills to 4. The other five paths were not individually re-run.
+**Verified on production 2026-08-25:** four of the six paths, plus all three dismissal routes.
+
+| Path | Title | Body names what survives | Verb | Red |
+|---|---|---|---|---|
+| delete an audit | "Delete this audit?" | "Your other audits are untouched." | "Delete audit" | ✓ |
+| remove the plan | "Remove your plan?" | "Trackers you've created stay." | "Remove plan" | ✓ |
+| stop tracking a limit | "Stop tracking this limit?" | "Audits already run are unaffected." | "Stop tracking" | ✓ |
+| delete a saved EOB | "Delete this saved EOB?" | names the EOB and what it stops doing | "Delete" | ✓ |
+
+Red is `rgb(178, 59, 59)` on all four. The renderer stayed responsive throughout — every one of
+these was clicked, read and dismissed from script, which the old native `confirm()` made
+impossible. **Not re-run:** "replace a plan with an older one" (needs an older-dated SBC) and
+"erase all data" (that is E7, which runs last).
+
+⚠️ **Found and fixed here 2026-08-25 — backdrop click did nothing.** Step 6 claims Cancel, Esc
+and the backdrop all decline. Cancel and Esc did (`dlg.onclose` resolves `false`), but a native
+`<dialog>` does **not** close on a backdrop click without an explicit handler, and there was
+none — the click was swallowed and the dialog just sat there, which reads as a frozen page.
+The safety property still held (dismissal never became consent: the tracker survived), so this
+was a stuck affordance, not a data risk. Fixed in `web/js/app.js` `confirmAction()` with
+`dlg.onclick = (e) => { if (e.target === dlg) done(false); }` — the dialog carries `padding:0`,
+so `e.target === dlg` is true only for a true backdrop click and never for a click on its
+contents. Re-verified after deploy: backdrop click closes the dialog **and** the tracker
+survives. Note that a synthetic `KeyboardEvent("Escape")` will NOT close a dialog — Esc must be
+tested with a real key press, or you will record a false failure.
 
 **Cost:** 0 audits (deletes only).
 
@@ -442,6 +500,22 @@ dialog now states up front.
    ✓ Confirm on the review screen that the saved EOB is actually there — it appears as its own tab, labelled "saved: …".
 7. **Clean up**: remove both staged bills with their **✕**.
 
+**Verified on production 2026-08-25:** all six steps.
+1. Full sign-out → password sign-in round trip landed on **Bills & coverage**, never the audit
+   form. Sampling the DOM every 150ms for 10.5s caught **no flash of "No bills audited yet"** —
+   the only sections seen were `signin` then `bills`.
+2. The feedback bubble (`#fb-bubble`) is visible on the bills list, the audit form and reports.
+3. The fourth totals card reads exactly "**Worth disputing**" — "$2,115.00 / $841.75 / $186.35 /
+   $804.15" with no trailing explainer.
+4. Both exits work, and the audit form's own "← Back to bills" returns to the list.
+5. "EOB on file: TESTVILLE BEHAVIORAL HEALTH ASSOCIATES · 2026-02-12" shows on the list card, and
+   the form opens with the previous run's files cleared.
+6. The pairing summary told the truth throughout: with a saved EOB selected, "**3 audits**: 0
+   bill+EOB pairs, 3 **with your saved EOB**"; ticking "I don't have an EOB" changed it in place
+   to "3 with **no** EOB"; unticking and re-picking changed it back. Bills accumulated one at a
+   time (nothing replaced), and removing each with **✕** returned the button to "Prepare audit →"
+   and hid the summary.
+
 **Cost:** 0 audits (back out of step 6 with **Start over** if you got as far as a review).
 
 ## F1 — Feedback widget
@@ -453,6 +527,13 @@ dialog now states up front.
 3. Pick a category, type a note, Send.
    ✓ "Thanks — we read every note." and the card closes itself.
    ✓ The submission appears in the Firestore `feedback` collection (console or CLI) with uid, email, message, category, screen, and — when sent from a report — the auditId.
+
+**Verified on production 2026-08-25:** sent from the bills list and again from a report. The
+card showed "Sending…" → "**Thanks — we read every note.**" → closed itself. Both landed in the
+Firestore `feedback` collection with uid, email, message, category, platform and screen. The
+report-sent one carried `screen: "report"` and `auditId: "77nVGeQlmA5R7Z2cZcmh"`; the
+list-sent one carried `screen: "bills"` and `auditId: null` — the auditId is attached only where
+there is one to attach.
 
 **Cost:** 0 audits (20 feedback/day limit).
 
