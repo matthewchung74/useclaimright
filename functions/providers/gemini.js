@@ -83,10 +83,37 @@ const usageOf = (response) => ({
   total: response?.usageMetadata?.totalTokenCount ?? null,
 });
 
-const IMAGE_NOTE = `The documents are attached as page images, bill first. Read them.
-Also return what you read: put the bill's full text in billText and the EOB's in eobText,
-verbatim, including headers and line items. Every evidence quote you give must appear in
-the text you return.`;
+const IMAGE_NOTE = `Some documents below are attached as page images instead of text. Read them.
+For each one supplied as images, also return what you read: the bill's full text in billText
+and the EOB's in eobText, verbatim, including headers and line items. Every evidence quote you
+give must appear either in the text supplied to you or in the text you return.`;
+
+// Each document arrives as text or as page images, and the two combine freely —
+// a photographed bill against a downloaded EOB is an ordinary upload.
+//
+// This used to branch once for the whole request: if ANYTHING was an image, the
+// text branch was skipped and every text document was silently dropped. A
+// photographed bill with a text EOB therefore reached the model with no EOB at
+// all, which it correctly reported as "missing from the EOB" — inflating
+// "worth disputing" by the whole bill, with no error anywhere. Found by running
+// S1 on production 2026-08-25.
+//
+// Exported for tests: the assembly is the part worth checking, not the API call.
+export function buildAuditParts(bill, eob, instructions) {
+  const parts = [{ text: instructions }];
+  const addDoc = (label, doc) => {
+    const images = doc?.images || [];
+    if (images.length) {
+      parts.push({ text: `\n===== ${label} — ${images.length} page image(s) follow =====` });
+      for (const data of images) parts.push({ inlineData: { mimeType: "image/jpeg", data } });
+    } else if (doc?.text?.trim()) {
+      parts.push({ text: `\n===== ${label} =====\n${doc.text}` });
+    }
+  };
+  addDoc("ITEMIZED BILL", bill);
+  addDoc("EOB", eob);
+  return parts;
+}
 
 // Provider adapter contract: runAudit(bill, eob, opts)
 //   -> { data: validated-shape object, usage: {input, output, total} }.
@@ -101,16 +128,7 @@ export async function runAudit(bill, eob, { modelId, apiKey }, planDigest = null
   if (!eob.text?.trim() && !eobImages.length) instructions += `\n\n${BILL_ONLY_NOTE}`;
   if (asImages) instructions += `\n\n${IMAGE_NOTE}`;
 
-  const parts = [];
-  if (asImages) {
-    parts.push({ text: `${instructions}\n\n${billImages.length} bill page(s), then ${eobImages.length} EOB page(s).` });
-    for (const data of [...billImages, ...eobImages]) {
-      parts.push({ inlineData: { mimeType: "image/jpeg", data } });
-    }
-  } else {
-    const eobSection = eob.text.trim() ? `===== EOB =====\n${eob.text}` : "";
-    parts.push({ text: `${instructions}\n\n===== ITEMIZED BILL =====\n${bill.text}\n\n${eobSection}` });
-  }
+  const parts = buildAuditParts(bill, eob, instructions);
 
   const response = await ai.models.generateContent({
     model: modelId,
