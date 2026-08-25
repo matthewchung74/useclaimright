@@ -55,8 +55,17 @@ be changed from the console with no deploy:
 
 Spend is counted in `meta/spend/{YYYY-MM-DD}/shard-{0..9}`; sum them for the day's
 total. Rules deny all client access to `meta/**`.
-- ☐ set a GCP budget alert as a backstop. An alert is not a cap: for a hard stop,
-  wire budget → Pub/Sub → disable billing, which takes the whole project offline.
+- ☑ GCP budget alert exists: **$25/month**, scoped to `projects/223366324716`
+  (useclaimright), thresholds at 50% / 90% / 100%. Verified 2026-08-24 via
+  `gcloud billing budgets list --billing-account=01C2D1-861724-53BC0C`.
+  `notificationsRule` is empty, so it emails billing admins and does nothing
+  else. That is an ALERT, not a cap — the in-app guard at `meta/guard` is what
+  actually stops spend. For a hard stop on everything else, wire
+  budget → Pub/Sub → disable billing, which takes the whole project offline.
+- ⚠ `gcloud config` has `core/project = paidright-app`, which is deleted. Any
+  gcloud command that routes quota through it fails with USER_PROJECT_DENIED.
+  Fixed for billing with `gcloud config set billing/quota_project useclaimright`;
+  `gcloud config set project useclaimright` would fix the rest.
 
 ## Verification (acceptance criteria)
 - **AC1 seeded-PHI leak test:** make a fake bill PDF containing `LEAKCANARY-SSN 123-45-6789`,
