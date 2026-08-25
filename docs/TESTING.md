@@ -372,7 +372,13 @@ goes wrong and they are where the raw Firebase strings used to leak through.
 
 **Edge cases — each must show OUR copy, never a raw `Firebase: Error (auth/…)` string**
 - Wrong password → "That email and password don't match. Check both, or reset your password."
-- Unknown email, sign-in mode → "No account with that email. Create one below, or sign in with Google."
+- Unknown email, sign-in mode → **"That email and password don't match. Check both, or reset your
+  password."** — the SAME message as a wrong password, deliberately. Firebase's email enumeration
+  protection returns `auth/invalid-credential` for both, so the app cannot tell them apart and
+  must not appear to. *(This plan originally asserted "No account with that email…", which is
+  what the `auth/user-not-found` mapping in app.js would produce. Running it on production
+  2026-08-25 showed that mapping is unreachable while enumeration protection is on. The
+  shipped behaviour is the better one and the plan was corrected, not the code.)*
 - Existing email, sign-up mode → "That email already has an account — sign in instead."
 - Password under 6 characters → "Passwords need to be at least 6 characters."
 - Malformed address → "That doesn't look like an email address."
@@ -386,6 +392,11 @@ goes wrong and they are where the raw Firebase strings used to leak through.
 - **The button disables while in flight** — double-clicking must not fire two attempts.
 
 **Cost:** 0 audits.
+
+**Verified on production 2026-08-25:** cases 1, 3, 4, 5, 6, 7, 8a, 8b, 8c, 9, 10 and the
+in-flight button disable all pass, with our copy in every case and never a raw Firebase
+string. Case 5 corrected as above. **Not run:** Google sign-in, the email link, and the
+provider-switched-off message (which needs the provider disabled in the Console).
 
 # Family, scans, and real documents
 
@@ -413,6 +424,11 @@ Both bills: flu vaccine 90686, $85.00, 03/10/2026, Testville Family Medicine Ass
 - **The control:** audit `emma-bill.pdf` + `family-eob.pdf`. Its 99213 is billed **twice on one
   statement**. ✓ A `duplicate_charge` of $210.00 IS reported. A change that suppresses
   duplicates wholesale passes steps 1–3 and fails here. *(+1 audit)*
+  **Verified on production 2026-08-25:** duplicate reported at $210.00, high confidence —
+  "the itemized bill lists code 99213 twice for the same date of service, whereas the EOB
+  lists only one office visit claim line". Totals $420.00 billed / $118.00 allowed / $30.00
+  responsibility / **$390.00 worth disputing** ($210 duplicate + $180 billed-above-allowed,
+  with the $30 copay correctly excluded).
 - **Same person, two statements:** re-audit `matthew-bill.pdf` against the same EOB. ✓ Same
   `billKey`, so still no duplicate — re-auditing one bill is the user re-running us, not a
   double-bill. *(+1 audit)*
@@ -423,7 +439,10 @@ Both bills: flu vaccine 90686, $85.00, 03/10/2026, Testville Family Medicine Ass
 
 **Verified on production 2026-08-25** (useclaimright.web.app, real Gemini calls): both audits
 returned $85.00 `billed_vs_allowed_mismatch` at high confidence, and the dashboard showed
-"2 bills · $170.00" with **no duplicate hero and no ribbon**. The edge cases were not run.
+"2 bills · $170.00" with **no duplicate hero and no ribbon**. Step 4 confirmed the stored
+documents carry `patientName` "Matthew T. Testpatient" and "Sarah L. Testpatient" —
+read from the patient field, not the guarantor, which on both bills is Matthew.
+`droppedUnverified` 0 on both. The Emma control was also run; see the edge cases.
 
 ## FAM2 — A family plan measures against the FAMILY deductible
 **Use case:** a plan states two limits and a household accrues against one. Reading
@@ -438,6 +457,14 @@ $500 individual / $1,000 family, $2,500 / $5,000 OOP). `family-eob.pdf` states
    ✓ It does **not** render past 100%.
    ✓ **No conflict warning** — the family figure is the plan, not a disagreement with it.
 2. ✓ The out-of-pocket card resolves the same way against the family maximum.
+
+**Verified on production 2026-08-25**, with `real-sbc/cms-2019.pdf` on file: the deductible
+card read **$640.00 of $1,000.00** (the family figure, not the $500 individual one) and the
+out-of-pocket card **$640.00 of $5,000.00 · 13%** (family, not the $2,500 individual). Before
+the fix these rendered as 128% and 26% of the individual targets. The card also surfaced an
+honest conflict note — "your EOBs' per-claim amounts sum to $0.00 — the insurer's running
+total disagrees" — which is correct: the family EOB states $640 met while its individual
+claim lines applied $0 to deductible.
 
 **Edge cases**
 - **Individual-scope EOB:** an EOB stating a $500 limit ✓ resolves to individual, no conflict.
@@ -520,6 +547,16 @@ on our own assumptions. These are genuine CMS publications in the ACA-mandated f
   `real-sbc/README.md` and not yet pulled — they would add real variation in deductible and
   cost-share structure rather than three versions of one plan.
 
+**Verified on production 2026-08-25** with `cms-2019.pdf`: extracted cleanly, plan on file as
+"Insurance Company 1: Plan Option 1", 2022-01-01 to 2022-12-31, deductible $500 / $1,000.
+Trackers were auto-created from its limits ("Children's eye exam 0/1", "Home health care
+0/60", both tagged *from your SBC — check the codes*). Step 3 confirmed: the out-of-period
+banner fired — "Your plan year ended 2022-12-31 — upload your new SBC." `cms-2025.pdf` and
+`cms-older.pdf` not run on production; both extracted cleanly against the API on 2026-08-24.
+- **Wrong document (E4) does NOT clobber a good plan:** uploading `real-eob/cms-sample-eob.pdf`
+  to the SBC dropzone was rejected with "This doesn't look like a Summary of Benefits." and
+  the existing plan survived intact. Verified on production 2026-08-25.
+
 **Cost:** 3 plan uploads, 0 audits.
 
 ## G1 — The spend guard stops model calls without a deploy
@@ -543,11 +580,37 @@ thing bounding the bill.
 
 **Cost:** 0 audits (the blocked attempts are refused before the model runs).
 
+**Verified on production 2026-08-25:**
+- Kill switch: `auditsEnabled=false` → audit refused in **637ms** with "Audits are paused
+  right now." A Gemini round trip is 10-20s, so the latency itself proves no model call.
+- Independence: with `plansEnabled=true`, a plan upload still reached the model (3,568ms)
+  and returned a content rejection. Not everything switched off together.
+- Ceiling, across shards: `dailyCalls=1` against 6 already spent → "We've hit today's limit
+  across all users." in **499ms**. The 6 were spread over ten shards at 0-1 each, so a
+  per-shard check would have let it through.
+- Guard restored to `auditsEnabled/plansEnabled true, dailyCalls 2000` afterwards.
+
+**Per-user daily cap (from Always-on), verified on production 2026-08-25:** the 11th audit
+shows a **dialog, not a red error** — "That's today's 10 audits", explaining that every audit
+is a real model call and "Capping it at 10 a day is what keeps it free for everyone".
+Reset shown as **"5:00 PM today"**, in local time: server counters roll on the UTC date, so
+"midnight" would be wrong for most people. Refused in **551ms**, before any model call. The
+inline error remains underneath as the trace after the dialog is dismissed.
+
 ## Always-on checks (every pass)
 - **Evidence is real:** spot-check two findings per pass — the quoted line must appear verbatim in the document it cites. A finding whose quote is absent should never render; `verifyEvidence` drops it server-side and logs `unverified evidence dropped`. Check the audit doc's `droppedUnverified` count after each run: a non-zero value is the model inventing evidence, and it is worth reading the log.
 - **Disclosure is present:** the audit form shows the "Where your documents go" banner naming Google's Gemini API, above the dropzones.
 - **Scanned documents:** upload a photo or a scanned PDF (no text layer). ✓ The 📷 banner fires, the right-hand review pane explains the pages are sent as images rather than showing text, and the audit still returns findings. The stored audit's `bill`/`eob` hold the model's transcription, so history, the bill fingerprint and saved-EOB matching all still work.
-- **Limits:** 11th audit → "Daily limit of 10 audits reached."; 4th plan upload → "Daily limit of 3 plan uploads reached."
+- **Limits:** 11th audit → the **daily-cap dialog** (see G1), with the inline "Daily limit of
+  10 audits reached." persisting underneath as the trace; 4th plan upload → "Daily limit of 3
+  plan uploads reached." *(This line used to describe only the inline error, which predates
+  `8178d22`.)*
+- **Resetting the counters between passes:** they live at `users/{uid}/meta/usage` as
+  `count` / `planCount`, Function-managed and client-write-denied. Reset with an owner
+  access token:
+  `curl -X PATCH "https://firestore.googleapis.com/v1/projects/useclaimright/databases/(default)/documents/users/{uid}/meta/usage?updateMask.fieldPaths=count&updateMask.fieldPaths=planCount" -H "Authorization: Bearer $(gcloud auth print-access-token)" -H "Content-Type: application/json" -d '{"fields":{"count":{"integerValue":"0"},"planCount":{"integerValue":"0"}}}'`
+  Note a rejected plan upload still consumes its allowance: the rate limit is taken before
+  the document is validated.
 - **Kill switch:** set `meta/guard.auditsEnabled = false` in the console → the next audit fails with "Audits are paused right now", no model call is made, and nothing is charged. Set it back to `true` and the next audit runs. No deploy either way.
 
 ## Background-tab regression check (both bugs found this way)
