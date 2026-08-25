@@ -82,6 +82,32 @@ const ocrConfidenceOf = (docs) => {
   return scores.length ? Math.min(...scores) : 100;
 };
 
+// A confirmation the app controls. Native confirm() is unstyled, cannot explain
+// itself beyond one line, cannot mark which button is the dangerous one — and it
+// freezes the renderer, so every destructive path was untestable by automation.
+// Returns a promise so call sites read the same as they did.
+function confirmAction({ title, body, confirmLabel = "Confirm", danger = false }) {
+  const dlg = $("confirm-dialog");
+  $("cd-title").textContent = title;
+  $("cd-body").textContent = body;
+  $("cd-ok").textContent = confirmLabel;
+  $("cd-ok").classList.toggle("danger", danger);
+  return new Promise((resolve) => {
+    const done = (answer) => {
+      $("cd-ok").onclick = null;
+      $("cd-cancel").onclick = null;
+      dlg.onclose = null;
+      if (dlg.open) dlg.close();
+      resolve(answer);
+    };
+    $("cd-ok").onclick = () => done(true);
+    $("cd-cancel").onclick = () => done(false);
+    // Esc and backdrop dismissal must read as "no", never as consent.
+    dlg.onclose = () => done(false);
+    dlg.showModal();
+  });
+}
+
 // ---------- Auth ----------
 
 $("google-signin").onclick = () =>
@@ -208,7 +234,11 @@ $("signout").onclick = () => signOut(auth);
 // rate-limit counters are Function-owned and intentionally survive.
 $("reset-account").onclick = async () => {
   $("menu").hidden = true;
-  if (!confirm("Erase ALL your data — audits, saved EOBs, trackers, and your plan? This cannot be undone. (Today's usage counters stay.)")) return;
+  if (!await confirmAction({
+    title: "Erase everything?",
+    body: "This deletes every audit, saved EOB, tracker and your plan. It cannot be undone. Today's usage counters stay as they are.",
+    confirmLabel: "Erase everything", danger: true,
+  })) return;
   const uid = auth.currentUser.uid;
   const colls = ["audits", "eobs", "trackers"];
   try {
@@ -1151,7 +1181,11 @@ async function openAudit(id) {
 }
 
 async function deleteAudit(id) {
-  if (!confirm("Delete this audit permanently?")) return;
+  if (!await confirmAction({
+    title: "Delete this audit?",
+    body: "The audit and its findings are removed permanently. Your other audits are untouched.",
+    confirmLabel: "Delete audit", danger: true,
+  })) return;
   await deleteDoc(doc(db, `users/${auth.currentUser.uid}/audits/${id}`));
   loadHistory();
 }
@@ -1311,7 +1345,11 @@ async function loadEobs() {
     row.className = "batch-row";
     row.innerHTML = `<span class="fname">${escapeHtml(e.label)}</span><button class="rm" title="Delete">✕</button>`;
     row.querySelector(".rm").onclick = async () => {
-      if (confirm(`Delete saved EOB “${e.label}”?`)) {
+      if (await confirmAction({
+        title: "Delete this saved EOB?",
+        body: `“${e.label}” will no longer be available to audit future bills against.`,
+        confirmLabel: "Delete", danger: true,
+      })) {
         await deleteDoc(doc(db, `users/${auth.currentUser.uid}/eobs/${e.id}`));
         loadEobs();
       }
@@ -1408,7 +1446,11 @@ function renderPlanCard() {
     };
     $("plan-remove").onclick = async (e) => {
       e.preventDefault();
-      if (!confirm(`Remove your plan (${s.planName || "SBC"})? Audits will no longer be checked against it. Trackers you've created stay.`)) return;
+      if (!await confirmAction({
+        title: "Remove your plan?",
+        body: `${s.planName || "Your SBC"} will be removed, and audits will no longer be checked against it. Trackers you've created stay.`,
+        confirmLabel: "Remove plan", danger: true,
+      })) return;
       await deleteDoc(doc(db, `users/${auth.currentUser.uid}/plan/active`));
       activePlan = null;
       $("plan-full").hidden = true;
@@ -1481,9 +1523,14 @@ async function runSbcExtraction(force = false) {
   try {
     const { data } = await extractPlanFn({ sbc, sourceName, force });
     if (data.status === "confirm_older") {
-      const msg = `The plan on file covers ${data.existingPeriod.start} → ${data.existingPeriod.end}; ` +
-        `this document covers ${data.incomingPeriod.start} → ${data.incomingPeriod.end}. Replace anyway?`;
-      if (confirm(msg)) return runSbcExtraction(true);
+      // The question is not "is this a duplicate" but "this one is OLDER — sure?",
+      // so the title says that and the button carries the verb.
+      const msg = `The plan on file covers ${data.existingPeriod.start} to ${data.existingPeriod.end}. ` +
+        `This document covers ${data.incomingPeriod.start} to ${data.incomingPeriod.end}, which is earlier. ` +
+        `Replacing it means audits are checked against the older terms.`;
+      if (await confirmAction({ title: "Replace the plan on file with an older one?", body: msg, confirmLabel: "Replace anyway" })) {
+        return runSbcExtraction(true);
+      }
       show("bills"); setBatchLabels(null); return;
     }
     await loadPlan();
@@ -1556,7 +1603,11 @@ function renderUsage() {
         ${contributions.map((c) => `<div class="contrib">${c.dates.map(escapeHtml).join(", ")} · ${escapeHtml(c.code)}${c.provider ? " · " + escapeHtml(c.provider) : ""}${c.count > 1 ? ` · ×${c.count}` : ""}${c.approximate ? " · ~approximate" : ""}</div>`).join("") || '<div class="contrib">None yet in this plan year.</div>'}
       </details>`;
     card.querySelector(".usage-del").onclick = async () => {
-      if (confirm(`Stop tracking "${t.label}"?`)) {
+      if (await confirmAction({
+        title: "Stop tracking this limit?",
+        body: `"${t.label}" is removed from Your coverage. Audits already run are unaffected.`,
+        confirmLabel: "Stop tracking", danger: true,
+      })) {
         await deleteDoc(doc(db, `users/${auth.currentUser.uid}/trackers/${t.id}`));
         loadTrackers().then(renderUsage);
       }
