@@ -551,12 +551,22 @@ today":
 - Firestore confirmed empty: 0 audits, 0 trackers, 0 eobs, `plan/active` gone.
 
 **How to run this without losing the account.** E7 no longer has to be run last or on a scratch
-account. Snapshot the user subtree over the Firestore REST API first — the collections are
-`audits`, `trackers`, `eobs` (NOT "savedEobs"), plus the singletons `plan/active` and
-`meta/usage` — then restore each document with a PATCH to the same document ID, which
-creates-or-updates. Prove the restore path against a throwaway uid and diff the read-back
-against the snapshot BEFORE erasing anything; a restore script you have not exercised is not a
-backup. Done that way here: round trip was byte-exact on all 21 documents plus both singletons,
+account. Use `scripts/account-snapshot.py`:
+
+```
+python3 scripts/account-snapshot.py save    <uid>            # snapshot
+python3 scripts/account-snapshot.py restore throwaway-uid    # prove the write path
+python3 scripts/account-snapshot.py verify  throwaway-uid    # must print EXACT
+#   ... now run E7 in the browser and assert on it ...
+python3 scripts/account-snapshot.py restore <uid>
+python3 scripts/account-snapshot.py verify  <uid>            # must print EXACT
+```
+
+It captures `audits`, `trackers`, `eobs` (NOT "savedEobs" — the wrong name returns an empty list
+rather than an error, which is how the first snapshot silently missed the whole EOB library)
+plus the singletons `plan/active` and `meta/usage`, and restores by PATCH to the same document
+IDs. Prove the restore against a throwaway uid BEFORE erasing anything: a restore script you
+have not exercised is not a backup. Done that way here: round trip was byte-exact on all 21 documents plus both singletons,
 the account came back to 13 audits / 2 trackers / 6 EOBs / plan on file / "7 of 10 audits left",
 and the only manual step afterwards was re-setting `ucr-skip-onboarding`, which is browser-local
 and therefore outside the Firestore snapshot.
