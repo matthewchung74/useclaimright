@@ -2,6 +2,27 @@
 
 Deferred items with context. Created by /plan-ceo-review 2026-08-20.
 
+## From running the suite on production (2026-08-25)
+
+- [ ] **`billKey` cannot recognise the same paper across extraction methods, and
+      the image path made this much worse.** `app.js:1138` hashes normalised
+      text, and its own comment anticipates the failure: two extractions of one
+      document get different keys and `crossBillDuplicates` reports "the same
+      visit is on two statements" for a bill that exists once. Whitespace and
+      case normalisation covered the HTML-vs-PDF case it was written for. A
+      scan now returns the MODEL'S TRANSCRIPTION, which differs from pdf.js
+      extraction by far more than spacing, so auditing one bill as a PDF and
+      again as a photo reliably produces a false duplicate. Reproduced on
+      production. No clean fix: billKey must identify the PAPER, and anything
+      derived from the charges would make the detector never fire at all.
+      Candidates: a statement number or account number extracted verbatim, or
+      accepting the limitation and warning when two audits share every charge.
+- [ ] **`prompt()` on the email-link path** (`app.js:216`) is the last native
+      dialog. It blocks the renderer like the six confirms did, so that path
+      stays untestable by automation. Needs an input, not a yes/no.
+- [ ] **Stale copy on the processing screen:** "Everything up to analysis happens
+      in your browser." Literally true, written for the redaction era.
+
 ## From the eng review (2026-08-23-phase0-phase1.md)
 
 - [x] ~~Family deductible and OOP targets hardcoded to individual~~ — DONE.

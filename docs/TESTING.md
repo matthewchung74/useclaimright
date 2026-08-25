@@ -310,6 +310,31 @@ done
 
 **Cost:** 0 audits for steps 1–4 (back out with **Start over**); 1 audit for step 5.
 
+## X1 — Destructive confirmations
+**Use case:** six actions delete something. Until 2026-08-25 all six asked through the
+browser's native `confirm()`, which is unstyled, says one line, offers "OK" as the verb for
+everything, and freezes the renderer — so this entire half of the app was untestable.
+**Data:** any account with an audit, a saved EOB, a plan and a tracker on it.
+
+For each of: **delete an audit · delete a saved EOB · remove the plan · stop tracking a
+limit · replace a plan with an older one · erase all data**
+
+1. ✓ A branded dialog appears, not an OS confirm, and **the page stays responsive**.
+2. ✓ The title asks the actual question ("Delete this audit?", "Remove your plan?").
+3. ✓ The body says what happens AND what survives — "Your other audits are untouched",
+   "Trackers you've created stay".
+4. ✓ The button carries the verb ("Delete audit", "Remove plan"), never "OK".
+5. ✓ Destructive ones render the primary button **red**; "replace an older plan" does not,
+   because it is not destructive.
+6. ✓ **Cancel, Esc and clicking the backdrop all decline.** Dismissal is never consent.
+
+**Verified on production 2026-08-25:** delete-an-audit showed "Delete this audit?" / "The
+audit and its findings are removed permanently. Your other audits are untouched." /
+"Delete audit" in red, the renderer stayed responsive throughout, and confirming took the
+dashboard from 5 bills to 4. The other five paths were not individually re-run.
+
+**Cost:** 0 audits (deletes only).
+
 ## E7 — Reset account returns you to onboarding (destructive — run last)
 **Use case:** "erase all my data" means a genuinely fresh account, including the first-run setup screen.
 **Data:** none (destructive — run it last, or on a scratch account).
@@ -432,6 +457,12 @@ Both bills: flu vaccine 90686, $85.00, 03/10/2026, Testville Family Medicine Ass
 - **Same person, two statements:** re-audit `matthew-bill.pdf` against the same EOB. ✓ Same
   `billKey`, so still no duplicate — re-auditing one bill is the user re-running us, not a
   double-bill. *(+1 audit)*
+- ⚠️ **Known gap, reproduced on production 2026-08-25:** the same paper audited once as a PDF
+  and once as a SCAN does NOT share a `billKey`, and is reported as "the same visit is on two
+  statements". `billKey` hashes normalised text; the scan path returns the model's
+  transcription, which differs from pdf.js extraction by much more than the whitespace and
+  case the normalisation handles. Auditing `emma-bill.pdf` and then a rasterisation of it
+  produced a $210.00 duplicate hero for a bill that exists once. See TODOS.
 - **Empty patient name:** any pre-2026-08-24 audit in history has no `patientName`. ✓ Those
   still participate in duplicate detection exactly as before (empty names share a key).
 
