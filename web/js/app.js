@@ -97,6 +97,7 @@ function confirmAction({ title, body, confirmLabel = "Confirm", danger = false }
       $("cd-ok").onclick = null;
       $("cd-cancel").onclick = null;
       dlg.onclose = null;
+      dlg.onclick = null;
       if (dlg.open) dlg.close();
       resolve(answer);
     };
@@ -104,6 +105,10 @@ function confirmAction({ title, body, confirmLabel = "Confirm", danger = false }
     $("cd-cancel").onclick = () => done(false);
     // Esc and backdrop dismissal must read as "no", never as consent.
     dlg.onclose = () => done(false);
+    // A click on the backdrop lands on the <dialog> element itself; a click on
+    // its contents does not. Without this the backdrop swallowed the click and
+    // left the dialog open, which reads as a frozen page.
+    dlg.onclick = (e) => { if (e.target === dlg) done(false); };
     dlg.showModal();
   });
 }
