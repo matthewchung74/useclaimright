@@ -20,8 +20,12 @@ Deferred items with context. Created by /plan-ceo-review 2026-08-20.
 - [ ] **`prompt()` on the email-link path** (`app.js:216`) is the last native
       dialog. It blocks the renderer like the six confirms did, so that path
       stays untestable by automation. Needs an input, not a yes/no.
-- [ ] **Stale copy on the processing screen:** "Everything up to analysis happens
-      in your browser." Literally true, written for the redaction era.
+- [x] ~~**Stale copy on the processing screen:** "Everything up to analysis happens
+      in your browser."~~ — DONE 2026-08-25. It was literally true (extraction IS
+      local) but it sat on the screen shown *while the documents are in flight to
+      Google*, so it read as a privacy promise at the exact moment it was least
+      true. Now: "Reading the pages happened here in your browser. The analysis
+      itself runs on Google's Gemini API — your documents are with it now."
 
 ## From the eng review (2026-08-23-phase0-phase1.md)
 
