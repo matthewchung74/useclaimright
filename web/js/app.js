@@ -25,6 +25,10 @@ import { matchSavedEob, documentsRelated } from "./eobmatch.js";
 const $ = (id) => document.getElementById(id);
 let currentSection = "signin";
 const show = (id) => {
+  // Every screen transition goes through here, so this is the whole funnel in
+  // one line. Defined above track(); both are module-level and only ever called
+  // after evaluation, so the ordering is fine.
+  if (currentSection !== id) track("stage_viewed", { stage: id });
   currentSection = id;
   for (const s of document.querySelectorAll("main > section")) s.hidden = s.id !== id;
   // Feedback bubble lives on the calm screens only — never over a review or spinner.
@@ -65,7 +69,51 @@ if (APP_CHECK_SITE_KEY) {
 
 let analytics = null;
 try { analytics = getAnalytics(app); } catch { /* blocked or unsupported — fine */ }
-const track = (name) => { try { analytics && logEvent(analytics, name); } catch {} };
+// ---------- Analytics ----------
+//
+// ONE RULE, and it is not negotiable: no property may be derived from the
+// contents of a document. No amounts, provider names, procedure codes, service
+// dates, patient names, and no filenames — a filename is very often the patient's
+// name. Everything below is structural: counts, booleans, and fixed enums whose
+// values are enumerated in this file. If a property cannot be predicted by
+// reading this source, it does not belong in an event.
+//
+// The funnel this answers: land → sign in → stage files → spend an audit → see a
+// report → generate the letter. Plus where people fall out, which is the half
+// that events named after successes can never tell you.
+const track = (name, params) => {
+  try { analytics && logEvent(analytics, name, params); } catch {}
+};
+
+// Errors are classified into a fixed vocabulary rather than forwarded. The
+// message is app copy, but copy interpolates filenames in places, and this
+// keeps that from ever becoming an analytics payload by accident.
+const ERROR_REASONS = [
+  [/daily limit|allowance|today's \d+ /i, "limit_reached"],
+  [/itemized bill is required/i, "no_bill_staged"],
+  [/don't have an EOB|no matching EOB/i, "eob_unacknowledged"],
+  [/doesn't look like a Summary of Benefits/i, "not_an_sbc"],
+  [/too large|20MB/i, "file_too_large"],
+  [/email and password don't match/i, "bad_credentials"],
+  [/already (registered|in use)/i, "email_in_use"],
+  [/password/i, "password_problem"],
+  [/enter your email/i, "email_missing"],
+  [/couldn't read|unreadable|no text/i, "extraction_failed"],
+  [/analysis error|try again/i, "analysis_failed"],
+];
+// The shape of a finished audit, structurally. "found" is a boolean rather than
+// the dollar figure on purpose: whether the product worked is answerable without
+// ever putting a number derived from someone's bill into analytics.
+const auditShape = (data) => ({
+  findings: (data?.findings || []).length,
+  found: ((data?.totals?.totalAtStake) || 0) > 0,
+  plan_applied: !!data?.planApplied,
+});
+
+const errorReason = (msg) => {
+  for (const [re, slug] of ERROR_REASONS) if (re.test(msg)) return slug;
+  return "other";
+};
 
 const OCR_CONFIDENCE_THRESHOLD = 75;
 
@@ -116,7 +164,9 @@ function confirmAction({ title, body, confirmLabel = "Confirm", danger = false }
 // ---------- Auth ----------
 
 $("google-signin").onclick = () =>
-  signInWithPopup(auth, new GoogleAuthProvider()).catch((e) => setError("signin-error", authError(e)));
+  signInWithPopup(auth, new GoogleAuthProvider())
+    .then(() => track("signed_in", { method: "google" }))
+    .catch((e) => setError("signin-error", authError(e)));
 
 // Firebase's own messages are diagnostics, not copy: "Firebase: Error
 // (auth/invalid-credential)." tells a member nothing and looks broken. Map the
@@ -174,6 +224,7 @@ $("password-signin").onclick = async () => {
     await (signupMode
       ? createUserWithEmailAndPassword(auth, email, password)
       : signInWithEmailAndPassword(auth, email, password));
+    track("signed_in", { method: signupMode ? "password_signup" : "password" });
   } catch (e) {
     setError("signin-error", authError(e));
   } finally {
@@ -325,6 +376,9 @@ $("skip-onboarding").onclick = (e) => {
 // so the reset is shown in the user's own timezone rather than as "UTC".
 function showLimitDialog(kind) {
   const audits = kind !== "plans";
+  // How many people hit the ceiling is the number that decides whether the cap
+  // is protecting the budget or capping the business.
+  track("limit_reached", { kind: audits ? "audits" : "plans" });
   const reset = new Date();
   reset.setUTCHours(24, 0, 0, 0);
   const sameDayLocal = reset.toDateString() === new Date().toDateString();
@@ -347,6 +401,9 @@ function setError(id, msg) {
   const el = $(id);
   el.textContent = msg;
   el.hidden = !msg;
+  // Clearing an error is not an error. Every visible failure in the app passes
+  // through here, which makes this the only honest view of where people stall.
+  if (msg) track("error_shown", { where: id, reason: errorReason(msg) });
 }
 
 // ---------- Pipeline state ----------
@@ -516,6 +573,14 @@ function batchBackToPanel() {
 
 $("run-audit").onclick = async () => {
   const { pairs, billOnly } = pairFiles(batchFiles);
+  // Fired before extraction and before any model call, so the gap between this
+  // and audit_started is the cost of the review step itself.
+  track("audit_requested", {
+    pairs: pairs.length,
+    bill_only: billOnly.length,
+    saved_eob: !!appliedSavedEob(),
+    no_eob: $("no-eob").checked,
+  });
   const skipEob = $("no-eob").checked;
   const savedEob = appliedSavedEob();
   const audits = pairs.length + billOnly.length;
@@ -702,7 +767,7 @@ async function runBatch() {
         await maybeSaveEob(eobDoc.text, data);
         eobDoc.saved = true; // shared EOB: save once, not once per audit
       }
-      track("audit_completed");
+      track("audit_completed", { ...auditShape(data), mode: "batch" });
     }
     batchQueue = null;
     batchDocs = null;
@@ -710,7 +775,7 @@ async function runBatch() {
     // A batch ends on the bills list, not on one arbitrary report: the question
     // after N bills is "what did you find across all of these", and the
     // just-audited block answers it with every audit one click away.
-    track("batch_completed");
+    track("batch_completed", { audits: justAuditedIds.length });
     await loadHistory(); // refreshes allAudits (incl. these audits) + renders the list
     show("bills");
   } catch (e) {
@@ -794,6 +859,9 @@ $("tab-eob").onclick = () => { state.activeDoc = "eob"; renderReview(); };
 
 
 $("confirm-review").onclick = async () => {
+  // The click that actually spends money. Everything before it is free, so the
+  // drop-off between audit_requested and here is the review screen's cost.
+  track("audit_started", { kind: state.sbcFlow ? "plan" : batchDocs ? "batch" : "single" });
   if (state.sbcFlow) return runSbcExtraction();
   if (batchDocs) return runBatch();
   const payload = {
@@ -822,7 +890,7 @@ $("confirm-review").onclick = async () => {
       // report that matters most, the one you see right after paying for the audit.
       pairUnrelated: unrelatedPair(payload.bill.text, payload.eob.text) });
     show("report");
-    track("audit_completed");
+    track("audit_completed", { ...auditShape(data), mode: "single" });
     if (state.eob && !state.eob.saved && $("save-eob").checked) {
       await maybeSaveEob(state.eob.text, data);
     }
@@ -1052,7 +1120,9 @@ $("gen-email").onclick = () => {
   }
   $("email-card").hidden = false;
   $("email-card").scrollIntoView({ behavior: "smooth" });
-  track("dispute_email_generated");
+  // The paywall moment, if there is ever a paywall: this is the step whose
+  // conversion rate decides whether the appeal letter is the thing to charge for.
+  track("dispute_email_generated", { findings: (lastReport?.findings || []).length });
 };
 
 $("copy-email").onclick = async () => {
