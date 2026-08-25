@@ -101,3 +101,37 @@ test("uniqueDocs: bill-only queue yields just the bills in order", () => {
   const docs = uniqueDocs(q);
   assert.deepEqual(docs.map((d) => d.file.name), ["a-bill.pdf", "b-bill.pdf"]);
 });
+
+test("one bill and one EOB pair even when the filenames disagree", () => {
+  // The family case, and the ordinary consolidated-statement case: a household
+  // EOB shares a stem with no single bill. Before this, the app showed the EOB
+  // in the list with a tick and refused to run, asking for an EOB.
+  const { pairs, billOnly, orphanEobs } = pairFiles([
+    { name: "matthew-bill.pdf" },
+    { name: "family-eob.pdf" },
+  ]);
+  assert.equal(pairs.length, 1);
+  assert.equal(pairs[0].bill.name, "matthew-bill.pdf");
+  assert.equal(pairs[0].eob.name, "family-eob.pdf");
+  assert.deepEqual(billOnly, []);
+  assert.deepEqual(orphanEobs, []);
+});
+
+test("the one-and-one rescue does not fire when there is real ambiguity", () => {
+  // Two bills and one unmatched EOB is genuinely ambiguous — which bill does it
+  // cover? Leave it orphaned and let the user say, rather than guessing.
+  const r = pairFiles([
+    { name: "alpha-bill.pdf" },
+    { name: "beta-bill.pdf" },
+    { name: "unrelated-eob.pdf" },
+  ]);
+  assert.equal(r.pairs.length, 0);
+  assert.equal(r.billOnly.length, 2);
+  assert.equal(r.orphanEobs.length, 1);
+});
+
+test("matching stems still pair normally, untouched by the rescue", () => {
+  const r = pairFiles([{ name: "t3-bill.pdf" }, { name: "t3-eob.pdf" }]);
+  assert.equal(r.pairs.length, 1);
+  assert.equal(r.pairs[0].bill.name, "t3-bill.pdf");
+});

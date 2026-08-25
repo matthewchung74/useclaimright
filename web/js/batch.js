@@ -87,6 +87,21 @@ export function pairFiles(files) {
       else orphanEobs.push(g.eobs[i]);
     }
   }
+  // Last resort: exactly one unpaired bill and exactly one orphan EOB. The
+  // stems disagree, but there is nothing else either could belong to, and the
+  // user put them in two labelled dropzones — that placement is the intent, and
+  // a filename heuristic should not overrule it.
+  //
+  // This is the ordinary case for a CONSOLIDATED statement, which the audit
+  // prompt handles explicitly ("covering several claims, dates, providers, or
+  // family members") but which almost never shares a stem with one bill: a
+  // household EOB is "family-eob.pdf" or "EOB_20260325.pdf" against a bill
+  // named for the patient or the clinic. Without this, the app listed the EOB
+  // on screen with a tick and told the user to add an EOB.
+  if (!pairs.length && billOnly.length === 1 && orphanEobs.length === 1) {
+    pairs.push({ bill: billOnly.pop(), eob: orphanEobs.pop() });
+  }
+
   pairs.sort((a, b) => byName(a.bill, b.bill));
   billOnly.sort(byName);
   orphanEobs.sort(byName);
