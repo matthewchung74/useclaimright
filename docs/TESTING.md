@@ -353,10 +353,22 @@ behaviour after a deploy is very likely cached — prime it with
 2. On the review screen, **before** analyzing:
    ✓ Banner: "⚠️ **This EOB may not cover this bill** (mixup-bill.pdf) — they share no service dates and no procedure codes…"
 3. Repeat with a genuine pair (`p1-bill.pdf` + `p1-eob.pdf`). ✓ **No banner** — a real pair shares dates and codes.
-4. Note: files with clearly different stems (`fake-bill.pdf` + `p1-eob.pdf`) never pair at all — the filename router keeps them separate and the audit reports "1 bill-only, 1 EOB has no matching bill".
+4. ~~Note: files with clearly different stems never pair at all.~~ **Changed 2026-08-25.**
+   Exactly one bill and exactly one EOB now pair regardless of filename — the user put them in
+   two labelled dropzones, and a household EOB never shares a stem with one bill. So
+   `fake-bill.pdf` + `p1-eob.pdf` DO pair, and this plan can be run with them directly instead
+   of making `mixup-*` copies. Ambiguity is still preserved: two bills and one unmatched EOB
+   leaves the EOB orphaned (see FAM3).
 5. Backstop (needs a real audit): if a mismatched pair is analyzed anyway and **every** finding comes back `not_in_eob`, the report shows "⚠️ Every line on this bill came back missing from the EOB…" above the totals.
    ✓ **Fixed 2026-08-16.** It originally failed here: the model returned `duplicate_charge` and `charity_care_eligible` alongside `not_in_eob`, and the old condition demanded *every* finding be `not_in_eob`. The report now also fires when the two documents share **no dates and no codes** — the same `documentsRelated()` evidence the step-2 banner uses — and the wording adapts: "**This EOB may not cover this bill.** They share no service dates and no procedure codes…".
    ✓ The discrimination that matters: this audit shows the warning, while **M5's genuine missing claim does not** (its bill and EOB do share a code). Verified live on both.
+
+**Verified on production 2026-08-25 (steps 1-2):** `fake-bill.pdf` (ED visit, 2026-06-12) and
+`p1-eob.pdf` (PT, 2026-03-20) paired under the new rule and the guard fired immediately —
+"⚠️ This EOB may not cover this bill (fake-bill.pdf) — they share no service dates and no
+procedure codes." The two changes compose the way they should: pairing is permissive about
+filenames, the guard is strict about content. Backed out with Start over, so no audit spent.
+Step 5's backstop was NOT re-run.
    ✓ **The four totals cards** — the failure signature the banner exists for:
 
    | Card | Expected | Why |
