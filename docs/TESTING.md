@@ -512,8 +512,21 @@ and saved-EOB matching then run on.
 4. ✓ The audit appears in history with a readable summary, which is only possible if the
    model's transcription was stored.
 
+**Verified on production 2026-08-25** with a 110 DPI rasterisation of `emma-bill.pdf`
+(no text layer) paired with `family-eob.pdf`: the 📷 banner fired, the bill tab showed the
+page image beside the scan explanation rather than an empty text box, the EOB tab showed its
+extracted text, and the audit found the duplicate 99213 **from the image** at $210.00.
+
+**This is the plan that caught the mixed-document bug.** On the first run the EOB was silently
+dropped — EOB allowed $0.00, "the billed services are missing from an EOB", worth-disputing
+inflated to $630.00. `runAudit` branched once for the whole request, so one image discarded
+every text document. Fixed, redeployed, re-run: EOB allowed $118.00, a real billed-above-
+allowed finding of $390.00, worth-disputing $600.00. Regression covered by
+`functions/test/parts.test.js`.
+
 **Edge cases**
 - **Mixed:** a digital-PDF bill with a photographed EOB. ✓ Bill goes as text, EOB as images.
+  The reverse direction (image bill, text EOB) is the one verified above.
 - **Too many pages:** more than 20 page images ✓ rejects with a page-count message, before any
   model call is billed.
 - **Upside down / cut off:** ✓ the banner tells the user to check exactly this, because the
