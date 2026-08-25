@@ -4,7 +4,9 @@ Deferred items with context. Created by /plan-ceo-review 2026-08-20.
 
 ## From the eng review (2026-08-23-phase0-phase1.md)
 
-- [ ] **Family deductible and OOP targets are hardcoded to the individual
+- [x] ~~Family deductible and OOP targets hardcoded to individual~~ — DONE.
+      See the note below for what the bug was.
+- [ ] ~~(fixed, kept for context)~~ **Family deductible and OOP targets were hardcoded to the individual
       amount.** `web/js/plan.js:52` and `:58` read
       `structured?.deductible?.individual` and `structured?.oopMax?.individual`.
       The plan schema DOES capture both individual and family (`plan.js:21-24`),
