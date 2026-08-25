@@ -8,6 +8,7 @@ import { addUsage, estimateCostUsd } from "./cost.js";
 import { runAudit, runPlanExtract } from "./providers/gemini.js";
 import { planSchema, buildDigest, replaceDecision, applyPlanGate } from "./plan.js";
 import { validateFeedback } from "./feedback.js";
+import { reserveModelCall } from "./guard.js";
 
 initializeApp();
 const db = getFirestore();
@@ -15,7 +16,14 @@ const db = getFirestore();
 const GEMINI_API_KEY = defineSecret("GEMINI_API_KEY");
 
 const MODEL_ID = process.env.MODEL_ID || "gemini-3.6-flash";
-const MAX_DOC_CHARS = 200_000;
+// Off until the client sets APP_CHECK_SITE_KEY and that build is live. Turning
+// this on first rejects every request from every user.
+const ENFORCE_APP_CHECK = process.env.APP_CHECK === "on";
+// A long itemized hospital bill runs to a few thousand characters, not 200k.
+// The old ceiling was three times the worst-case cost per audit for no benefit.
+// Over-limit truncates with a note rather than rejecting: bouncing a real
+// stranger's real bill is the more expensive failure.
+const MAX_DOC_CHARS = 60_000;
 // Page images are billed per page and arrive base64-encoded in the callable
 // payload, so both count. Generous for a real bill, bounded against abuse.
 const MAX_PAGES = 20;
@@ -60,7 +68,7 @@ async function checkFeedbackRateLimit(uid) {
 // In-app feedback: auth-gated, validated, written server-side only (rules deny
 // all client access to the feedback collection). Read in the Firebase console.
 export const submitFeedback = onCall(
-  { region: "us-central1", memory: "256MiB", timeoutSeconds: 30, enforceAppCheck: false },
+  { region: "us-central1", memory: "256MiB", timeoutSeconds: 30, enforceAppCheck: ENFORCE_APP_CHECK },
   async (request) => {
     if (!request.auth) throw new HttpsError("unauthenticated", "Sign in to send feedback.");
     const v = validateFeedback(request.data || {});
@@ -97,7 +105,7 @@ export const analyze = onCall(
     memory: "512MiB",
     timeoutSeconds: 300,
     secrets: [GEMINI_API_KEY],
-    enforceAppCheck: false, // flip to true once App Check is configured in Console
+    enforceAppCheck: ENFORCE_APP_CHECK,
   },
   async (request) => {
     if (!request.auth) {
@@ -114,9 +122,13 @@ export const analyze = onCall(
     if (!billDoc.text.trim() && !billDoc.images.length) {
       throw new HttpsError("invalid-argument", "The bill is required, as text or page images.");
     }
-    if (billDoc.text.length > MAX_DOC_CHARS || eobDoc.text.length > MAX_DOC_CHARS) {
-      throw new HttpsError("invalid-argument", "Document too large.");
-    }
+    const clip = (t, label) => {
+      if (t.length <= MAX_DOC_CHARS) return t;
+      console.warn("document truncated", { uid, label, from: t.length, to: MAX_DOC_CHARS });
+      return `${t.slice(0, MAX_DOC_CHARS)}\n\n[TRUNCATED: this document was longer than we analyze. Findings cover only the text above.]`;
+    };
+    billDoc.text = clip(billDoc.text, "bill");
+    eobDoc.text = clip(eobDoc.text, "eob");
     const pages = billDoc.images.length + eobDoc.images.length;
     if (pages > MAX_PAGES) {
       throw new HttpsError("invalid-argument", `Too many pages (${pages}); the limit is ${MAX_PAGES}.`);
@@ -127,6 +139,7 @@ export const analyze = onCall(
     }
 
     await checkRateLimit(uid);
+    const release = await reserveModelCall(db, { kind: "audit" });
 
     let plan = null;
     try {
@@ -148,6 +161,7 @@ export const analyze = onCall(
       if (!validate(result)) {
         // One retry with the validation errors appended so the model can self-correct.
         // It bills a second time, which is why usage accumulates rather than replaces.
+        // Not reached when the first call was truncated — that throws terminal.
         const errText = ajv.errorsText(validate.errors);
         const retry = await runAudit(
           billDoc,
@@ -162,8 +176,12 @@ export const analyze = onCall(
         }
       }
     } catch (err) {
+      await release();
       if (err instanceof HttpsError) throw err;
-      console.error("runAudit failed", { uid, model: MODEL_ID, message: err.message });
+      console.error("runAudit failed", { uid, model: MODEL_ID, message: err.message, terminal: !!err.terminal });
+      if (err.terminal) {
+        throw new HttpsError("resource-exhausted", "This document produced more output than we can handle. Try auditing fewer pages at once.");
+      }
       throw new HttpsError("internal", "Analysis failed. Please try again.");
     }
 
@@ -199,13 +217,26 @@ export const analyze = onCall(
     const costUsd = estimateCostUsd(usage, MODEL_ID);
     console.log("audit usage", { uid, model: MODEL_ID, ...usage, costUsd });
 
+    // Firestore caps a document at 1,048,576 bytes. Both documents plus the
+    // findings live in one, and this write happens AFTER the model is billed —
+    // a breach means the user paid and got an error. Trim the stored text
+    // rather than lose the audit; the findings are the valuable part.
+    const BUDGET = 700_000; // headroom for findings, occurrence table and metadata
+    let billStore = billSource, eobStore = eobSource;
+    if (Buffer.byteLength(billStore) + Buffer.byteLength(eobStore) > BUDGET) {
+      const half = Math.floor(BUDGET / 2);
+      billStore = billStore.slice(0, half);
+      eobStore = eobStore.slice(0, half);
+      console.warn("stored document text trimmed to fit the Firestore limit", { uid });
+    }
+
     const auditRef = db.collection(`users/${uid}/audits`).doc();
     await auditRef.set({
       // The text the audit was actually reasoned over. For scans this is the
       // model's transcription, which is also what the client's bill fingerprint
       // and saved-EOB matching run on. Page images are never stored.
-      bill: billSource,
-      eob: eobSource,
+      bill: billStore,
+      eob: eobStore,
       findings: result.findings,
       totals: result.totals,
       occurrenceTable: result.occurrenceTable,
@@ -232,7 +263,7 @@ export const extractPlan = onCall(
     memory: "512MiB",
     timeoutSeconds: 300,
     secrets: [GEMINI_API_KEY],
-    enforceAppCheck: false, // flip with analyze when App Check is configured
+    enforceAppCheck: ENFORCE_APP_CHECK,
   },
   async (request) => {
     if (!request.auth) throw new HttpsError("unauthenticated", "Sign in to add your plan.");
@@ -245,12 +276,13 @@ export const extractPlan = onCall(
     if (!sbcDoc.text.trim() && !sbcDoc.images.length) {
       throw new HttpsError("invalid-argument", "The SBC is required, as text or page images.");
     }
-    if (sbcDoc.text.length > MAX_DOC_CHARS) throw new HttpsError("invalid-argument", "Document too large.");
+    if (sbcDoc.text.length > MAX_DOC_CHARS) sbcDoc.text = sbcDoc.text.slice(0, MAX_DOC_CHARS);
     if (sbcDoc.images.length > MAX_PAGES) throw new HttpsError("invalid-argument", `Too many pages; the limit is ${MAX_PAGES}.`);
     if (sbcDoc.images.reduce((n, d) => n + d.length, 0) > MAX_IMAGE_BYTES) {
       throw new HttpsError("invalid-argument", "Those pages are too large. Try a lower-resolution scan.");
     }
     await checkPlanRateLimit(uid);
+    const release = await reserveModelCall(db, { kind: "plan" });
 
     const opts = { modelId: MODEL_ID, apiKey: GEMINI_API_KEY.value() };
     let structured, planUsage = null;
@@ -272,8 +304,12 @@ export const extractPlan = onCall(
       }
       console.log("plan usage", { uid, model: MODEL_ID, ...planUsage, costUsd: estimateCostUsd(planUsage, MODEL_ID) });
     } catch (err) {
+      await release();
       if (err instanceof HttpsError) throw err;
-      console.error("runPlanExtract failed", { uid, model: MODEL_ID, message: err.message });
+      console.error("runPlanExtract failed", { uid, model: MODEL_ID, message: err.message, terminal: !!err.terminal });
+      if (err.terminal) {
+        throw new HttpsError("resource-exhausted", "This document produced more output than we can handle. Try auditing fewer pages at once.");
+      }
       throw new HttpsError("internal", "Plan extraction failed. Please try again.");
     }
 

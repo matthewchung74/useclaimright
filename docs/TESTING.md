@@ -351,6 +351,7 @@ done
 - **Disclosure is present:** the audit form shows the "Where your documents go" banner naming Google's Gemini API, above the dropzones.
 - **Scanned documents:** upload a photo or a scanned PDF (no text layer). ✓ The 📷 banner fires, the right-hand review pane explains the pages are sent as images rather than showing text, and the audit still returns findings. The stored audit's `bill`/`eob` hold the model's transcription, so history, the bill fingerprint and saved-EOB matching all still work.
 - **Limits:** 11th audit → "Daily limit of 10 audits reached."; 4th plan upload → "Daily limit of 3 plan uploads reached."
+- **Kill switch:** set `meta/guard.auditsEnabled = false` in the console → the next audit fails with "Audits are paused right now", no model call is made, and nothing is charged. Set it back to `true` and the next audit runs. No deploy either way.
 
 ## Background-tab regression check (both bugs found this way)
 Chrome freezes `requestAnimationFrame` in hidden tabs. Two features broke on this and were fixed; re-check after touching either:

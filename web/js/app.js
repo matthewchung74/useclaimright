@@ -13,7 +13,8 @@ import {
 } from "./usage.js";
 import { getFunctions, httpsCallable, connectFunctionsEmulator } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-functions.js";
 import { getAnalytics, logEvent } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-analytics.js";
-import { firebaseConfig } from "./firebase-config.js";
+import { initializeAppCheck, ReCaptchaV3Provider } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app-check.js";
+import { firebaseConfig, APP_CHECK_SITE_KEY } from "./firebase-config.js";
 import { extractText } from "./extract.js";
 import { pairFiles, classifyFile, uniqueDocs } from "./batch.js";
 import { planYearStartMonthFrom, mergeSbcTrackers, deductibleTarget, oopTarget } from "./plan.js";
@@ -51,6 +52,16 @@ if (["localhost", "127.0.0.1"].includes(location.hostname)) {
 const analyzeFn = httpsCallable(functions, "analyze", { timeout: 300_000 });
 const extractPlanFn = httpsCallable(functions, "extractPlan", { timeout: 300_000 });
 const submitFeedbackFn = httpsCallable(functions, "submitFeedback", { timeout: 30_000 });
+// App Check attests that a request came from this app, not a script holding a
+// minted account. Skipped when no site key is set — the Functions must stay on
+// enforceAppCheck: false until both halves are in place, or every call 403s.
+if (APP_CHECK_SITE_KEY) {
+  initializeAppCheck(app, {
+    provider: new ReCaptchaV3Provider(APP_CHECK_SITE_KEY),
+    isTokenAutoRefreshEnabled: true,
+  });
+}
+
 let analytics = null;
 try { analytics = getAnalytics(app); } catch { /* blocked or unsupported — fine */ }
 const track = (name) => { try { analytics && logEvent(analytics, name); } catch {} };
