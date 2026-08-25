@@ -877,11 +877,15 @@ Chrome freezes `requestAnimationFrame` in hidden tabs. Two features broke on thi
   combine (cap at billed? drop charity-care from the total? de-overlap by charge?) is a product
   call, not a mechanical one. Reproduce with a deliberately mismatched pair, which is what makes
   every finding fire at once.
-- **Production coverage is partial, not zero.** On 2026-08-25 the live site was exercised in
-  a real Chrome with real Gemini calls: password sign-up and sign-in, the bill/EOB pairing fix
-  (FAM3 step 2), and FAM1 steps 1-3. Everything else — every M plan, every E plan, S1, P1, G1,
-  all the A1 edge cases, and FAM1 step 4 — has only ever been run against the emulator, or not
-  at all. Emulator-green is not production-green.
+- **Production coverage is now broad, but not complete.** Through 2026-08-25 the live site was
+  exercised in a real Chrome against real Gemini calls: A1 (password sign-up, sign-in and its
+  error cases), E1b, E2, E3, E5, E6 (incl. step 5), M4, M5, M7, D1, R2, F1, S1, P1, G1, X1
+  (five of six paths), FAM1, FAM2 and FAM3. **Still never run on production:** E7 (destructive,
+  runs last), A1's Google and email-link paths, and X1's "erase all data". Emulator-green is
+  still not production-green — five real defects this suite found (pairing, mixed documents,
+  the native `confirm()` freeze, the patientName cohort regression, and the suppressed
+  mismatched-EOB warning) were all invisible from reading the code, and the last two were
+  found only because the plans were run against the live site.
 - **The stale line on the processing screen:** "Everything up to analysis happens in your
   browser." Literally true (extraction is local) but written for the redaction era, and it
   still carries that implication. Not yet reworded.
