@@ -7,6 +7,10 @@
 > https://useclaimright.web.app with public invoker + in-function auth verified.
 > REMAINING: step 3 (Auth providers — Console), step 7 (App Check),
 > custom-domain reconnect (Namecheap), and the verification runs below.
+>
+> **Status 2026-08-24:** budget verified ($25/mo, 50/90/100%). Auth confirmed working
+> against the emulator end to end. Redaction removed; tesseract removed; global spend
+> guard live. App Check wired on both sides but OFF until step 7 is done in order.
 
 Everything in the codebase is done; these are the steps that need your accounts/consoles,
 in order. Items marked ☐ are yours; ▶ are commands I (or you) can run once the step above is done.
@@ -68,10 +72,11 @@ total. Rules deny all client access to `meta/**`.
   `gcloud config set project useclaimright` would fix the rest.
 
 ## Verification (acceptance criteria)
-- **AC1 seeded-PHI leak test:** make a fake bill PDF containing `LEAKCANARY-SSN 123-45-6789`,
-  `leakcanary@example.com`, and a fake name. Run a full audit with DevTools → Network open.
-  Search all request payloads for `LEAKCANARY`, the SSN, and the email — zero hits allowed.
-  (Model-weight downloads from jsdelivr/huggingface are GETs — confirm no request bodies.)
+- **AC1 disclosure honesty:** on-device redaction was removed 2026-08-23, so this used to be
+  a leak test and is now the opposite. Run a full audit with DevTools → Network open and
+  confirm the payload contains exactly what the disclosure says it does: the document text,
+  personal details included. What must be true is that the app SAID so first — the "Where
+  your documents go" banner is on the audit form, above the dropzones.
 - **AC2 ground truth:** BEFORE running your own bill, write down the discrepancies you know are
   in it. Then run it. The report must find them with correct amounts.
 - **AC3 bake-off:** run the same redacted pair against `gemini-3.6-flash` (default) and one
@@ -79,12 +84,17 @@ total. Rules deny all client access to `meta/**`.
   Missed findings or fabrications ⇒ upgrade the default. Tie ⇒ keep Flash.
 - **AC5 rules tests:** `brew install openjdk` (emulator needs Java), then
   `firebase emulators:exec --only firestore --project demo-useclaimright "npm --prefix functions test"`
-- **AC6/7 scan path:** photograph a bill, upload the photo — OCR banner must appear on review,
-  and the report must carry the scan caveat.
+- **AC6/7 scan path:** photograph a bill, upload the photo. There is no text layer, so the
+  pages go to the model as images (tesseract was removed 2026-08-23). The 📷 banner must
+  appear on review, the right-hand pane explains the pages are read directly rather than
+  showing text, and the stored audit's `bill`/`eob` must hold the model's transcription —
+  that is what history, the bill fingerprint and saved-EOB matching run on.
 
 ## Known limitations / notes
-- The marketing page still advertises the parked concierge service ("We Handle It, $39").
-  Copy rework is deliberately out of this build's scope — flag for a follow-up.
-- De-id model: `onnx-community/OpenMed-PII-SuperClinical-Base-184M-v1-ONNX` (~90MB one-time
-  browser download, then cached). Smaller 44M alternative noted in `web/js/deid.js`.
-- Regex backstop (SSN/phone/email) runs on top of NER regardless.
+- Documents are sent to Gemini as printed, personal details included. `web/privacy.html`
+  describes this, and it has still had no attorney review.
+- The concierge copy this file used to warn about is gone from the marketing page.
+- Test data: `test-fixtures/real-sbc/` holds genuine CMS sample SBCs and
+  `test-fixtures/real-eob/` a real CMS sample EOB layout. There is no public corpus of
+  real EOB documents — they are payer-specific and full of PHI — so `test-fixtures/family/`
+  synthesizes a consolidated family EOB using the CMS column vocabulary.
