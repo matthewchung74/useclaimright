@@ -213,6 +213,13 @@ did not fire. `droppedUnverified` 0.
 
 **Cost:** 1 audit.
 
+**Verified on production 2026-08-25:** the consolidated EOB appeared ONCE in the library
+despite two audits sharing it. `t4-bill.pdf` alone pre-selected it ("using saved: TESTVILLE
+BEHAVIORAL HEALTH ASSOCIATES · 2026-02-12 — change below if this isn't the right one") and
+the review screen explained the pick — "matched by provider". Totals $175.00 / $0.00 /
+$175.00 / **$175.00** from a single `not_in_eob`, and the "every line came back missing"
+backstop correctly did NOT fire on one finding. `droppedUnverified` 0.
+
 ## M6 — Plan lifecycle: duplicate re-upload
 **Use case:** re-uploading the same SBC never re-extracts or duplicates.
 **Data:** the same `fake-sbc.pdf`, via the plan line's **Replace**.
