@@ -78,21 +78,21 @@ test("mergeSbcTrackers: creates new, updates sbc-sourced, never touches manual",
 });
 
 test("deductibleTarget: SBC owns the limit; EOB fills gaps; conflict when both differ > $1", () => {
-  assert.deepEqual(deductibleTarget(PLAN, null), { limit: 1500, source: "sbc", conflict: false });
-  assert.deepEqual(deductibleTarget(null, { deductibleLimit: 1500 }), { limit: 1500, source: "eob", conflict: false });
-  assert.deepEqual(deductibleTarget(PLAN, { deductibleLimit: 2000 }), { limit: 1500, source: "sbc", conflict: true });
-  assert.deepEqual(deductibleTarget(PLAN, { deductibleLimit: 1500.5 }), { limit: 1500, source: "sbc", conflict: false });
-  assert.deepEqual(deductibleTarget(null, null), { limit: null, source: null, conflict: false });
+  assert.deepEqual(deductibleTarget(PLAN, null), { limit: 1500, source: "sbc", scope: "individual", conflict: false });
+  assert.deepEqual(deductibleTarget(null, { deductibleLimit: 1500 }), { limit: 1500, source: "eob", scope: null, conflict: false });
+  assert.deepEqual(deductibleTarget(PLAN, { deductibleLimit: 2000 }), { limit: 1500, source: "sbc", scope: "individual", conflict: true });
+  assert.deepEqual(deductibleTarget(PLAN, { deductibleLimit: 1500.5 }), { limit: 1500, source: "sbc", scope: "individual", conflict: false });
+  assert.deepEqual(deductibleTarget(null, null), { limit: null, source: null, scope: null, conflict: false });
   // family-only SBC deductible (individual null): individual target intentionally stays null/EOB-sourced
   assert.deepEqual(deductibleTarget({ deductible: { individual: null, family: 3000 } }, { deductibleLimit: 1500 }),
-    { limit: 1500, source: "eob", conflict: false });
+    { limit: 1500, source: "eob", scope: null, conflict: false });
 });
 
 test("oopTarget: SBC owns the limit, EOB fills gaps, conflicts flagged", () => {
-  assert.deepEqual(oopTarget({ oopMax: { individual: 6000, family: 12000 } }, null), { limit: 6000, source: "sbc", conflict: false });
-  assert.deepEqual(oopTarget(null, { oopLimit: 6000 }), { limit: 6000, source: "eob", conflict: false });
-  assert.deepEqual(oopTarget({ oopMax: { individual: 6000 } }, { oopLimit: 8150 }), { limit: 6000, source: "sbc", conflict: true });
-  assert.deepEqual(oopTarget(null, null), { limit: null, source: null, conflict: false });
+  assert.deepEqual(oopTarget({ oopMax: { individual: 6000, family: 12000 } }, null), { limit: 6000, source: "sbc", scope: "individual", conflict: false });
+  assert.deepEqual(oopTarget(null, { oopLimit: 6000 }), { limit: 6000, source: "eob", scope: null, conflict: false });
+  assert.deepEqual(oopTarget({ oopMax: { individual: 6000 } }, { oopLimit: 8150 }), { limit: 6000, source: "sbc", scope: "individual", conflict: true });
+  assert.deepEqual(oopTarget(null, null), { limit: null, source: null, scope: null, conflict: false });
 });
 
 test("planYearStartMonthFrom: extracts month, defaults to 1", () => {
@@ -230,4 +230,49 @@ test("applyPlanGate: applies in-window (inclusive bounds), strips straggler plan
   // no plan / no dates
   assert.equal(applyPlanGate(mk(["2026-03-01"]), null).planReason, "no_plan");
   assert.equal(applyPlanGate(mk([]), STRUCTURED).planReason, "no_dates");
+});
+
+// --- family vs individual limits ---
+// Reproduces against test-fixtures/real-sbc/*.pdf: every CMS sample SBC is
+// "Coverage for: Family" at $500 individual / $1,000 family, $2,500 / $5,000 OOP.
+
+const FAMILY_PLAN = {
+  deductible: { individual: 500, family: 1000 },
+  oopMax: { individual: 2500, family: 5000 },
+};
+
+test("a family EOB accrues against the FAMILY deductible, not the individual one", () => {
+  // The live bug: $640 counted toward a $1,000 family deductible was measured
+  // against the $500 individual target, rendering 128% of a limit they were
+  // 64% through — and calling the EOB's correct figure a conflict.
+  const t = deductibleTarget(FAMILY_PLAN, { deductibleLimit: 1000, deductibleToDate: 640 });
+  assert.equal(t.limit, 1000);
+  assert.equal(t.scope, "family");
+  assert.equal(t.conflict, false, "the family limit is not in conflict with the plan — it IS the plan");
+});
+
+test("an individual EOB still picks the individual limit", () => {
+  const t = deductibleTarget(FAMILY_PLAN, { deductibleLimit: 500, deductibleToDate: 120 });
+  assert.equal(t.limit, 500);
+  assert.equal(t.scope, "individual");
+  assert.equal(t.conflict, false);
+});
+
+test("out-of-pocket max resolves scope the same way", () => {
+  assert.equal(oopTarget(FAMILY_PLAN, { oopLimit: 5000 }).scope, "family");
+  assert.equal(oopTarget(FAMILY_PLAN, { oopLimit: 2500 }).scope, "individual");
+});
+
+test("a limit matching NEITHER figure is still a genuine conflict", () => {
+  // Precedence is unchanged: the SBC keeps the limit and the UI shows both.
+  const t = deductibleTarget(FAMILY_PLAN, { deductibleLimit: 3000 });
+  assert.equal(t.conflict, true);
+  assert.equal(t.limit, 500);
+  assert.equal(t.source, "sbc");
+});
+
+test("with no EOB figure, individual is the default", () => {
+  const t = deductibleTarget(FAMILY_PLAN, {});
+  assert.equal(t.limit, 500);
+  assert.equal(t.scope, "individual");
 });

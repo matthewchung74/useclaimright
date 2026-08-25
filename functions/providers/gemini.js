@@ -34,6 +34,9 @@ Also extract, verbatim from the documents (NEVER inferred or guessed):
   Statement/processing dates are NOT dates of service. When the EOB is a consolidated statement
   covering other claims, do NOT include dates that appear only on the EOB — this bill's dates only.
 - provider: the billing provider or facility name.
+- patientName: the person the BILL is for, exactly as printed. Take it from the patient
+  field, never the guarantor, subscriber or responsible party — on a child's bill those
+  name a parent. Empty string if the bill does not say.
 - payerRemarks: remark or note lines mentioning benefit maximums, visit limits, coverage denials,
   or accumulator status — copied word-for-word. Empty array when none.
 - accumulators (from the EOB): deductibleToDate, deductibleLimit, oopToDate, oopLimit,

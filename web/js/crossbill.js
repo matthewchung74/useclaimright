@@ -4,6 +4,17 @@
 // atStake, findingTypes[], summary, createdAtDate}.
 
 const norm = (s) => String(s || "").trim().toLowerCase().replace(/\s+/g, " ");
+
+// First and last name only: "Matthew T. Testpatient", "MATTHEW TESTPATIENT" and
+// "Testpatient, Matthew" all have to land on one person, and middle initials and
+// punctuation are exactly where the same name stops matching itself. An empty
+// name yields "", so accounts with one patient (and audits from before this was
+// captured) all share a key and keep behaving as they always did.
+const personKey = (s) => {
+  const w = norm(s).replace(/[.,]/g, " ").split(" ").filter(Boolean);
+  if (!w.length) return "";
+  return w.length === 1 ? w[0] : `${w[0]} ${w[w.length - 1]}`;
+};
 const inWindow = (d, w) => !w || (typeof d === "string" && d >= w.start && d <= w.end);
 const lowercaseCount = (s) => (String(s).match(/[a-z]/g) || []).length;
 const auditDate = (a) => (a.serviceDates || []).filter(Boolean)[0] || a.createdAtDate || "";
@@ -25,7 +36,7 @@ export function crossBillDuplicates(audits) {
         : (a.serviceDates || []).filter(Boolean);
       const amount = (row.unitCharges || []).find((n) => typeof n === "number");
       for (const date of new Set(dates)) {
-        const key = `${norm(a.provider)}|${String(row.code).trim().toUpperCase()}|${date}`;
+        const key = `${personKey(a.patientName)}|${norm(a.provider)}|${String(row.code).trim().toUpperCase()}|${date}`;
         if (!charges.has(key)) charges.set(key, { code: row.code, description: row.description || "", provider: a.provider, date, bills: new Map() });
         const entry = charges.get(key);
         if (!entry.bills.has(a.billKey)) {

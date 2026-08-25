@@ -154,6 +154,12 @@ export const findingsSchema = {
     billText: { type: "string" },
     eobText: { type: "string" },
 
+    // Who the bill is FOR. A household shares a plan and a provider, so
+    // without this two family members seen the same day for the same code are
+    // indistinguishable from one person billed twice — and the cross-bill
+    // duplicate check reports the second as a double-bill.
+    patientName: { type: "string" },
+
     // v2 fields — extracted verbatim from the documents, never inferred.
     serviceDates: { type: "array", items: { type: "string" } }, // ISO YYYY-MM-DD
     provider: { type: "string" },
