@@ -222,6 +222,10 @@ did not fire. `droppedUnverified` 0.
 
 **Cost:** 0.
 
+**Verified on production 2026-08-25:** "This plan is already on file." appeared immediately,
+with no "Reading your plan's terms…" step, no plan upload consumed (`planCount` stayed at 1
+from M1) and no confirmation dialog — the duplicate check is client-side, before the callable.
+
 ## M7 — Zero-entry tracking from remarks (optional, +3 audits)
 **Use case:** when an EOB remark prints the limit, one click tracks it — no typing. (With an SBC on file the trackers already exist; to see this path, delete the mental-health tracker first or run without a plan.)
 **Data:** `series/t4-bill.pdf`+`t4-eob.pdf`, `t5-bill.pdf`+`t5-eob.pdf`, `t6-bill.pdf`+`t6-eob.pdf`.
@@ -267,6 +271,25 @@ did not fire. `droppedUnverified` 0.
 5. ✓ Negative control: the t-series alone (same code, *different* dates) must produce **no** duplicate hero. Auditing the same bill twice must also produce none.
 
 **Cost:** 2 audits (+1 plan upload if no SBC on file).
+
+**Verified on production 2026-08-25.** Each report carried the t-series shape ($175.00 /
+$120.00 / $120.00 / **$55.00**, one `billed_vs_allowed_mismatch`), and the $175.00 duplicate
+appeared ONLY on the dashboard — "FOUND BY COMPARING YOUR BILLS TO EACH OTHER", "The same
+visit is on two statements", naming 90837 and Feb 12 2026, with Statement A / Statement B
+showing audited dates and amounts and no statement numbers. Provider grouping held: three
+audits under differing extraction casing collapsed into ONE "Testville Behavioral Health
+Associates" group.
+
+**This plan caught a regression.** On the first run no hero appeared. The model had extracted
+`patientName` from one statement of the pair and not the other, and the duplicate key
+included it — so "" and "jane testpatient" read as different people and a genuine double-bill
+went unreported. Identity now separates people only when EVERY bill in the group names one.
+Regression covered in `functions/test/family.test.js`.
+
+⚠️ **Note when re-running:** hosting serves JS with `max-age=300`, so a freshly deployed
+module can take up to five minutes to reach an open tab. A page that still shows the old
+behaviour after a deploy is very likely cached — prime it with
+`fetch(url, { cache: "reload" })` before concluding the fix did not work.
 
 ---
 
