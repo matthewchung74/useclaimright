@@ -1,4 +1,5 @@
 import { GoogleGenAI } from "@google/genai";
+
 import { findingsSchema } from "../schema.js";
 import { planSchema, PLAN_EXTRACT_INSTRUCTIONS, planTermsBlock } from "../plan.js";
 
@@ -54,6 +55,23 @@ any EOB comparison — every eobQuote must be an empty string, finding types
 billed_vs_allowed_mismatch / not_in_eob / cost_share_error must not appear, and set
 totals.eobAllowed and totals.patientResponsibility to 0.`;
 
+// Output is billed at five times input, and nothing bounded it. A transcription
+// plus findings runs ~2k tokens; this is generous room above that, and a hard
+// stop under a model that decides to think at length.
+const MAX_OUTPUT_TOKENS = 8192;
+
+// A response cut off mid-JSON is not retryable. It fails schema validation, the
+// retry sends the SAME oversized request, and a ceiling meant to cap cost
+// doubles it instead. Detect the truncation and stop.
+function assertComplete(response) {
+  const reason = response?.candidates?.[0]?.finishReason;
+  if (reason === "MAX_TOKENS") {
+    const err = new Error("Model response hit the output ceiling and was truncated.");
+    err.terminal = true;
+    throw err;
+  }
+}
+
 // Token counts as the API reports them. Null rather than 0 when absent, so a
 // provider that reports nothing is distinguishable from a genuinely free call.
 const usageOf = (response) => ({
@@ -94,8 +112,14 @@ export async function runAudit(bill, eob, { modelId, apiKey }, planDigest = null
   const response = await ai.models.generateContent({
     model: modelId,
     contents: [{ role: "user", parts }],
-    config: { temperature: 0, responseMimeType: "application/json", responseJsonSchema: findingsSchema },
+    config: {
+      temperature: 0,
+      maxOutputTokens: MAX_OUTPUT_TOKENS,
+      responseMimeType: "application/json",
+      responseJsonSchema: findingsSchema,
+    },
   });
+  assertComplete(response);
   return { data: JSON.parse(response.text), usage: usageOf(response) };
 }
 
@@ -116,7 +140,9 @@ export async function runPlanExtract(sbc, { modelId, apiKey }) {
       responseMimeType: "application/json",
       responseJsonSchema: planSchema,
       temperature: 0,
+      maxOutputTokens: MAX_OUTPUT_TOKENS,
     },
   });
+  assertComplete(response);
   return { data: JSON.parse(response.text), usage: usageOf(response) };
 }

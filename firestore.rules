@@ -36,6 +36,13 @@ service cloud.firestore {
     match /feedback/{feedbackId} {
       allow read, write: if false;
     }
+    // Spend guard: the ceiling config and the sharded day counters. Both are
+    // Function-managed. Nothing here is client-readable — knowing how much
+    // budget is left is knowing how much is left to burn.
+    match /meta/{document=**} {
+      allow read, write: if false;
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }

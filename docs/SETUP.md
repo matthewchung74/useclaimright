@@ -41,8 +41,22 @@ in order. Items marked ☐ are yours; ▶ are commands I (or you) can run once t
 - ▶ `firebase deploy` (hosting + functions + firestore rules)
 
 ## 7. App Check (after first successful end-to-end run)
-- ☐ Console → App Check → register web app with reCAPTCHA v3
-- ▶ flip `enforceAppCheck: true` in `functions/index.js`, redeploy
+**Order matters — reversing these two steps takes the app down for everyone.**
+- ☐ Console → App Check → register the web app with reCAPTCHA v3, copy the site key
+- ▶ set `APP_CHECK_SITE_KEY` in `web/js/firebase-config.js`, `firebase deploy --only hosting`
+- ☐ confirm audits still run (the client now sends tokens; the Functions still ignore them)
+- ▶ set `APP_CHECK=on` for the Functions, redeploy. Only now are tokens required.
+
+## 7b. Spend guard
+The global ceiling and kill switch live in Firestore at `meta/guard`, so both can
+be changed from the console with no deploy:
+- `auditsEnabled` / `plansEnabled` — set either to `false` to stop model calls immediately
+- `dailyCalls` — the global daily ceiling across ALL users (default 2000, about $20/day)
+
+Spend is counted in `meta/spend/{YYYY-MM-DD}/shard-{0..9}`; sum them for the day's
+total. Rules deny all client access to `meta/**`.
+- ☐ set a GCP budget alert as a backstop. An alert is not a cap: for a hard stop,
+  wire budget → Pub/Sub → disable billing, which takes the whole project offline.
 
 ## Verification (acceptance criteria)
 - **AC1 seeded-PHI leak test:** make a fake bill PDF containing `LEAKCANARY-SSN 123-45-6789`,
