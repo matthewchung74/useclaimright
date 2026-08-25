@@ -486,11 +486,15 @@ limit · replace a plan with an older one · erase all data**
 | remove the plan | "Remove your plan?" | "Trackers you've created stay." | "Remove plan" | ✓ |
 | stop tracking a limit | "Stop tracking this limit?" | "Audits already run are unaffected." | "Stop tracking" | ✓ |
 | delete a saved EOB | "Delete this saved EOB?" | names the EOB and what it stops doing | "Delete" | ✓ |
+| replace with an older plan | "Replace the plan on file with an older one?" | quotes **both** coverage periods and what changes | "Replace anyway" | ✗ (teal) |
 
-Red is `rgb(178, 59, 59)` on all four. The renderer stayed responsive throughout — every one of
+Red is `rgb(178, 59, 59)` on the four destructive ones. The replace-with-an-older-plan dialog is
+the discriminating case and it behaves: `rgb(13, 138, 138)` teal with no `danger` class, because
+replacing a plan destroys nothing. Cancelling left the 2026 plan on file. It needed a fixture
+that did not exist, so `test-fixtures/fake-sbc-older.html` was added — `fake-sbc.html` with the
+coverage period shifted to 2025. The SBC input accepts `text/html`, so no PDF render is needed. The renderer stayed responsive throughout — every one of
 these was clicked, read and dismissed from script, which the old native `confirm()` made
-impossible. **Not re-run:** "replace a plan with an older one" (needs an older-dated SBC) and
-"erase all data" (that is E7, which runs last).
+impossible. **Not re-run:** only "erase all data", which is E7 and runs last.
 
 ⚠️ **Found and fixed here 2026-08-25 — backdrop click did nothing.** Step 6 claims Cancel, Esc
 and the backdrop all decline. Cancel and Esc did (`dlg.onclose` resolves `false`), but a native
@@ -888,7 +892,6 @@ Chrome freezes `requestAnimationFrame` in hidden tabs. Two features broke on thi
   vocabulary. Layout variety across real payers remains completely untested, and it is the
   hardest part of the product.
 - Out-of-period plan check (needs a bill dated outside 2026; verify the footer variant "service dates fall outside your plan year").
-- Older-SBC replace confirmation (needs a second SBC fixture with an earlier coverage period).
 - Expired-plan renewal banner (needs a past-dated SBC fixture or a clock change).
 - Emulator rules tests (need Java).
 - `loadPlan()` failing soft (a Firestore error should leave the empty plan card and no unhandled rejection) — needs network throttling or an injected failure.

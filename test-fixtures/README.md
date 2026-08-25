@@ -74,3 +74,11 @@ uploads. There is no equivalent for EOBs: they are payer-specific and full of
 PHI, so nobody publishes a corpus, and `real-eob/cms-sample-eob.pdf` is an
 annotated teaching document rather than a clean statement. That is why the
 family EOB above is synthesized.
+
+## Older SBC — for the replace-with-an-older-plan confirmation
+
+`fake-sbc-older.html` is `fake-sbc.html` with the coverage period shifted to
+01/01/2025 – 12/31/2025. Upload it via **Replace** on the plan card while the 2026 plan is on
+file and the app asks "Replace the plan on file with an older one?" — the one confirmation in
+the app that is deliberately NOT red, because replacing a plan destroys nothing (X1 step 5).
+The SBC input accepts `text/html`, so this needs no PDF render.
