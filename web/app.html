@@ -52,7 +52,7 @@
   .ld-actions{display:flex;gap:10px;justify-content:flex-end;padding:0 26px 22px;flex-wrap:wrap}
   .banner{background:#fff8ec;border:1px solid #f0dcb0;border-radius:10px;padding:12px 16px;margin:12px 0;color:#6b5320;font-size:14px}
   .muted{color:var(--ink-soft);font-size:14px}
-  input[type=email]{border:1px solid var(--line);border-radius:10px;padding:10px;width:100%;background:#fff;font-size:14px}
+  input[type=email],input[type=password]{border:1px solid var(--line);border-radius:10px;padding:10px;width:100%;background:#fff;font-size:14px}
   label{font-weight:700;font-size:14px;display:block;margin:14px 0 6px}
   .user-bar{display:none;align-items:center;gap:12px;font-size:14px;color:var(--ink-soft);position:relative}
   body.authed .user-bar{display:flex}
@@ -179,6 +179,10 @@
   .fb-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
   .fb-head b{font-size:16px}
   .fb-head button{border:none;background:none;font-size:16px;cursor:pointer;color:var(--ink-soft);padding:3px 6px}
+  /* "or" divider: a rule with the word sitting in a gap, so the two sign-in
+     routes read as alternatives rather than a stack of buttons */
+  .or-rule{display:flex;align-items:center;gap:10px;margin:16px 0 4px;color:var(--ink-soft);font-size:12.5px}
+  .or-rule::before,.or-rule::after{content:"";flex:1;height:1px;background:var(--line)}
   .fb-chips{margin-bottom:10px}
   .fb-chips button{padding:6px 12px;font-size:13px;border-radius:999px}
   #fb-text{width:100%;height:96px;border:1px solid var(--line);border-radius:10px;padding:10px;font-size:14px;font-family:inherit;resize:vertical}
@@ -263,10 +267,23 @@
       <h1>Sign in</h1>
       <p class="lead">Your audits are private to your account.</p>
       <button id="google-signin" class="btn" style="width:100%">Continue with Google</button>
-      <label for="email-input" style="text-align:left">Or get a sign-in link by email</label>
-      <input id="email-input" type="email" placeholder="you@example.com">
-      <button id="email-signin" class="btn ghost" style="width:100%;margin-top:10px">Email me a sign-in link</button>
+
+      <div class="or-rule"><span>or</span></div>
+
+      <label for="email-input" style="text-align:left" id="email-label">Email</label>
+      <input id="email-input" type="email" placeholder="you@example.com" autocomplete="username">
+      <label for="password-input" style="text-align:left">Password</label>
+      <input id="password-input" type="password" placeholder="••••••••" autocomplete="current-password">
+      <button id="password-signin" class="btn" style="width:100%;margin-top:10px">Sign in</button>
+
+      <p class="muted" style="margin-top:12px;font-size:13px">
+        <a href="#" id="toggle-signup">Create an account</a> ·
+        <a href="#" id="forgot-password">Forgot password?</a> ·
+        <a href="#" id="use-email-link">Email me a link instead</a>
+      </p>
+
       <p id="email-sent" class="muted" hidden>Link sent — check your inbox on this device.</p>
+      <p id="reset-sent" class="muted" hidden>Password reset sent — check your inbox.</p>
       <div id="signin-error" class="error" hidden></div>
     </div>
   </section>
