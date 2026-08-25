@@ -242,6 +242,7 @@ export const analyze = onCall(
       occurrenceTable: result.occurrenceTable,
       serviceDates: result.serviceDates,
       provider: result.provider,
+      patientName: result.patientName || "",
       payerRemarks: result.payerRemarks,
       accumulators: result.accumulators,
       model: MODEL_ID,

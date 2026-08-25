@@ -39,23 +39,41 @@ export function mergeSbcTrackers(existing, limits, planYearStartMonth) {
 }
 
 // The SBC owns the LIMIT; the EOB owns progress. When both state a limit and
-// disagree by more than $1, surface the conflict (UI shows both).
-function limitTarget(sbcLimit, eobLimit) {
-  if (typeof sbcLimit === "number") {
-    return { limit: sbcLimit, source: "sbc", conflict: typeof eobLimit === "number" && Math.abs(eobLimit - sbcLimit) > 1 };
+// disagree by more than $1, the SBC still wins and the UI shows the conflict.
+//
+// With one correction. A plan states TWO limits, individual and family, and a
+// household accrues against one of them. The EOB is the only document that says
+// which — it prints the limit this member's claims actually count toward. So a
+// figure matching the plan's FAMILY number is not a disagreement with the
+// individual one; it is the household's target.
+//
+// This read `.individual` unconditionally, so a family plan measured progress
+// toward $1,000 against a $500 target and reported the EOB's correct family
+// figure as a conflict. Reproduces with any file in test-fixtures/real-sbc/.
+function limitTarget(sbcIndividual, sbcFamily, eobLimit) {
+  const near = (a, b) => typeof a === "number" && typeof b === "number" && Math.abs(a - b) <= 1;
+
+  if (near(sbcFamily, eobLimit) && !near(sbcIndividual, eobLimit)) {
+    return { limit: sbcFamily, source: "sbc", scope: "family", conflict: false };
   }
-  if (typeof eobLimit === "number") return { limit: eobLimit, source: "eob", conflict: false };
-  return { limit: null, source: null, conflict: false };
+  if (typeof sbcIndividual === "number") {
+    return {
+      limit: sbcIndividual, source: "sbc", scope: "individual",
+      conflict: typeof eobLimit === "number" && !near(sbcIndividual, eobLimit),
+    };
+  }
+  if (typeof eobLimit === "number") return { limit: eobLimit, source: "eob", scope: null, conflict: false };
+  return { limit: null, source: null, scope: null, conflict: false };
 }
 
 export function deductibleTarget(structured, snapshot) {
-  return limitTarget(structured?.deductible?.individual, snapshot?.deductibleLimit);
+  return limitTarget(structured?.deductible?.individual, structured?.deductible?.family, snapshot?.deductibleLimit);
 }
 
 // Out-of-pocket max: same precedence, and the reason the OOP card can finally
 // render — oopToDate/oopLimit have been extracted since v2 but never shown.
 export function oopTarget(structured, snapshot) {
-  return limitTarget(structured?.oopMax?.individual, snapshot?.oopLimit);
+  return limitTarget(structured?.oopMax?.individual, structured?.oopMax?.family, snapshot?.oopLimit);
 }
 
 export function planYearStartMonthFrom(planYearStart) {

@@ -1007,6 +1007,7 @@ async function loadHistory() {
       // Dashboard fields: identity of the paper (so the same bill audited twice
       // is never mistaken for a double-bill), money, and a human summary.
       billKey: billKeyOf(auditText(a, 'bill')),
+      patientName: a.patientName || "",
       atStake: a.totals?.totalAtStake || 0,
       findingTypes: findings.map((f) => f.type),
       summary: summarizeFindings(findings),
