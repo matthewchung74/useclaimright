@@ -23,14 +23,56 @@ export const FINDING_TYPES = [
 // "worth disputing" double-counts the very figure it refers to.
 export const ADVISORY_FINDING_TYPES = new Set(["charity_care_eligible"]);
 
+// The lines a finding refers to, parsed out of the model's free-text lineRef.
+// Seen in production: "Line 2", "Line 1 - Line 6", "Header". Anything we cannot
+// read returns an empty set, which means "cannot judge" — such a finding is
+// never de-overlapped, so an unparseable ref can only ever cost us a deduction
+// we were not sure about.
+export function linesIn(lineRef) {
+  const s = String(lineRef || "").toLowerCase();
+  const nums = [];
+  let sawRange = false;
+  for (const m of s.matchAll(/(\d+)\s*(?:-|–|—|to|through)\s*(?:lines?\s*)?(\d+)/g)) {
+    sawRange = true;
+    const a = Number(m[1]), b = Number(m[2]);
+    // A nonsensical span ("line 1 - 99999") is refused outright rather than
+    // degraded to its first line: a wrong line set drives a wrong containment
+    // decision, whereas an empty one only declines to judge.
+    if (b >= a && b - a < 200) for (let i = a; i <= b; i++) nums.push(i);
+  }
+  if (sawRange) return new Set(nums);
+  for (const m of s.matchAll(/lines?\s*(\d+)/g)) nums.push(Number(m[1]));
+  return new Set(nums);
+}
+
+const strictlyContains = (outer, inner) =>
+  outer.size > inner.size && inner.size > 0 && [...inner].every((n) => outer.has(n));
+
 // The at-stake total, computed from the findings rather than trusted from the
 // model. The prompt never specified how to sum it, so the exclusion above held
 // only by luck: one E1 run returned $990.50 (= $804.15 + the $186.35 charity
 // figure) instead of $804.15.
-export function computeAtStake(findings) {
-  return (findings || [])
+//
+// Findings also overlap. Live on 2026-08-25 a mismatched pair produced
+// not_in_eob over "Line 1 - Line 6" ($2,115.00 — the whole bill) alongside
+// duplicate_charge over "Line 2" ($145.50), and the sum came to $2,260.50 on a
+// $2,115.00 bill. A headline larger than the bill is indefensible: it is the
+// figure a member acts on when deciding what to withhold. The $145.50 is not
+// additional money, it is a reason inside the larger claim.
+//
+// Only strict containment is deducted. Partial overlaps are ambiguous and are
+// left summed, with the billed cap as the backstop — overstating is the failure
+// that costs the product its credibility, so both rules round that way.
+export function computeAtStake(findings, billed) {
+  const items = (findings || [])
     .filter((f) => !ADVISORY_FINDING_TYPES.has(f.type))
-    .reduce((sum, f) => sum + (typeof f.amountAtStake === "number" ? f.amountAtStake : 0), 0);
+    .map((f) => ({ lines: linesIn(f.lineRef), amt: typeof f.amountAtStake === "number" ? f.amountAtStake : 0 }));
+
+  const total = items
+    .filter((a) => !items.some((b) => b !== a && strictlyContains(b.lines, a.lines)))
+    .reduce((sum, x) => sum + x.amt, 0);
+
+  return typeof billed === "number" && billed > 0 ? Math.min(total, billed) : total;
 }
 
 // Evidence, verified. The schema proves a quote is a STRING; it cannot prove the
@@ -133,7 +175,7 @@ export function verifyEvidence(result, sources) {
   // Re-derive rather than subtract, for the reason applyPlanGate re-derives: one
   // formula, one place. Subtracting would inherit whatever the model asserted.
   return {
-    result: { ...result, findings: kept, totals: { ...result.totals, totalAtStake: computeAtStake(kept) } },
+    result: { ...result, findings: kept, totals: { ...result.totals, totalAtStake: computeAtStake(kept, result.totals?.billed) } },
     dropped,
   };
 }

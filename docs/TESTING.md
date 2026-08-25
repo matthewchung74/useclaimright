@@ -400,6 +400,29 @@ the out-of-pocket-maximum card came back with it.
 **Cost:** 1 plan upload (3/3 for the day after M1 + E4 + E5).
 
 ## E6 — Wrong EOB paired with a bill
+
+**De-overlap (fixed 2026-08-25).** This plan is also the reproduction for overlapping findings,
+because a mismatched pair makes every finding type fire at once. The first run reported
+**$2,115.00 billed and $2,260.50 worth disputing** — a headline larger than the bill, which is
+the figure a member acts on when deciding what to withhold.
+
+The arithmetic was exact: `not_in_eob` over `"Line 1 - Line 6"` ($2,115.00, the whole bill) plus
+`duplicate_charge` over `"Line 2"` ($145.50, one line inside it). `charity_care_eligible` was
+already excluded as advisory. The $145.50 is not extra money; it is a reason inside the larger
+claim.
+
+`computeAtStake` now parses `lineRef` and drops any finding whose lines are **strictly
+contained** in another's, then caps the total at `billed`. Both rules round the same way,
+toward understating: overstating is the failure that costs the product its credibility. Only
+strict containment is deducted — partial overlaps are ambiguous and stay summed, with the cap as
+the backstop. An unparseable `lineRef` (`"Header"`, a nonsensical `"Line 1 - 99999"` span)
+yields an empty set and is never de-overlapped, so it can only ever cost a deduction we were
+unsure of.
+
+Re-verified live on the same pair: **worth disputing $2,115.00**, equal to billed. Containment
+did the work, not the cap — the model wrote `"Lines 1-6"` on the re-run, a different shape from
+the original `"Line 1 - Line 6"`, and both parse. **Both findings are still shown on the
+report**; de-overlap changes the total, never what is surfaced.
 **Use case:** pairing the wrong EOB must be called out, not silently reported as "you may not owe the whole bill".
 **Data:** copies of two unrelated fixtures given matching stems so they pair by filename — e.g. `mixup-bill.pdf` (copy of `fake-bill.pdf`, ED visit 2026-06-12) + `mixup-eob.pdf` (copy of `series/p1-eob.pdf`, PT 2026-03-20).
 
@@ -510,14 +533,33 @@ tested with a real key press, or you will record a false failure.
 
 **Cost:** 0 audits (deletes only).
 
-## E7 — Reset account returns you to onboarding (destructive — run last)
+## E7 — Reset account returns you to onboarding (destructive — snapshot first)
 
-**Verified on production 2026-08-25:** the confirmation is now the app's own dialog —
-"Erase everything?" / "This deletes every audit, saved EOB, tracker and your plan. It cannot
-be undone. Today's usage counters stay as they are." / red "Erase everything". After
-confirming: 0 audits, 0 saved EOBs, 0 trackers, no plan, back on `onboarding`, and the usage
-counter document survived rather than being deleted — which is the non-obvious part the
-dialog now states up front.
+**Verified on production 2026-08-25 — all three steps, and reversibly.** The confirmation is the
+app's own dialog: "Erase everything?" / "This deletes every audit, saved EOB, tracker and your
+plan. It cannot be undone. Today's usage counters stay as they are." / red `rgb(178, 59, 59)`
+"Erase everything" — X1's sixth and last path.
+
+From a baseline of 13 audits, 2 trackers, 6 saved EOBs, a plan on file and "7 of 10 audits left
+today":
+- Step 1: landed on **"Set up your plan"**, not the audit page, and the skip link read the
+  **first-visit** wording "Skip for now — audit a bill first" — against the origin-aware
+  "Not now — back to your audits" the same screen shows when reached via **Add now** (E5). The
+  `ucr-skip-onboarding` localStorage key was cleared along with the Firestore data.
+- Step 3: `meta/usage` **survived untouched** — `count: 3`, `planCount: 2`, unchanged. Reset is
+  not a way to buy more audits.
+- Firestore confirmed empty: 0 audits, 0 trackers, 0 eobs, `plan/active` gone.
+
+**How to run this without losing the account.** E7 no longer has to be run last or on a scratch
+account. Snapshot the user subtree over the Firestore REST API first — the collections are
+`audits`, `trackers`, `eobs` (NOT "savedEobs"), plus the singletons `plan/active` and
+`meta/usage` — then restore each document with a PATCH to the same document ID, which
+creates-or-updates. Prove the restore path against a throwaway uid and diff the read-back
+against the snapshot BEFORE erasing anything; a restore script you have not exercised is not a
+backup. Done that way here: round trip was byte-exact on all 21 documents plus both singletons,
+the account came back to 13 audits / 2 trackers / 6 EOBs / plan on file / "7 of 10 audits left",
+and the only manual step afterwards was re-setting `ucr-skip-onboarding`, which is browser-local
+and therefore outside the Firestore snapshot.
 **Use case:** "erase all my data" means a genuinely fresh account, including the first-run setup screen.
 **Data:** none (destructive — run it last, or on a scratch account).
 
@@ -868,15 +910,6 @@ Chrome freezes `requestAnimationFrame` in hidden tabs. Two features broke on thi
 - The Hide chip positions via `setTimeout`, not rAF — it must still appear when the tab regains focus after a background selection.
 
 ## Not covered by this suite (documented gaps)
-- **"Worth disputing" can exceed "Billed".** Seen live 2026-08-25 on the first E6 step-5 run:
-  billed $2,115.00, worth disputing **$2,260.50**. Three findings overlapped on the same
-  charges — `duplicate_charge`, `not_in_eob` and `charity_care_eligible` — and the headline
-  total appears to sum them without capping at the amount actually billed. A number larger than
-  the bill is not defensible to a user reading it as "money you may not owe", and this is the
-  most prominent figure on the report. Not fixed here: deciding how overlapping findings should
-  combine (cap at billed? drop charity-care from the total? de-overlap by charge?) is a product
-  call, not a mechanical one. Reproduce with a deliberately mismatched pair, which is what makes
-  every finding fire at once.
 - **Production coverage is now broad, but not complete.** Through 2026-08-25 the live site was
   exercised in a real Chrome against real Gemini calls: A1 (password sign-up, sign-in and its
   error cases), E1b, E2, E3, E5, E6 (incl. step 5), M4, M5, M7, D1, R2, F1, S1, P1, G1, X1

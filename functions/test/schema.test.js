@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import Ajv from "ajv";
-import { findingsSchema, computeAtStake, verifyEvidence } from "../schema.js";
+import { findingsSchema, computeAtStake, verifyEvidence, linesIn } from "../schema.js";
 
 const ajv = new Ajv({ allErrors: true });
 const validate = ajv.compile(findingsSchema);
@@ -103,6 +103,57 @@ test("computeAtStake sums plan findings and tolerates missing amounts", () => {
 
 test("an all-advisory audit is worth $0 to dispute", () => {
   assert.equal(computeAtStake([{ type: "charity_care_eligible", amountAtStake: 186.35 }]), 0);
+});
+
+// --- de-overlap (live regression 2026-08-25) ---
+
+test("E6: a finding inside another's line span is not added again", () => {
+  // The live failure: $2,115.00 billed, $2,260.50 "worth disputing". not_in_eob
+  // covered the whole bill and duplicate_charge covered one line inside it.
+  const findings = [
+    { type: "duplicate_charge", lineRef: "Line 2", amountAtStake: 145.5 },
+    { type: "not_in_eob", lineRef: "Line 1 - Line 6", amountAtStake: 2115 },
+    { type: "charity_care_eligible", lineRef: "Header", amountAtStake: 845 },
+  ];
+  assert.equal(computeAtStake(findings, 2115), 2115);
+});
+
+test("findings on separate lines still sum", () => {
+  // The de-overlap must not eat real money: different lines, nothing contained.
+  const findings = [
+    { type: "duplicate_charge", lineRef: "Line 2", amountAtStake: 145.5 },
+    { type: "billed_vs_allowed_mismatch", lineRef: "Line 4", amountAtStake: 658.65 },
+  ];
+  assert.equal(Number(computeAtStake(findings, 845).toFixed(2)), 804.15);
+});
+
+test("the total never exceeds what was billed", () => {
+  const findings = [
+    { type: "duplicate_charge", lineRef: "Line 1", amountAtStake: 400 },
+    { type: "wrong_code", lineRef: "Line 2", amountAtStake: 400 },
+  ];
+  assert.equal(computeAtStake(findings, 500), 500);
+  // ...and with no billed figure to cap against, it is left alone.
+  assert.equal(computeAtStake(findings), 800);
+});
+
+test("an unreadable lineRef is never de-overlapped", () => {
+  // "Header" parses to nothing, so it can neither contain nor be contained.
+  const findings = [
+    { type: "not_in_eob", lineRef: "Line 1 - Line 6", amountAtStake: 300 },
+    { type: "wrong_code", lineRef: "Header", amountAtStake: 50 },
+  ];
+  assert.equal(computeAtStake(findings, 2000), 350);
+});
+
+test("linesIn parses the shapes the model actually emits", () => {
+  assert.deepEqual([...linesIn("Line 2")], [2]);
+  assert.deepEqual([...linesIn("Line 1 - Line 6")], [1, 2, 3, 4, 5, 6]);
+  assert.deepEqual([...linesIn("Lines 3-4")], [3, 4]);
+  assert.deepEqual([...linesIn("Header")], []);
+  assert.deepEqual([...linesIn(undefined)], []);
+  // A runaway span is refused rather than expanded.
+  assert.deepEqual([...linesIn("Line 1 - 99999")], []);
 });
 
 // --- verifyEvidence ---
