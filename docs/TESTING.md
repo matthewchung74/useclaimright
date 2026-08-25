@@ -273,6 +273,23 @@ from M1) and no confirmation dialog — the duplicate check is client-side, befo
    *(Regression guard, fixed 2026-08-16: the remark matcher required "visits" to follow "N of M covered" immediately, so the real remark — which names the benefit in between — never matched and this banner never appeared. `web/js/usage.js` now allows up to 5 words there.)*
 2. After t6: ✓ tracker red ("Limit reached…"), deductible card $720 of $1,500.
 
+**Verified on production 2026-08-25 (cheaper route, 1 audit):** deleted the SBC mental-health
+tracker, then audited the t5 pair alone. The four cards held the t-series shape exactly —
+$175.00 / $120.00 / $120.00 / $55.00. The banner fired with the real remark, which is the
+regression the 5-word allowance exists for:
+
+> 💡 Your insurer mentioned a benefit limit for 90837 — Psychotherapy, 60 minutes
+> ("5 of 6 covered outpatient mental health visits used this plan year."). **Track it**
+
+ONE click created the tracker with **no form and no dialog** — Firestore shows
+`label: "Psychotherapy, 60 minutes"`, `limit: 6`, `codes: ["90837"]`, `source: "remark"`. It
+rendered immediately as "8 / 6 · Over the limit" against 8 contributing audits, and — unlike
+the SBC-sourced tracker beside it — carries no "from your SBC — check the codes" caveat,
+because the codes came from the remark itself. The manual fallback is labelled "Add a custom
+limit". Note `planYearStart`/`planYearEnd` are `null` on **both** trackers: the plan year shown
+("2026-01-01 → 2026-12-31") is rendered from the SBC, not stored per tracker. Pre-existing
+behaviour, not the remark path.
+
 **Cost:** 3 audits.
 
 ## D1 — Bills & coverage dashboard, incl. cross-bill duplicate
@@ -416,6 +433,30 @@ Step 5's backstop was NOT re-run.
    | Worth disputing | ≈ the **entire bill** | every finding is `not_in_eob` |
 
    ⚠️ These are the same numbers as **M5**, where the missing claim was genuine. The totals cannot distinguish "your insurer never processed this" from "you paired the wrong two documents" — the banner in step 2 is the only thing that can, which is why it must fire *before* the audit is spent.
+
+**Verified on production 2026-08-25 (step 5) — and it FAILED first.** Running
+`fake-bill.pdf` (ED, 2026-06-12) + `p1-eob.pdf` (PT, 2026-03-20) produced findings
+`duplicate_charge` + `not_in_eob` + `charity_care_eligible` — the exact mix the 2026-08-16 fix
+was written for — and **no warning appeared on the report**. Re-opening the same audit from the
+bills list showed it correctly, which localised the bug to the render path rather than the
+logic.
+
+Cause: `renderReport` after a run was called with `unrelatedPair(payload.bill, payload.eob)`,
+but `payload.bill` is the wire-format doc `{text, images}`, not a string. `String(doc)` is
+`"[object Object]"` — no dates, no codes — so `documentsRelated` returned "cannot judge" and
+the warning was **silently suppressed on the one report that matters most: the one you see
+immediately after paying for the audit.** `openAudit` was unaffected because it passes
+`auditText(data, ...)`, which is a real string. Same root cause as the f9b4498 mixed-document
+bug: the wire format became doc objects and a call site kept treating it as text.
+
+Fixed by passing `payload.bill.text` / `payload.eob.text`. Re-verified with a *different*
+mismatched pair (`p1-bill.pdf`, PT 2026-03-20 + `t5-eob.pdf`, psychotherapy 2026-05-13): the
+review banner fired before analysis, and the post-run report showed the warning **above the
+totals**, which read $210.00 / $0.00 / $210.00 / $210.00 — the documented failure signature.
+
+WARNING — **when re-running this plan, assert on the report you get straight after the run, not
+on a re-opened one.** The two go through different code paths, and only the re-opened one was
+ever checked before, which is why this survived since the wire format changed.
 
 **Cost:** 0 audits for steps 1–4 (back out with **Start over**); 1 audit for step 5.
 
@@ -823,6 +864,15 @@ Chrome freezes `requestAnimationFrame` in hidden tabs. Two features broke on thi
 - The Hide chip positions via `setTimeout`, not rAF — it must still appear when the tab regains focus after a background selection.
 
 ## Not covered by this suite (documented gaps)
+- **"Worth disputing" can exceed "Billed".** Seen live 2026-08-25 on the first E6 step-5 run:
+  billed $2,115.00, worth disputing **$2,260.50**. Three findings overlapped on the same
+  charges — `duplicate_charge`, `not_in_eob` and `charity_care_eligible` — and the headline
+  total appears to sum them without capping at the amount actually billed. A number larger than
+  the bill is not defensible to a user reading it as "money you may not owe", and this is the
+  most prominent figure on the report. Not fixed here: deciding how overlapping findings should
+  combine (cap at billed? drop charity-care from the total? de-overlap by charge?) is a product
+  call, not a mechanical one. Reproduce with a deliberately mismatched pair, which is what makes
+  every finding fire at once.
 - **Production coverage is partial, not zero.** On 2026-08-25 the live site was exercised in
   a real Chrome with real Gemini calls: password sign-up and sign-in, the bill/EOB pairing fix
   (FAM3 step 2), and FAM1 steps 1-3. Everything else — every M plan, every E plan, S1, P1, G1,

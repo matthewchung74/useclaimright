@@ -816,7 +816,11 @@ $("confirm-review").onclick = async () => {
     const { data } = await analyzeFn(payload);
     lastAuditId = data.auditId || null;
     renderReport(data, { ocrLow, model: data.model, planApplied: data.planApplied, planReason: data.planReason,
-      pairUnrelated: unrelatedPair(payload.bill, payload.eob) });
+      // .text, not the doc itself: payload.bill is {text, images}, and stringifying
+      // that yields "[object Object]" — no dates, no codes, so documentsRelated
+      // reported "can't judge" and the warning was silently suppressed on the one
+      // report that matters most, the one you see right after paying for the audit.
+      pairUnrelated: unrelatedPair(payload.bill.text, payload.eob.text) });
     show("report");
     track("audit_completed");
     if (state.eob && !state.eob.saved && $("save-eob").checked) {
