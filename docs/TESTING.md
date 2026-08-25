@@ -9,14 +9,14 @@ Three fixture sets, and they are not interchangeable:
 - **real** (`real-sbc/`, `real-eob/`) — genuine CMS and DOL documents. The only fixtures we did not write ourselves, and therefore the only ones that can tell us extraction works on something other than our own assumptions. Used by **P1**.
 - **family** (`family/`) — a consolidated household EOB and three bills. Reproduces two defects fixed on 2026-08-23/24. Used by **FAM1–FAM3**.
 
-**Session setup:** open https://useclaimright.web.app/app, hard-refresh, sign in. A fresh account starts empty with full daily limits (**10 audits, 3 plan uploads**).
+**Session setup:** open https://useclaimright.web.app/app, hard-refresh, sign in. Three ways in — Google, email + password, or an email link — see **A1**. A fresh account starts empty with full daily limits (**10 audits, 3 plan uploads**).
 
 **Budget — the full suite does NOT fit in one day.** Core plans (E1, M1–M6, D1, E2, E4–E7) cost **10 audits + 3 plan uploads**, exactly the daily ceiling, leaving no room for the rate-limit check. Optional **M7** adds 3 more. Run it as:
 
 - **Day 1 (core):** E1 → **E1b** → M1 → M2 → M3 → M4 → M5 → M6 → D1, then the zero-cost plans (E3, E5*, R1, F1, R2). *E5 needs a plan upload.
   **E1b is not optional and not movable:** it costs no audits, but it starts from E1's report and ends by clearing the files M1 needs gone, so it only works in that slot.
 - **Day 2 (edges):** M7, E2, E4, E6, E7, and the rate-limit check in Always-on.
-- **Day 3 (family, scans, real documents):** FAM1 (2 audits) → FAM2 (0, reads FAM1's) → FAM3 (0) → S1 (1 audit) → P1 (3 plan uploads) → G1 (0). Total **3 audits + 3 plan uploads**, so it fits comfortably and can be folded into Day 2 if Day 2 ran light.
+- **Day 3 (auth, family, scans, real documents):** A1 (0 audits) → FAM1 (2 audits) → FAM2 (0, reads FAM1's) → FAM3 (0) → S1 (1 audit) → P1 (3 plan uploads) → G1 (0). Total **3 audits + 3 plan uploads**, so it fits comfortably and can be folded into Day 2 if Day 2 ran light.
 - Or use **☰ → Reset account** between passes: it clears data and returns you to onboarding, but **daily counters intentionally survive**, so it does not buy more audits.
 
 **Automated tests first:** `cd functions && npm test`. Rules tests need the emulator + Java: `firebase emulators:exec --only firestore "npm --prefix functions test"`.
@@ -352,6 +352,41 @@ done
 
 **Cost:** 0 audits (20 feedback/day limit).
 
+# Auth
+
+## A1 — Three ways in, and the failures a real person hits
+**Use case:** password sign-in was added 2026-08-25 alongside Google and the email link.
+Most of this plan is the failure paths, because those are what a member sees when something
+goes wrong and they are where the raw Firebase strings used to leak through.
+**Data:** a throwaway address, e.g. `fam-test@useclaimright.test`.
+**Prerequisite:** Firebase Console → Authentication → Sign-in method → **Email/Password** enabled.
+
+1. **Create an account.** Enter email and a password, click "Create an account" (the button
+   becomes "Create account"), submit. ✓ Signed straight in, landing on onboarding.
+   ✓ The toggle now reads "I already have an account", and "Forgot password?" is hidden —
+   it makes no sense in sign-up mode.
+2. **Sign out**, then sign back in with the same credentials. ✓ Works.
+3. **Google** still works, and lands the same place.
+4. **Email link** — "Email me a link instead" ✓ shows "Link sent — check your inbox on this
+   device", and the link signs you in. The address must be typed first.
+
+**Edge cases — each must show OUR copy, never a raw `Firebase: Error (auth/…)` string**
+- Wrong password → "That email and password don't match. Check both, or reset your password."
+- Unknown email, sign-in mode → "No account with that email. Create one below, or sign in with Google."
+- Existing email, sign-up mode → "That email already has an account — sign in instead."
+- Password under 6 characters → "Passwords need to be at least 6 characters."
+- Malformed address → "That doesn't look like an email address."
+- Empty email / empty password → asks for the missing one, and makes no network call.
+- **Provider switched off** in the Console → "Password sign-in isn't switched on for this app
+  yet. Use Google or an email link." Not a message blaming the member for a config problem.
+- **Reset does not leak account existence:** "Forgot password?" with an address that has NO
+  account ✓ shows the same "check your inbox" as one that does. Anything else turns the form
+  into an account-existence oracle.
+- **Enter submits** from both the email and the password field.
+- **The button disables while in flight** — double-clicking must not fire two attempts.
+
+**Cost:** 0 audits.
+
 # Family, scans, and real documents
 
 ## FAM1 — Two family members are not one person billed twice
@@ -385,6 +420,10 @@ Both bills: flu vaccine 90686, $85.00, 03/10/2026, Testville Family Medicine Ass
   still participate in duplicate detection exactly as before (empty names share a key).
 
 **Cost:** 2 audits, +2 for the edge cases.
+
+**Verified on production 2026-08-25** (useclaimright.web.app, real Gemini calls): both audits
+returned $85.00 `billed_vs_allowed_mismatch` at high confidence, and the dashboard showed
+"2 bills · $170.00" with **no duplicate hero and no ribbon**. The edge cases were not run.
 
 ## FAM2 — A family plan measures against the FAMILY deductible
 **Use case:** a plan states two limits and a household accrues against one. Reading
@@ -421,6 +460,9 @@ on screen with a tick next to it.
 2. Click **Prepare audit →**.
    ✓ It reaches the **review** screen. ✓ **No** "Add your EOB (step 1)…" error.
 3. **Start over** to back out without spending an audit.
+
+**Verified on production 2026-08-25:** `matthew-bill.pdf` + `family-eob.pdf` reached the
+review screen with no error.
 
 **Edge cases**
 - **Ambiguity is preserved:** stage two bills and one unmatched EOB. ✓ The EOB stays orphaned
@@ -514,11 +556,14 @@ Chrome freezes `requestAnimationFrame` in hidden tabs. Two features broke on thi
 - The Hide chip positions via `setTimeout`, not rAF — it must still appear when the tab regains focus after a background selection.
 
 ## Not covered by this suite (documented gaps)
-- **Nothing has been run against production.** Every verification on 2026-08-23/24 used the
-  Firebase emulator suite, driven headlessly. The live site at useclaimright.web.app has not
-  been exercised since the redaction removal. Emulator-green is not production-green: hosting
-  cache headers, App Check, real Auth providers and the real Firestore rules deployment all
-  differ.
+- **Production coverage is partial, not zero.** On 2026-08-25 the live site was exercised in
+  a real Chrome with real Gemini calls: password sign-up and sign-in, the bill/EOB pairing fix
+  (FAM3 step 2), and FAM1 steps 1-3. Everything else — every M plan, every E plan, S1, P1, G1,
+  all the A1 edge cases, and FAM1 step 4 — has only ever been run against the emulator, or not
+  at all. Emulator-green is not production-green.
+- **The stale line on the processing screen:** "Everything up to analysis happens in your
+  browser." Literally true (extraction is local) but written for the redaction era, and it
+  still carries that implication. Not yet reworded.
 - **App Check is untested in either direction** — it is wired on both sides but OFF, and
   turning it on is the two-step in SETUP.md §7 that takes the app down if reversed.
 - **No real EOB has ever been through the product.** There is no public corpus (payer-specific,
