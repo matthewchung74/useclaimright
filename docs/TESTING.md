@@ -2,7 +2,12 @@
 
 The main case assumes the user has their **Summary of Benefits (SBC)** on file: setup once, then every audit is checked against the plan. Exception cases cover missing documents (no SBC, no EOB, wrong document). Each plan names its use case, exact fixture data, numbered steps, and ✓ checkpoints.
 
-Fixtures: `test-fixtures/` (regenerate HTML: `node test-fixtures/gen-series.mjs`; PDFs render via the browse CLI). Answer key: `test-fixtures/series-expected.json`. Pairings: `test-fixtures/README.md`.
+Fixtures: `test-fixtures/` (regenerate HTML: `node test-fixtures/gen-series.mjs` and `node test-fixtures/gen-family.mjs`; PDFs render via the browse CLI). Answer key: `test-fixtures/series-expected.json`. Pairings: `test-fixtures/README.md`.
+
+Three fixture sets, and they are not interchangeable:
+- **synthetic** (`fake-*.pdf`, `series/`) — planted errors with known answers. Most plans use these.
+- **real** (`real-sbc/`, `real-eob/`) — genuine CMS and DOL documents. The only fixtures we did not write ourselves, and therefore the only ones that can tell us extraction works on something other than our own assumptions. Used by **P1**.
+- **family** (`family/`) — a consolidated household EOB and three bills. Reproduces two defects fixed on 2026-08-23/24. Used by **FAM1–FAM3**.
 
 **Session setup:** open https://useclaimright.web.app/app, hard-refresh, sign in. A fresh account starts empty with full daily limits (**10 audits, 3 plan uploads**).
 
@@ -11,6 +16,7 @@ Fixtures: `test-fixtures/` (regenerate HTML: `node test-fixtures/gen-series.mjs`
 - **Day 1 (core):** E1 → **E1b** → M1 → M2 → M3 → M4 → M5 → M6 → D1, then the zero-cost plans (E3, E5*, R1, F1, R2). *E5 needs a plan upload.
   **E1b is not optional and not movable:** it costs no audits, but it starts from E1's report and ends by clearing the files M1 needs gone, so it only works in that slot.
 - **Day 2 (edges):** M7, E2, E4, E6, E7, and the rate-limit check in Always-on.
+- **Day 3 (family, scans, real documents):** FAM1 (2 audits) → FAM2 (0, reads FAM1's) → FAM3 (0) → S1 (1 audit) → P1 (3 plan uploads) → G1 (0). Total **3 audits + 3 plan uploads**, so it fits comfortably and can be folded into Day 2 if Day 2 ran light.
 - Or use **☰ → Reset account** between passes: it clears data and returns you to onboarding, but **daily counters intentionally survive**, so it does not buy more audits.
 
 **Automated tests first:** `cd functions && npm test`. Rules tests need the emulator + Java: `firebase emulators:exec --only firestore "npm --prefix functions test"`.
@@ -346,6 +352,155 @@ done
 
 **Cost:** 0 audits (20 feedback/day limit).
 
+# Family, scans, and real documents
+
+## FAM1 — Two family members are not one person billed twice
+**Use case:** a household shares a plan, a clinic and a day. Before 2026-08-24 the second
+audit reported "a provider billing you twice for one visit" and told the user to dispute a
+charge they legitimately owe. This is the plan that must never regress.
+**Data:** `family/matthew-bill.pdf`, `family/sarah-bill.pdf`, `family/family-eob.pdf`.
+Both bills: flu vaccine 90686, $85.00, 03/10/2026, Testville Family Medicine Associates.
+**Both bills name Matthew as GUARANTOR** — that is the trap, and it is deliberate.
+
+1. Audit `matthew-bill.pdf` + `family-eob.pdf`.
+   ✓ Report renders. The bill demands $85.00 where the EOB allows $32.00 and says you owe
+   $0.00, so **Worth disputing ≈ $85.00**, one `billed_vs_allowed_mismatch`, high confidence.
+2. **New audit.** Audit `sarah-bill.pdf` + `family-eob.pdf`. ✓ Same shape, ≈ $85.00.
+3. **← Back to bills.**
+   ✓ **NO duplicate hero. No `FOUND BY COMPARING YOUR BILLS TO EACH OTHER` ribbon.**
+   ✓ The provider group reads "**2 bills · $170.00**", both rows "Billed above EOB allowed amount".
+4. Open each audit and confirm the patient it was attributed to.
+   ✓ One is **Matthew T. Testpatient**, the other **Sarah L. Testpatient** — read from the
+   *patient* field. If both say Matthew, the model took the **guarantor** and the fix is
+   broken even though step 3 may still look right by luck.
+
+**Edge cases**
+- **The control:** audit `emma-bill.pdf` + `family-eob.pdf`. Its 99213 is billed **twice on one
+  statement**. ✓ A `duplicate_charge` of $210.00 IS reported. A change that suppresses
+  duplicates wholesale passes steps 1–3 and fails here. *(+1 audit)*
+- **Same person, two statements:** re-audit `matthew-bill.pdf` against the same EOB. ✓ Same
+  `billKey`, so still no duplicate — re-auditing one bill is the user re-running us, not a
+  double-bill. *(+1 audit)*
+- **Empty patient name:** any pre-2026-08-24 audit in history has no `patientName`. ✓ Those
+  still participate in duplicate detection exactly as before (empty names share a key).
+
+**Cost:** 2 audits, +2 for the edge cases.
+
+## FAM2 — A family plan measures against the FAMILY deductible
+**Use case:** a plan states two limits and a household accrues against one. Reading
+`.individual` unconditionally rendered a household 64% through a $1,000 family deductible as
+**128%** of a $500 individual one, and reported the EOB's correct figure as a conflict.
+**Data:** FAM1's audits, plus any `real-sbc/*.pdf` on file (all are Coverage for: Family,
+$500 individual / $1,000 family, $2,500 / $5,000 OOP). `family-eob.pdf` states
+**$640.00 of $1,000.00** family deductible met.
+
+1. With a real SBC on file (P1) and FAM1's audits run, go to **Bills & coverage → Your coverage**.
+   ✓ The deductible card reads **$640 of $1,000**, not $640 of $500.
+   ✓ It does **not** render past 100%.
+   ✓ **No conflict warning** — the family figure is the plan, not a disagreement with it.
+2. ✓ The out-of-pocket card resolves the same way against the family maximum.
+
+**Edge cases**
+- **Individual-scope EOB:** an EOB stating a $500 limit ✓ resolves to individual, no conflict.
+- **Genuine conflict:** an EOB naming a figure matching *neither* ($3,000) ✓ still warns, and
+  ✓ the SBC still owns the limit — precedence is unchanged, only scope selection was fixed.
+- **No EOB figure at all:** ✓ falls back to individual. That is the single-member case and the
+  conservative one: too low warns early rather than late.
+
+**Cost:** 0 audits.
+
+## FAM3 — A consolidated EOB pairs with a differently-named bill
+**Use case:** nobody renames their downloads. A household EOB is `family-eob.pdf` or
+`EOB_20260325.pdf`; the bill is named for the patient or the clinic. Pairing grouped by
+filename stem, so the two never matched — and the app said "Add your EOB" while the EOB sat
+on screen with a tick next to it.
+**Data:** `family/matthew-bill.pdf` + `family/family-eob.pdf` (stems "matthew" and "family").
+
+1. Stage the bill on the bill zone and the EOB on the insurance-letter zone.
+   ✓ Both appear as "✓ file ✕" rows.
+2. Click **Prepare audit →**.
+   ✓ It reaches the **review** screen. ✓ **No** "Add your EOB (step 1)…" error.
+3. **Start over** to back out without spending an audit.
+
+**Edge cases**
+- **Ambiguity is preserved:** stage two bills and one unmatched EOB. ✓ The EOB stays orphaned
+  and the error asks for the missing one — with two candidates there is nothing to infer, and
+  guessing would pair the wrong documents.
+- **Matching stems unaffected:** `t3-bill.pdf` + `t3-eob.pdf` ✓ still pair by stem.
+
+**Cost:** 0 audits.
+
+## S1 — A scan is read by the model, not OCR'd locally
+**Use case:** tesseract was removed 2026-08-23. Pages with no text layer go to the model as
+images, and the model returns its transcription — which is what history, the bill fingerprint
+and saved-EOB matching then run on.
+**Data:** photograph a bill, or rasterize one: `pdftoppm -png -r 150 test-fixtures/fake-bill.pdf out`.
+
+1. Upload the photo. ✓ Processing is quick and there is **no model download** (the 500MB NER is gone).
+2. On review: ✓ the **📷 banner** appears. ✓ The right pane does **not** show extracted text —
+   it explains the pages are sent as images and says what to check.
+3. Analyze. ✓ Findings return with quoted evidence.
+4. ✓ The audit appears in history with a readable summary, which is only possible if the
+   model's transcription was stored.
+
+**Edge cases**
+- **Mixed:** a digital-PDF bill with a photographed EOB. ✓ Bill goes as text, EOB as images.
+- **Too many pages:** more than 20 page images ✓ rejects with a page-count message, before any
+  model call is billed.
+- **Upside down / cut off:** ✓ the banner tells the user to check exactly this, because the
+  model cannot.
+
+**Cost:** 1 audit.
+
+## P1 — Extraction works on documents we did not write
+**Use case:** every other plan uses fixtures we authored, so they only prove extraction works
+on our own assumptions. These are genuine CMS publications in the ACA-mandated format.
+**Data:** `real-sbc/cms-2025.pdf`, `real-sbc/cms-2019.pdf`, `real-sbc/cms-older.pdf`.
+
+1. Upload each as the SBC (3 separate plan uploads, one per day-limit).
+   ✓ All three extract without error. Verified 2026-08-24:
+
+   | file | plan year | deductible | OOP max | cost-share rows |
+   |---|---|---|---|---|
+   | `cms-2025.pdf` | 2025-01-01 → 2025-12-31 | $500 / $1,000 | $2,500 / $5,000 | 13 |
+   | `cms-2019.pdf` | 2022-01-01 → 2022-12-31 | $500 / $1,000 | $2,500 / $5,000 | 15 |
+   | `cms-older.pdf` | 2017-01-01 → 2017-12-31 | $500 / $1,000 | $2,500 / $5,000 | 17 |
+
+2. ✓ Limits carry CPT hints (home health 60 visits/yr, rehabilitation).
+3. ✓ **The 2017 and 2022 plans are out of period today** — an audit against them reports
+   `out_of_period` rather than applying stale terms. That is the correct behaviour, and it makes
+   `cms-2025.pdf` the one to leave on file for FAM2.
+
+**Edge cases**
+- **Wrong document on the SBC zone:** `real-eob/cms-sample-eob.pdf` is an EOB, not an SBC.
+  ✓ Rejected with "This doesn't look like a Summary of Benefits."
+- **DOL samples:** two further completed SBCs for *different* plans are linked in
+  `real-sbc/README.md` and not yet pulled — they would add real variation in deductible and
+  cost-share structure rather than three versions of one plan.
+
+**Cost:** 3 plan uploads, 0 audits.
+
+## G1 — The spend guard stops model calls without a deploy
+**Use case:** every other limit is per-uid, and accounts are free to mint. This is the only
+thing bounding the bill.
+**Data:** Firestore console, `meta/guard`.
+
+1. Set `meta/guard.auditsEnabled = false`.
+2. Try an audit. ✓ Fails with "**Audits are paused right now.**" ✓ No model call in the
+   Functions log, so **nothing is charged**. ✓ No audit document is written.
+3. Set it back to `true`. ✓ The next audit runs normally, with no deploy in between.
+
+**Edge cases**
+- **Independence:** `plansEnabled = false` with `auditsEnabled = true` ✓ blocks plan uploads
+  only. Audits keep running.
+- **Ceiling:** set `dailyCalls` to 1, run one audit, try a second. ✓ "We've hit today's limit
+  across all users." Reset it afterwards — **the default is 2000**.
+- **Failure is open, not closed:** the guard config failing to read must not take the product
+  down; the per-uid limits stand behind it. Covered by `functions/test/guard.test.js`.
+- **Counters are day-scoped:** yesterday's spend ✓ does not bar today.
+
+**Cost:** 0 audits (the blocked attempts are refused before the model runs).
+
 ## Always-on checks (every pass)
 - **Evidence is real:** spot-check two findings per pass — the quoted line must appear verbatim in the document it cites. A finding whose quote is absent should never render; `verifyEvidence` drops it server-side and logs `unverified evidence dropped`. Check the audit doc's `droppedUnverified` count after each run: a non-zero value is the model inventing evidence, and it is worth reading the log.
 - **Disclosure is present:** the audit form shows the "Where your documents go" banner naming Google's Gemini API, above the dropzones.
@@ -359,6 +514,17 @@ Chrome freezes `requestAnimationFrame` in hidden tabs. Two features broke on thi
 - The Hide chip positions via `setTimeout`, not rAF — it must still appear when the tab regains focus after a background selection.
 
 ## Not covered by this suite (documented gaps)
+- **Nothing has been run against production.** Every verification on 2026-08-23/24 used the
+  Firebase emulator suite, driven headlessly. The live site at useclaimright.web.app has not
+  been exercised since the redaction removal. Emulator-green is not production-green: hosting
+  cache headers, App Check, real Auth providers and the real Firestore rules deployment all
+  differ.
+- **App Check is untested in either direction** — it is wired on both sides but OFF, and
+  turning it on is the two-step in SETUP.md §7 that takes the app down if reversed.
+- **No real EOB has ever been through the product.** There is no public corpus (payer-specific,
+  full of PHI), so `family/family-eob.pdf` is synthesized from the CMS sample EOB's column
+  vocabulary. Layout variety across real payers remains completely untested, and it is the
+  hardest part of the product.
 - Out-of-period plan check (needs a bill dated outside 2026; verify the footer variant "service dates fall outside your plan year").
 - Older-SBC replace confirmation (needs a second SBC fixture with an earlier coverage period).
 - Expired-plan renewal banner (needs a past-dated SBC fixture or a clock change).
