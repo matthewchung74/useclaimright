@@ -96,6 +96,12 @@ const AUTH_MESSAGES = {
   "auth/invalid-credential": "That email and password don't match. Check both, or reset your password.",
   "auth/invalid-login-credentials": "That email and password don't match. Check both, or reset your password.",
   "auth/wrong-password": "That email and password don't match. Check both, or reset your password.",
+  // Normally unreachable, and deliberately kept. Firebase's email enumeration
+  // protection (on by default) returns auth/invalid-credential for an unknown
+  // address AND a wrong password, so the app cannot distinguish them and must
+  // not appear to — verified on production 2026-08-25. This fires only if that
+  // protection is switched off in the Console, which would be a decision to
+  // leak account existence, not an accident.
   "auth/user-not-found": "No account with that email. Create one below, or sign in with Google.",
   "auth/email-already-in-use": "That email already has an account — sign in instead.",
   "auth/weak-password": "Passwords need to be at least 6 characters.",
