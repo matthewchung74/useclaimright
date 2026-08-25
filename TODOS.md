@@ -4,12 +4,18 @@ Deferred items with context. Created by /plan-ceo-review 2026-08-20.
 
 ## From the eng review (2026-08-23-phase0-phase1.md)
 
-- [ ] **One patient per account, throughout.** The roster + `patientRef` fixes
-      cross-bill duplicate detection, but the assumption runs deeper: tracker
-      limits ("6 therapy visits per year") are per person, not per household,
-      and `deductibleToDate` on a family plan has separate individual and family
-      amounts the current model cannot represent. Families are the common case
-      for surprise bills.
+- [ ] **Family deductible and OOP targets are hardcoded to the individual
+      amount.** `web/js/plan.js:52` and `:58` read
+      `structured?.deductible?.individual` and `structured?.oopMax?.individual`.
+      The plan schema DOES capture both individual and family (`plan.js:21-24`),
+      so this is a display bug, not a data-model gap — an earlier note here said
+      otherwise and was wrong. On a family plan the dashboard measures progress
+      against the $500 individual deductible while the EOB accumulator counts
+      toward the $1,000 family one. Reproducible with any file in
+      `test-fixtures/real-sbc/` — all three are Coverage for: Family, $500/$1,000.
+- [ ] **One patient per account (identity).** The roster + `patientRef` fixes
+      cross-bill duplicate detection; tracker visit limits ("6 therapy visits per
+      year") are still counted per account rather than per person.
 - [ ] **FTC Health Breach Notification Rule review.** Unredacted PHI now goes to
       a third party. `privacy.html:60` already says the policy needs attorney
       review; that review is more load-bearing than it was.
