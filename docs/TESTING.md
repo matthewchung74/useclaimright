@@ -103,6 +103,12 @@ reminder under Your coverage.
 
 **Cost:** 1 plan upload.
 
+**Verified on production 2026-08-25:** skip link read "Not now — back to your audits"
+(origin-aware), the review tab read **"Plan (SBC)"** not "Bill" and showed the SBC itself.
+Extracted Acme Silver PPO, 2026-01-01 to 2026-12-31, deductible $1,500/$3,000, OOP
+$6,000/$12,000, limits "Outpatient mental health services 6/yr" and "Rehabilitation services
+20/yr", with both trackers auto-created and tagged `source: sbc`.
+
 ## M2 — Audit with a planted plan violation
 **Use case:** the audit quotes the SBC against the bill and highlights the dollar gap.
 **Data:** `series/p1-bill.pdf` + `series/p1-eob.pdf` (PT 97110, 2026-03-20; EOB member responsibility $95 vs SBC's "$60 copay, deductible does not apply").
@@ -124,6 +130,13 @@ reminder under Your coverage.
 
 **Cost:** 1 audit.
 
+**Verified on production 2026-08-25:** billed $210.00, EOB allowed $95.00, responsibility
+$95.00, worth disputing **$150.00** — `billed_vs_allowed_mismatch` $115.00 high plus
+`copay_mismatch` $35.00 medium, and nothing else. `planApplied: true`, `planReason: null`,
+`droppedUnverified` 0, and the copay finding carried a verbatim SBC quote beginning
+"Rehabilitation services (physical, occupational therapy) $60". The arithmetic holds exactly:
+115 + 35 = 150.
+
 ## M3 — Consistent claim: no false positives + combined deductible sourcing
 **Use case:** plan terms that agree with the EOB stay silent; deductible card merges SBC target with EOB progress.
 **Data:** `series/t1-bill.pdf` + `series/t1-eob.pdf` (90837, $175 billed, $120 to deductible — consistent with the SBC's "$0 coinsurance after deductible" row).
@@ -143,6 +156,14 @@ reminder under Your coverage.
    ✓ Deductible card: "**$120.00 of $1,500.00** — Target from your plan (SBC). As stated on your most recent EOB (2026-01-15)."
 
 **Cost:** 1 audit.
+
+**Verified on production 2026-08-25:** billed $175.00, EOB allowed and responsibility
+$120.00, worth disputing **$55.00** from a single `billed_vs_allowed_mismatch`, and
+**zero plan-mismatch findings**. `planApplied: true`, so the plan was checked and chose to
+stay silent rather than being skipped — which is the whole point of this plan and the harder
+direction to get right. Accumulators picked up `deductibleToDate` 120 against
+`deductibleLimit` 1500. The documented regression (a false `deductible_misapplied` at $95)
+did not fire. `droppedUnverified` 0.
 ---
 ## M4 — Batch with a consolidated EOB, plan still applied
 **Use case:** many bills + one EOB in a single review-all pass; plan checks apply to every audit in the batch.
