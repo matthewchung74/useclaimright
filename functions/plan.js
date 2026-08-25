@@ -127,7 +127,7 @@ export function applyPlanGate(result, structured) {
     // figure. Subtracting was a second, weaker formula for the same number: it
     // inherited whatever the model asserted, so it kept advisory findings in the
     // total that computeAtStake excludes. One formula, one place.
-    result = { ...result, findings: kept, totals: { ...result.totals, totalAtStake: computeAtStake(kept) } };
+    result = { ...result, findings: kept, totals: { ...result.totals, totalAtStake: computeAtStake(kept, result.totals?.billed) } };
   }
   return { planApplied, planReason, result };
 }

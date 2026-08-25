@@ -209,7 +209,7 @@ export const analyze = onCall(
     // The headline number is ours to compute, not the model's to assert: it must
     // equal the findings actually shown, minus advisory ones. Runs after the
     // plan gate and the evidence check so stripped findings are already gone.
-    result = { ...result, totals: { ...result.totals, totalAtStake: computeAtStake(result.findings) } };
+    result = { ...result, totals: { ...result.totals, totalAtStake: computeAtStake(result.findings, result.totals?.billed) } };
 
     // What this audit actually cost, in the log and on the document. Counts are
     // the durable record; the dollar figure is derived at read time from a
