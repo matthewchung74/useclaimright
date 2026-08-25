@@ -2,6 +2,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/fireba
 import {
   getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup,
   sendSignInLinkToEmail, isSignInWithEmailLink, signInWithEmailLink, signOut,
+  signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail,
   connectAuthEmulator,
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 import {
@@ -84,17 +85,98 @@ const ocrConfidenceOf = (docs) => {
 // ---------- Auth ----------
 
 $("google-signin").onclick = () =>
-  signInWithPopup(auth, new GoogleAuthProvider()).catch((e) => setError("signin-error", e.message));
+  signInWithPopup(auth, new GoogleAuthProvider()).catch((e) => setError("signin-error", authError(e)));
 
-$("email-signin").onclick = async () => {
+// Firebase's own messages are diagnostics, not copy: "Firebase: Error
+// (auth/invalid-credential)." tells a member nothing and looks broken. Map the
+// ones a real person actually hits; anything unmapped falls through to the raw
+// message rather than a vague catch-all, because a message we have not seen
+// before is more useful than "Something went wrong".
+const AUTH_MESSAGES = {
+  "auth/invalid-credential": "That email and password don't match. Check both, or reset your password.",
+  "auth/invalid-login-credentials": "That email and password don't match. Check both, or reset your password.",
+  "auth/wrong-password": "That email and password don't match. Check both, or reset your password.",
+  "auth/user-not-found": "No account with that email. Create one below, or sign in with Google.",
+  "auth/email-already-in-use": "That email already has an account — sign in instead.",
+  "auth/weak-password": "Passwords need to be at least 6 characters.",
+  "auth/invalid-email": "That doesn't look like an email address.",
+  "auth/missing-password": "Enter your password.",
+  "auth/too-many-requests": "Too many attempts. Wait a few minutes and try again.",
+  "auth/network-request-failed": "Couldn't reach the server. Check your connection and try again.",
+  // Password sign-in is enabled per project. Without it every attempt fails
+  // with this, and the message should say so rather than blame the member.
+  "auth/operation-not-allowed": "Password sign-in isn't switched on for this app yet. Use Google or an email link.",
+};
+const authError = (e) => AUTH_MESSAGES[e?.code] || e?.message || "Sign-in failed. Try again.";
+
+// One form, two modes. A separate sign-up screen doubles the markup to change
+// one verb and one call, and makes "wrong mode" a navigation problem instead of
+// a click.
+let signupMode = false;
+function setSignupMode(on) {
+  signupMode = on;
+  $("password-signin").textContent = on ? "Create account" : "Sign in";
+  $("toggle-signup").textContent = on ? "I already have an account" : "Create an account";
+  $("password-input").setAttribute("autocomplete", on ? "new-password" : "current-password");
+  $("forgot-password").hidden = on;
+  setError("signin-error", "");
+  $("reset-sent").hidden = true;
+}
+
+$("toggle-signup").onclick = (e) => { e.preventDefault(); setSignupMode(!signupMode); };
+
+$("password-signin").onclick = async () => {
   const email = $("email-input").value.trim();
-  if (!email) return;
+  const password = $("password-input").value;
+  if (!email) return setError("signin-error", "Enter your email.");
+  if (!password) return setError("signin-error", "Enter your password.");
+  setError("signin-error", "");
+  const btn = $("password-signin");
+  btn.disabled = true;
+  try {
+    await (signupMode
+      ? createUserWithEmailAndPassword(auth, email, password)
+      : signInWithEmailAndPassword(auth, email, password));
+  } catch (e) {
+    setError("signin-error", authError(e));
+  } finally {
+    btn.disabled = false;
+  }
+};
+
+// Enter submits from either field — a two-field form where the keyboard does
+// nothing is a form people fight with.
+for (const id of ["email-input", "password-input"]) {
+  $(id).addEventListener("keydown", (e) => { if (e.key === "Enter") $("password-signin").click(); });
+}
+
+$("forgot-password").onclick = async (e) => {
+  e.preventDefault();
+  const email = $("email-input").value.trim();
+  if (!email) return setError("signin-error", "Enter your email first, then choose “Forgot password?”.");
+  setError("signin-error", "");
+  try {
+    await sendPasswordResetEmail(auth, email);
+    $("reset-sent").hidden = false;
+  } catch (e2) {
+    // Never confirm or deny that an address has an account: that turns the
+    // reset form into an account-existence oracle.
+    if (e2?.code === "auth/user-not-found") $("reset-sent").hidden = false;
+    else setError("signin-error", authError(e2));
+  }
+};
+
+$("use-email-link").onclick = async (e) => {
+  e.preventDefault();
+  const email = $("email-input").value.trim();
+  if (!email) return setError("signin-error", "Enter your email first, then choose “Email me a link instead”.");
+  setError("signin-error", "");
   try {
     await sendSignInLinkToEmail(auth, email, { url: location.href, handleCodeInApp: true });
     localStorage.setItem("emailForSignIn", email);
     $("email-sent").hidden = false;
-  } catch (e) {
-    setError("signin-error", e.message);
+  } catch (e2) {
+    setError("signin-error", authError(e2));
   }
 };
 
@@ -102,7 +184,7 @@ if (isSignInWithEmailLink(auth, location.href)) {
   const email = localStorage.getItem("emailForSignIn") || prompt("Confirm your email to finish signing in:");
   signInWithEmailLink(auth, email, location.href)
     .then(() => history.replaceState(null, "", location.pathname))
-    .catch((e) => setError("signin-error", e.message));
+    .catch((e) => setError("signin-error", authError(e)));
 }
 
 $("menu-btn").onclick = (e) => {
