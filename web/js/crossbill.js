@@ -36,11 +36,11 @@ export function crossBillDuplicates(audits) {
         : (a.serviceDates || []).filter(Boolean);
       const amount = (row.unitCharges || []).find((n) => typeof n === "number");
       for (const date of new Set(dates)) {
-        const key = `${personKey(a.patientName)}|${norm(a.provider)}|${String(row.code).trim().toUpperCase()}|${date}`;
+        const key = `${norm(a.provider)}|${String(row.code).trim().toUpperCase()}|${date}`;
         if (!charges.has(key)) charges.set(key, { code: row.code, description: row.description || "", provider: a.provider, date, bills: new Map() });
         const entry = charges.get(key);
         if (!entry.bills.has(a.billKey)) {
-          entry.bills.set(a.billKey, { auditId: a.id, amount: amount ?? null, statementDate: a.createdAtDate || "" });
+          entry.bills.set(a.billKey, { auditId: a.id, amount: amount ?? null, statementDate: a.createdAtDate || "", person: personKey(a.patientName) });
         }
       }
     }
@@ -48,16 +48,36 @@ export function crossBillDuplicates(audits) {
   const out = [];
   for (const entry of charges.values()) {
     if (entry.bills.size < 2) continue;
-    const bills = [...entry.bills.values()];
-    const amounts = bills.map((b) => b.amount).filter((n) => typeof n === "number");
-    out.push({
-      provider: entry.provider,
-      code: entry.code,
-      description: entry.description,
-      date: entry.date,
-      amount: amounts.length ? Math.min(...amounts) : null, // you likely owe one, not both
-      bills,
-    });
+
+    // Patient identity SEPARATES people, but only when it is known for everyone
+    // in the group. patientName is model-extracted, so it comes back empty often
+    // enough to matter: on the D1 fixtures the model read it from one statement
+    // of a pair and not the other. Keying on it directly meant "" and
+    // "jane testpatient" were different people, and a real double-bill went
+    // unreported — the failure that costs a user money, arriving silently.
+    //
+    // So: split by person only if EVERY bill here names one. An unknown name
+    // means we cannot tell them apart, and not being able to tell them apart is
+    // exactly the case this check exists to report.
+    const bills = [...entry.bills.entries()];
+    const everyoneNamed = bills.every(([, b]) => b.person);
+    const cohorts = everyoneNamed
+      ? [...new Map(bills.map(([, b]) => [b.person, null])).keys()].map((p) => bills.filter(([, b]) => b.person === p))
+      : [bills];
+
+    for (const cohort of cohorts) {
+      if (cohort.length < 2) continue;
+      const list = cohort.map(([, b]) => b);
+      const amounts = list.map((b) => b.amount).filter((n) => typeof n === "number");
+      out.push({
+        provider: entry.provider,
+        code: entry.code,
+        description: entry.description,
+        date: entry.date,
+        amount: amounts.length ? Math.min(...amounts) : null,
+        bills: list,
+      });
+    }
   }
   return out.sort((x, y) => (y.amount || 0) - (x.amount || 0));
 }

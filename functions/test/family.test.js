@@ -53,3 +53,38 @@ test("audits with no patient name behave exactly as before", () => {
   ]);
   assert.equal(found.length, 1);
 });
+
+test("REGRESSION: one named, one unnamed, at the same charge is still a duplicate", () => {
+  // patientName is model-extracted and comes back empty often enough to matter:
+  // on the D1 fixtures the model read it from one statement of a pair and not
+  // the other. Keying on it directly made "" a different person from
+  // "jane testpatient", so a real double-bill went unreported — silently, and in
+  // the direction that costs the user money.
+  const found = crossBillDuplicates([
+    audit("a-1", "b-1", "90837", "2026-02-12", 175, "Jane Q. Testpatient"),
+    audit("a-2", "b-2", "90837", "2026-02-12", 175, ""),
+  ]);
+  assert.equal(found.length, 1, "an unknown name means we cannot tell them apart, which is what this check reports");
+});
+
+test("three bills, two named the same and one unnamed: still reported together", () => {
+  const found = crossBillDuplicates([
+    audit("a-1", "b-1", "90837", "2026-02-12", 175, "Jane Q. Testpatient"),
+    audit("a-2", "b-2", "90837", "2026-02-12", 175, "Jane Q. Testpatient"),
+    audit("a-3", "b-3", "90837", "2026-02-12", 175, ""),
+  ]);
+  assert.equal(found.length, 1);
+  assert.equal(found[0].bills.length, 3, "one unknown name collapses the whole group");
+});
+
+test("two different people PLUS a third unnamed: no split, all reported", () => {
+  // The conservative direction. Splitting here would rely on the unnamed bill
+  // belonging to neither, which is exactly what is not known.
+  const found = crossBillDuplicates([
+    audit("a-1", "b-1", "90686", "2026-03-10", 85, "Matthew T. Testpatient"),
+    audit("a-2", "b-2", "90686", "2026-03-10", 85, "Sarah L. Testpatient"),
+    audit("a-3", "b-3", "90686", "2026-03-10", 85, ""),
+  ]);
+  assert.equal(found.length, 1);
+  assert.equal(found[0].bills.length, 3);
+});
