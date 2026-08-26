@@ -1,10 +1,15 @@
-import { onCall, HttpsError } from "firebase-functions/v2/https";
+import { onCall, onRequest, HttpsError } from "firebase-functions/v2/https";
 import { defineSecret } from "firebase-functions/params";
 import { initializeApp } from "firebase-admin/app";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import Ajv from "ajv";
 import { findingsSchema, computeAtStake, verifyEvidence } from "./schema.js";
 import { buildDisputeLetter } from "./letter.js";
+import Stripe from "stripe";
+import {
+  LETTER_PRICE_CENTS, LETTER_PRODUCT_NAME, CURRENCY,
+  entitlementsPath, letterAccess, spendCredit, grantCredits,
+} from "./payments.js";
 import { addUsage, estimateCostUsd } from "./cost.js";
 import { runAudit, runPlanExtract } from "./providers/gemini.js";
 import { planSchema, buildDigest, replaceDecision, applyPlanGate } from "./plan.js";
@@ -15,6 +20,15 @@ initializeApp();
 const db = getFirestore();
 
 const GEMINI_API_KEY = defineSecret("GEMINI_API_KEY");
+const STRIPE_SECRET_KEY = defineSecret("STRIPE_SECRET_KEY");
+const STRIPE_WEBHOOK_SECRET = defineSecret("STRIPE_WEBHOOK_SECRET");
+
+// Payments are OFF until this is explicitly switched on, exactly like App Check:
+// the letter stays free, createCheckoutSession refuses, and nothing can charge
+// anyone by accident. Turning it on is a deliberate act after the test-mode run.
+const PAYMENTS_ON = process.env.PAYMENTS === "on";
+// Where Stripe sends the buyer back. Same origin as the app.
+const APP_URL = process.env.APP_URL || "https://useclaimright.web.app";
 
 const MODEL_ID = process.env.MODEL_ID || "gemini-3.6-flash";
 // "vertex" routes the same model through Vertex AI, authenticating as this
@@ -116,11 +130,150 @@ export const generateLetter = onCall(
 
     // Scoped to the caller's own subtree, so one member can never read another's
     // findings by guessing an id.
-    const snap = await db.doc(`users/${request.auth.uid}/audits/${auditId}`).get();
+    const uid = request.auth.uid;
+    const snap = await db.doc(`users/${uid}/audits/${auditId}`).get();
     if (!snap.exists) throw new HttpsError("not-found", "That audit no longer exists.");
     const a = snap.data() || {};
 
-    return { letter: buildDisputeLetter({ findings: a.findings, totals: a.totals }) };
+    // A clean audit has nothing to dispute, so there is nothing to sell. Charging
+    // for "good news, we found nothing" would be indefensible.
+    const findings = a.findings || [];
+    if (!findings.length) return { letter: buildDisputeLetter({ findings, totals: a.totals }), free: true };
+
+    // THE GATE. It lives here, in the callable, because this is the only place
+    // the letter text exists. While PAYMENTS is off the letter stays free and
+    // this is a no-op, which is how it shipped first.
+    if (PAYMENTS_ON) {
+      const ref = db.doc(entitlementsPath(uid));
+      const spent = await db.runTransaction(async (tx) => {
+        const es = await tx.get(ref);
+        const ent = es.exists ? es.data() : {};
+        const access = letterAccess(ent, auditId);
+        if (!access.allowed) return access;
+        // Spending marks this audit permanently unlocked, so re-opening a letter
+        // already bought never charges twice.
+        const { changed, next } = spendCredit(ent, auditId);
+        if (changed) tx.set(ref, next, { merge: true });
+        return access;
+      });
+      if (!spent.allowed) {
+        throw new HttpsError("permission-denied", "This letter needs to be purchased first.");
+      }
+    }
+
+    return { letter: buildDisputeLetter({ findings, totals: a.totals }) };
+  }
+);
+
+// ---------- Payments ----------
+//
+// Stripe Checkout, not Payment Element and not Payment Links: the hosted page
+// means card data never touches this origin (SAQ A), it handles SCA/3DS and
+// wallets for free, and client_reference_id ties the session back to a uid,
+// which Payment Links cannot do. For a product already sending health
+// information to a third party, "we never see the card" is worth more than a
+// prettier checkout.
+
+export const createCheckoutSession = onCall(
+  {
+    region: "us-central1", memory: "256MiB", timeoutSeconds: 30,
+    secrets: [STRIPE_SECRET_KEY], enforceAppCheck: ENFORCE_APP_CHECK,
+  },
+  async (request) => {
+    if (!request.auth) throw new HttpsError("unauthenticated", "Sign in first.");
+    if (!PAYMENTS_ON) throw new HttpsError("failed-precondition", "Payments are not switched on.");
+    const uid = request.auth.uid;
+    const auditId = String(request.data?.auditId || "").trim();
+    if (!auditId) throw new HttpsError("invalid-argument", "Which audit?");
+
+    // Never sell someone what they already own.
+    const ent = (await db.doc(entitlementsPath(uid)).get()).data() || {};
+    if (letterAccess(ent, auditId).allowed) return { alreadyEntitled: true, url: null };
+
+    const stripe = new Stripe(STRIPE_SECRET_KEY.value());
+    // price_data inline rather than a pre-created Price: one product, one
+    // amount, and no dashboard object to drift out of sync with the code.
+    const session = await stripe.checkout.sessions.create({
+      mode: "payment",
+      client_reference_id: uid,
+      // The uid is what the webhook grants against; the auditId is only for
+      // the receipt. Metadata is echoed back on the event.
+      metadata: { uid, auditId },
+      line_items: [{
+        quantity: 1,
+        price_data: {
+          currency: CURRENCY,
+          unit_amount: LETTER_PRICE_CENTS,
+          product_data: { name: LETTER_PRODUCT_NAME },
+        },
+      }],
+      success_url: `${APP_URL}/app?paid=1&audit=${encodeURIComponent(auditId)}`,
+      cancel_url: `${APP_URL}/app?paid=0`,
+    });
+    return { alreadyEntitled: false, url: session.url };
+  }
+);
+
+// The webhook. Two things break here for everyone, so both are handled
+// explicitly:
+//
+//  1. THE RAW BODY. stripe.webhooks.constructEvent() needs the unparsed bytes.
+//     Firebase parses JSON for you, and handing Stripe the parsed object fails
+//     the signature check 100% of the time with a misleading error. req.rawBody
+//     is what Firebase provides for exactly this.
+//  2. IDEMPOTENCY. Stripe retries on any non-2xx and re-delivers on a slow
+//     response. Granting is keyed on event.id inside a transaction, so one
+//     payment can never become two credits.
+//
+// Return 2xx fast: Stripe times out around 20s and starts retrying, which is
+// how the duplicate above happens in the first place.
+export const stripeWebhook = onRequest(
+  {
+    region: "us-central1", memory: "256MiB", timeoutSeconds: 30,
+    secrets: [STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET],
+  },
+  async (req, res) => {
+    if (!PAYMENTS_ON) { res.status(503).send("payments off"); return; }
+    const stripe = new Stripe(STRIPE_SECRET_KEY.value());
+    let event;
+    try {
+      event = stripe.webhooks.constructEvent(
+        req.rawBody,                       // NOT req.body — see above
+        req.headers["stripe-signature"],
+        STRIPE_WEBHOOK_SECRET.value(),
+      );
+    } catch (err) {
+      // An unverified body is not a payment. Never trust it, never grant on it.
+      console.error("stripe signature verification failed", err.message);
+      res.status(400).send(`signature: ${err.message}`);
+      return;
+    }
+
+    if (event.type !== "checkout.session.completed") { res.status(200).send("ignored"); return; }
+    const session = event.data.object;
+    const uid = session.client_reference_id || session.metadata?.uid;
+    if (!uid) {
+      // Nothing to grant against. 200 so Stripe stops retrying something that
+      // will never succeed, but loud in the log because it means a real payment
+      // landed with no owner.
+      console.error("checkout.session.completed with no uid", { session: session.id });
+      res.status(200).send("no uid");
+      return;
+    }
+
+    try {
+      const ref = db.doc(entitlementsPath(uid));
+      await db.runTransaction(async (tx) => {
+        const snap = await tx.get(ref);
+        const { changed, next } = grantCredits(snap.exists ? snap.data() : {}, { eventId: event.id, credits: 1 });
+        if (changed) tx.set(ref, next, { merge: true });
+      });
+      res.status(200).send("ok");
+    } catch (err) {
+      // 500 so Stripe retries — the transaction is idempotent, so a retry is safe.
+      console.error("grant failed", err);
+      res.status(500).send("grant failed");
+    }
   }
 );
 
