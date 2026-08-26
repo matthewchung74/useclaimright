@@ -26,6 +26,42 @@ const auditDate = (a) => (a.serviceDates || []).filter(Boolean)[0] || a.createdA
 // re-audited (e.g. once against an individual EOB, once against a consolidated
 // one), which is the user re-running us, not a double-bill. Without a billKey
 // we cannot tell those apart, so we say nothing rather than guess.
+// Identity of the PIECE OF PAPER a bill was printed on.
+//
+// This is the hinge the whole duplicate detector turns on: audits sharing a
+// billKey are one bill re-audited, audits that differ are candidates for a
+// double-bill. Getting it wrong in one direction misses real money; in the
+// other it accuses a provider of double-billing a member who owes the charge
+// once.
+//
+// Prefer the identifier PRINTED on the statement. It is the only thing that
+// differs between two different statements for the same visit — provider,
+// patient, date and codes are identical in both cases by definition, so no
+// combination of those can tell the two apart. Because the model extracts it,
+// a PDF and a photo of the same bill yield the same value.
+//
+// The text hash is the fallback for bills that print no such number, and it is
+// known-weak: it identifies the EXTRACTION, not the paper. Two renderings of
+// one document (pdf.js text vs the model's transcription of a scan) differ by
+// far more than whitespace, so they hash differently and read as two
+// statements. That produced a false duplicate on production, which is why the
+// printed identifier is preferred wherever there is one.
+const djb2 = (s) => {
+  let h = 5381;
+  for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0;
+  return (h >>> 0).toString(36);
+};
+
+export function billKeyOf(text, statementId, provider) {
+  // Punctuation and case vary between renderings ("ACCT-778899" / "acct 778899"),
+  // the digits do not.
+  const id = String(statementId || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  // A number with no digits at all is a label the model mistook for an id.
+  if (id && /[0-9]/.test(id)) return `s${djb2(norm(provider) + "|" + id)}`;
+  if (!text) return "";
+  return `b${djb2(text.toLowerCase().replace(/\s+/g, " ").trim())}`;
+}
+
 export function crossBillDuplicates(audits) {
   const charges = new Map(); // "provider|code|date" -> Map(billKey -> {auditId, amount, statementDate})
   for (const a of audits || []) {

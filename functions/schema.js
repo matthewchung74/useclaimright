@@ -202,6 +202,15 @@ export const findingsSchema = {
     // duplicate check reports the second as a double-bill.
     patientName: { type: "string" },
 
+    // The identifier printed on the STATEMENT — account number, statement
+    // number, invoice number, whichever the bill shows. This is the only thing
+    // that differs between two different statements for the same visit, so it
+    // is what tells "the user re-audited one bill" apart from "the provider
+    // billed this visit twice". Everything else a duplicate would be judged on
+    // (provider, patient, date, codes) is identical in both cases by
+    // definition. Empty when the bill prints no such number.
+    statementId: { type: "string" },
+
     // v2 fields — extracted verbatim from the documents, never inferred.
     serviceDates: { type: "array", items: { type: "string" } }, // ISO YYYY-MM-DD
     provider: { type: "string" },
