@@ -687,8 +687,37 @@ this Google account has no plan and no audits, so the empty-account route is cor
 matches what password sign-up does in step 1. The routing is shared (`onAuthStateChanged`),
 so the assertion is that the provider does not change it, and it does not.
 
-**Still not run:** the email link (step 4) and the provider-switched-off message, which needs
-Email/Password disabled in the Console.
+**Step 4 (email link) — the app is correct, the EMAIL DOES NOT ARRIVE. Investigated 2026-08-26.**
+The owner requested a link and never received it. This is a delivery problem, not an app bug,
+and every layer was checked:
+
+- The client call succeeded: `sendSignInLinkToEmail(auth, email, { url: location.href,
+  handleCodeInApp: true })` resolved without throwing, "Link sent — check your inbox on this
+  device." rendered, and `emailForSignIn` was written to localStorage. A rejected request would
+  have thrown and shown our error copy instead.
+- Auth config is right: `email.enabled: true`, `passwordRequired` unset (so links are
+  permitted), and `useclaimright.web.app` is an authorized domain.
+- The link pipeline itself works. Generating one through the admin API
+  (`accounts:sendOobCode` with `returnOobLink: true`, which returns the link instead of mailing
+  it) produced a valid `mode=signIn` link with `continueUrl=https://useclaimright.web.app/app`.
+
+So the code, the config and the link are all fine; the message is not reaching the inbox. The
+cause is Firebase's DEFAULT email sender: `notification.sendEmail.method` is `DEFAULT` with no
+SMTP configured, so mail goes out as **noreply@useclaimright.firebaseapp.com** — a domain with
+no SPF/DKIM alignment to useclaimright.com. Gmail routinely spam-files or silently drops it.
+
+To finish the test: search the mailbox for `from:noreply@useclaimright.firebaseapp.com`
+including Spam and All Mail. To fix it properly: Console → Authentication → Templates → SMTP
+settings, pointed at a real sending domain with SPF/DKIM.
+
+⚠️ **Worth deciding whether to keep this path at all.** It is the only sign-in route that does
+not work reliably, and it is also the one carrying the last native `prompt()` in the app
+(`app.js:272`, open in TODOS) — which fires whenever the link is opened on a different device
+from the one that requested it. Google and password sign-in both work. Removing the email link
+would delete a broken path and the last renderer-blocking dialog in one change.
+
+**Still not run:** the provider-switched-off message, which needs Email/Password disabled in
+the Console.
 
 # Family, scans, and real documents
 
