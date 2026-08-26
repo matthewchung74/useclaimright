@@ -1077,12 +1077,26 @@ a rules change.
   declined to apply stale terms and said so rather than silently applying them. The
   expired-plan renewal banner ("Your plan year ended … — upload your new SBC.") also fired.
 - `loadPlan()` failing soft (a Firestore error should leave the empty plan card and no unhandled rejection) — needs network throttling or an injected failure.
-- Mobile / narrow widths: **partly covered 2026-08-26.** At a 606px viewport the 720px
-  breakpoint is active (`matchMedia("(max-width:720px)").matches === true`), `.panes` and
-  `.dropzones` collapse to a single column, neither the bills list nor a report scrolls
-  horizontally, the report's action row does **not** overlap the feedback bubble (the specific
-  worry here), and a modal dialog renders readably with its buttons in reach. Not covered: a
-  true phone viewport — Chrome would not give a window narrower than ~600px on this display, so
-  320-390px is still unverified, as is touch interaction.
+- Mobile / narrow widths: **covered 2026-08-26 at a true phone viewport.** Chrome will not
+  shrink its *window* below ~600px, so this was run through Playwright, which sets the
+  *viewport* directly: **390 × 844** (iPhone-class). Results across sign-in, the bills list and
+  a report:
+  - the 720px breakpoint is active, `.panes` and `.dropzones` collapse to one column
+  - **no horizontal scroll anywhere** — `documentElement.scrollWidth` came back 390 / 375 / 387
+    against a 390px viewport — and **zero** elements wider than the viewport
+  - the totals cards stack vertically instead of squeezing into a row
+  - the report's action row buttons are 42px and 44px tall and do **not** overlap the feedback
+    bubble, which was the specific worry recorded here
+  - the one evidence table is 334px, inside the viewport, so it does not need its own scroller
+
+  ⚠️ **Finding: two tap targets are too small.** "Create an account" and "Forgot password?" on
+  the sign-in card are inline text links **15px** tall, well under the ~44px that is comfortable
+  on a phone, and they sit next to each other so the wrong one is easy to hit. Everything else
+  interactive is 32px or more. Not fixed — it is a real but minor usability issue, and worth
+  batching with the DESIGN.md palette alignment rather than a one-off patch.
+
+  Still not covered: real touch interaction (drag-and-drop onto the dropzones from a phone),
+  and iOS Safari specifically — this was Chromium at a phone viewport, which is not the same as
+  a phone.
 - The planted **$18 cost-share error** in `fake-eob` (see E1's known gap) — currently not reported as `cost_share_error`.
 - Cross-bill duplicates spanning **different providers for the same visit** (e.g. facility + physician billing the same date) — the detector deliberately keys on provider, so this is out of scope by design, not an oversight.
