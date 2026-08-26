@@ -374,8 +374,9 @@
     <p class="lead">Add your bill and, if you have it, the letter from your insurance. You'll see exactly what gets analyzed before anything is sent.</p>
     <div class="banner" style="background:var(--accent);border-color:var(--brand);color:var(--brand-dark)">
       <b>Where your documents go:</b> to analyze a bill we send it, and the insurance letter, to Google's
-      Gemini API — including your name and everything else printed on them. Google does not train its models
-      on data sent through that API. We keep the text so you can re-open the audit later, and you can delete
+      Gemini models on Vertex AI (part of Google Cloud) — including your name and everything else printed on
+      them. Google states that customer data sent to Vertex AI is not used to train its models; their terms
+      govern what they do with it. We keep the text so you can re-open the audit later, and you can delete
       any audit, or your whole account, whenever you like.
     </div>
     <div class="card">

@@ -46,6 +46,16 @@ Deferred items with context. Created by /plan-ceo-review 2026-08-20.
 - [ ] **FTC Health Breach Notification Rule review.** Unredacted PHI now goes to
       a third party. `privacy.html:60` already says the policy needs attorney
       review; that review is more load-bearing than it was.
+      *Partly improved 2026-08-25:* the model backend moved to Vertex AI, so the
+      data terms are contractual and tied to this project's own service account
+      rather than to whether billing happens to be enabled on an AI Studio key's
+      project. The attorney review is still needed; the posture it reviews is
+      better. See `docs/SETUP.md` §8.
+- [ ] **Tighten the Functions runtime service account.**
+      `223366324716-compute@developer.gserviceaccount.com` holds `roles/editor`,
+      which is how it can call Vertex at all. `roles/aiplatform.user` plus the
+      Firestore access it actually needs would be the least-privilege version.
+      Editor on the runtime SA is broader than anything the app does.
 - [ ] **The Show HN framing is stale.** The CEO plan's launch pitch was built on
       the on-device redaction hook, which no longer exists.
 

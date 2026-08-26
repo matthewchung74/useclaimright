@@ -90,6 +90,37 @@ total. Rules deny all client access to `meta/**`.
   showing text, and the stored audit's `bill`/`eob` must hold the model's transcription —
   that is what history, the bill fingerprint and saved-EOB matching run on.
 
+## 8. Model backend — Vertex AI (switched 2026-08-25)
+
+Audits and plan extraction run against **Gemini on Vertex AI**, authenticating as the
+Functions runtime service account, not an AI Studio API key.
+
+Why: on the Gemini **Developer** API, whether your data is used for training turns on
+whether billing is enabled on the API key's project — and that key lived in
+`gen-lang-client-*`, not in `useclaimright`. A promise the app makes to members rested on
+a billing toggle in a project nobody looks at, and could be silently falsified by someone
+regenerating a key. Vertex authenticates as this project's own service account, is
+covered by Google Cloud's data protection terms (and is the path to a HIPAA BAA if that
+is ever wanted), so the data terms are contractual rather than incidental.
+
+Vertex is the **default in source** (`functions/index.js`), not just in config.
+`functions/.env` is gitignored, so a config-only switch would not survive a fresh clone —
+someone would deploy and silently fall back to the AI Studio key, quietly falsifying what
+the privacy page tells members. To roll back, set `GEMINI_BACKEND=developer` in
+`functions/.env` and redeploy.
+
+- **`location` must be `global`.** `gemini-3.6-flash` 404s in `us-central1` on Vertex and
+  serves from the global endpoint. Verified against the live API.
+- `GEMINI_API_KEY` is still read and still set, deliberately: it makes the rollback a
+  one-line env change rather than a code change.
+- Requires `aiplatform.googleapis.com` enabled (done) and the runtime service account
+  (`223366324716-compute@developer.gserviceaccount.com`) able to call Vertex — it
+  currently holds `roles/editor`, which covers it. Tightening that to
+  `roles/aiplatform.user` is worth doing and is not done.
+- Verified end to end on production: an E1 audit returned the ground-truth figures
+  ($2,115.00 / $841.75 / $186.35 / **$804.15**), and plan extraction ran and produced a
+  digest that matched the plan already on file.
+
 ## Known limitations / notes
 - Documents are sent to Gemini as printed, personal details included. `web/privacy.html`
   describes this, and it has still had no attorney review.
