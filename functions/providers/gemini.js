@@ -115,11 +115,36 @@ export function buildAuditParts(bill, eob, instructions) {
   return parts;
 }
 
+// Which Google endpoint the same model is reached through.
+//
+// The Gemini DEVELOPER API (an AI Studio key) and VERTEX AI serve the same
+// models but sit under different terms. The developer API's data handling turns
+// on whether billing is enabled on the key's project — and that project is not
+// this one, so a promise the app makes to members ("not used for training")
+// rests on a billing toggle in a project nobody looks at. Vertex authenticates
+// as this function's own service account, is covered by Google Cloud's HIPAA
+// BAA, and makes the data terms contractual rather than incidental.
+//
+// Defaults to vertex; "developer" rolls back to the AI Studio key.
+function makeClient({ apiKey, backend, project, location }) {
+  if (backend === "vertex") {
+    // No API key: Application Default Credentials, i.e. the runtime service
+    // account. GOOGLE_CLOUD_PROJECT is set for us in the Functions runtime.
+    return new GoogleGenAI({
+      vertexai: true,
+      project: project || process.env.GOOGLE_CLOUD_PROJECT || process.env.GCLOUD_PROJECT,
+      location: location || "global",
+    });
+  }
+  return new GoogleGenAI({ apiKey });
+}
+
 // Provider adapter contract: runAudit(bill, eob, opts)
 //   -> { data: validated-shape object, usage: {input, output, total} }.
 // Swapping providers means adding a sibling file with the same signature.
-export async function runAudit(bill, eob, { modelId, apiKey }, planDigest = null) {
-  const ai = new GoogleGenAI({ apiKey });
+export async function runAudit(bill, eob, opts, planDigest = null) {
+  const { modelId } = opts;
+  const ai = makeClient(opts);
   const billImages = bill.images || [];
   const eobImages = eob.images || [];
   const asImages = billImages.length > 0 || eobImages.length > 0;
@@ -144,8 +169,9 @@ export async function runAudit(bill, eob, { modelId, apiKey }, planDigest = null
   return { data: JSON.parse(response.text), usage: usageOf(response) };
 }
 
-export async function runPlanExtract(sbc, { modelId, apiKey }) {
-  const ai = new GoogleGenAI({ apiKey });
+export async function runPlanExtract(sbc, opts) {
+  const { modelId } = opts;
+  const ai = makeClient(opts);
   const images = sbc.images || [];
   const parts = images.length
     ? [

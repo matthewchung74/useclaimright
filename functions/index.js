@@ -16,6 +16,18 @@ const db = getFirestore();
 const GEMINI_API_KEY = defineSecret("GEMINI_API_KEY");
 
 const MODEL_ID = process.env.MODEL_ID || "gemini-3.6-flash";
+// "vertex" routes the same model through Vertex AI, authenticating as this
+// function's service account instead of an AI Studio key. See makeClient() in
+// providers/gemini.js for why that matters. Unset = the developer API, i.e. no
+// behaviour change.
+// Defaults to vertex IN SOURCE on purpose. functions/.env is gitignored, so a
+// config-only switch would not survive a fresh clone: someone would deploy and
+// silently fall back to the AI Studio key, quietly falsifying what the privacy
+// page tells members. Set GEMINI_BACKEND=developer to roll back.
+const GEMINI_BACKEND = process.env.GEMINI_BACKEND || "vertex";
+// "global", not a region: gemini-3.6-flash is served from the global endpoint on
+// Vertex and 404s in us-central1. Verified against the live API 2026-08-25.
+const VERTEX_LOCATION = process.env.VERTEX_LOCATION || "global";
 // Off until the client sets APP_CHECK_SITE_KEY and that build is live. Turning
 // this on first rejects every request from every user.
 const ENFORCE_APP_CHECK = process.env.APP_CHECK === "on";
@@ -148,7 +160,14 @@ export const analyze = onCall(
       console.error("plan fetch failed — auditing without plan", { uid, message: err.message });
     }
 
-    const opts = { modelId: MODEL_ID, apiKey: GEMINI_API_KEY.value() };
+    const opts = {
+      modelId: MODEL_ID,
+      // Vertex needs no key; reading the secret anyway keeps one code path and
+      // lets a rollback to the developer API be an env flip with no deploy.
+      apiKey: GEMINI_API_KEY.value(),
+      backend: GEMINI_BACKEND,
+      location: VERTEX_LOCATION,
+    };
     // Build the digest here rather than reading the copy stored at upload time:
     // it is a derived view of `structured`, so a stored one silently freezes the
     // format the day the SBC was uploaded and no fix reaches existing plans.
@@ -285,7 +304,14 @@ export const extractPlan = onCall(
     await checkPlanRateLimit(uid);
     const release = await reserveModelCall(db, { kind: "plan" });
 
-    const opts = { modelId: MODEL_ID, apiKey: GEMINI_API_KEY.value() };
+    const opts = {
+      modelId: MODEL_ID,
+      // Vertex needs no key; reading the secret anyway keeps one code path and
+      // lets a rollback to the developer API be an env flip with no deploy.
+      apiKey: GEMINI_API_KEY.value(),
+      backend: GEMINI_BACKEND,
+      location: VERTEX_LOCATION,
+    };
     let structured, planUsage = null;
     try {
       const first = await runPlanExtract(sbcDoc, opts);
