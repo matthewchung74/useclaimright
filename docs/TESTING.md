@@ -92,8 +92,10 @@ its checkbox, not stranded after the bill section.
 
 Step 2's exact wording ("2 audits: 0 bill+EOB pairs, 2 with no EOB") is **only reachable on a
 fresh account**; once a saved EOB exists the same widget correctly says "with your saved EOB"
-instead. That behaviour is covered by R2 step 6, which was verified. Hover colour was not
-checked — only the resting colours above.
+instead. That behaviour is covered by R2 step 6, which was verified. Hover colour resolved from the CSSOM on 2026-08-26:
+`.menu-item.danger:hover` is `rgb(253, 240, 240)`, a red tint, and at specificity (0,3,0) it
+beats the teal `.menu-item:hover { background: var(--accent) }` at (0,2,0). So Reset account
+hovers red, not teal, as the plan requires.
 **Cost:** 0 audits.
 
 ---
@@ -518,7 +520,8 @@ replacing a plan destroys nothing. Cancelling left the 2026 plan on file. It nee
 that did not exist, so `test-fixtures/fake-sbc-older.html` was added — `fake-sbc.html` with the
 coverage period shifted to 2025. The SBC input accepts `text/html`, so no PDF render is needed. The renderer stayed responsive throughout — every one of
 these was clicked, read and dismissed from script, which the old native `confirm()` made
-impossible. **Not re-run:** only "erase all data", which is E7 and runs last.
+impossible. All six paths are now covered: "erase all data" was verified when E7 ran on 2026-08-25
+("Erase everything?" / red / body naming what survives).
 
 ⚠️ **Found and fixed here 2026-08-25 — backdrop click did nothing.** Step 6 claims Cancel, Esc
 and the backdrop all decline. Cancel and Esc did (`dlg.onclose` resolves `false`), but a native
@@ -895,8 +898,9 @@ on our own assumptions. These are genuine CMS publications in the ACA-mandated f
 "Insurance Company 1: Plan Option 1", 2022-01-01 to 2022-12-31, deductible $500 / $1,000.
 Trackers were auto-created from its limits ("Children's eye exam 0/1", "Home health care
 0/60", both tagged *from your SBC — check the codes*). Step 3 confirmed: the out-of-period
-banner fired — "Your plan year ended 2022-12-31 — upload your new SBC." `cms-2025.pdf` and
-`cms-older.pdf` not run on production; both extracted cleanly against the API on 2026-08-24.
+banner fired — "Your plan year ended 2022-12-31 — upload your new SBC." `cms-2025.pdf` and `cms-older.pdf` were
+subsequently run on production against Vertex on 2026-08-26 — 2025-01-01 → 2025-12-31 and
+2017-01-01 → 2017-12-31 respectively, both $500 / $1,000. All three CMS files are covered.
 - **Wrong document (E4) does NOT clobber a good plan:** uploading `real-eob/cms-sample-eob.pdf`
   to the SBC dropzone was rejected with "This doesn't look like a Summary of Benefits." and
   the existing plan survived intact. Verified on production 2026-08-25.
@@ -999,6 +1003,21 @@ Chrome freezes `requestAnimationFrame` in hidden tabs. Two features broke on thi
 - Start an audit, **switch to another tab** during "Reading your documents…", wait ~30s, come back. ✓ Extraction completed (pdf.js renders with `intent:"print"`).
 - The Hide chip positions via `setTimeout`, not rAF — it must still appear when the tab regains focus after a background selection.
 
+## Firestore rules tests
+
+`rules.test.js` is skipped by a plain `npm test` because it needs the emulator, which needs
+Java. With Java installed it runs:
+
+```
+export PATH="/opt/homebrew/opt/openjdk/bin:$PATH"
+firebase emulators:exec --only firestore --project demo-useclaimright "npm --prefix functions test"
+```
+
+**Run 2026-08-26: 154 tests, 154 pass, 0 skipped** — 14 rules tests that a bare `npm test`
+never reaches. If you only ever run `npm test` you will see "139 pass, 1 skipped" and the
+rules will be untested; that skip is the whole reason to run the emulator form before shipping
+a rules change.
+
 ## Not covered by this suite (documented gaps)
 - **Production coverage: 26 of 26 plans, on the current backend.** Every plan has run against
   the live site, and every model-dependent one has run against Vertex AI (see the
@@ -1021,7 +1040,6 @@ Chrome freezes `requestAnimationFrame` in hidden tabs. Two features broke on thi
   year ended 2025-12-31 — upload your new SBC." — which had been listed here as its own
   untested gap. What remains untested is how an *audit* behaves against an expired plan, which
   needs an audit run while one is on file.
-- Emulator rules tests (need Java).
 - `loadPlan()` failing soft (a Firestore error should leave the empty plan card and no unhandled rejection) — needs network throttling or an injected failure.
 - Mobile / narrow widths: **partly covered 2026-08-26.** At a 606px viewport the 720px
   breakpoint is active (`matchMedia("(max-width:720px)").matches === true`), `.panes` and
