@@ -445,7 +445,8 @@ report**; de-overlap changes the total, never what is surfaced.
 "⚠️ This EOB may not cover this bill (fake-bill.pdf) — they share no service dates and no
 procedure codes." The two changes compose the way they should: pairing is permissive about
 filenames, the guard is strict about content. Backed out with Start over, so no audit spent.
-Step 5's backstop was NOT re-run.
+Step 5's backstop was re-run later the same day — see the step-5 block above, where it
+failed first and was fixed.
    ✓ **The four totals cards** — the failure signature the banner exists for:
 
    | Card | Expected | Why |
@@ -923,15 +924,23 @@ Chrome freezes `requestAnimationFrame` in hidden tabs. Two features broke on thi
 - **Production coverage is now broad, but not complete.** Through 2026-08-25 the live site was
   exercised in a real Chrome against real Gemini calls: A1 (password sign-up, sign-in and its
   error cases), E1b, E2, E3, E5, E6 (incl. step 5), M4, M5, M7, D1, R2, F1, S1, P1, G1, X1
-  (five of six paths), FAM1, FAM2 and FAM3. **Still never run on production:** E7 (destructive,
-  runs last), A1's Google and email-link paths, and X1's "erase all data". Emulator-green is
+  (all six paths), E7, FAM1, FAM2 and FAM3. **Still never run on production:** E4, A1's Google
+  and email-link paths, and — see below — the whole suite against Vertex AI. Emulator-green is
   still not production-green — five real defects this suite found (pairing, mixed documents,
   the native `confirm()` freeze, the patientName cohort regression, and the suppressed
   mismatched-EOB warning) were all invisible from reading the code, and the last two were
   found only because the plans were run against the live site.
-- **The stale line on the processing screen:** "Everything up to analysis happens in your
-  browser." Literally true (extraction is local) but written for the redaction era, and it
-  still carries that implication. Not yet reworded.
+- **The suite is verified against a backend the app no longer uses.** Every model-dependent
+  result in this file was produced by the Gemini **Developer API**. On 2026-08-25 the backend
+  moved to **Vertex AI** (`docs/SETUP.md` §8). Only three model calls have run there: an E1
+  audit ($2,115.00 / $841.75 / $186.35 / $804.15 — the ground-truth figures), a t1 pair
+  ($175 / $120 / $120 / $55 — the t-series shape) and one plan extraction whose digest matched
+  the plan on file. That is real evidence the two backends agree, and it is not the same as
+  having run the suite. Re-running every model-dependent plan costs about **15 audits**, so
+  two days at the 10/day cap, or one day with a counter reset.
+- **E4 has never been run on production at all** — the only plan in this file with no
+  verification block. It costs 1 plan upload and asserts that a non-SBC upload is rejected
+  cleanly with nothing stored.
 - **App Check is untested in either direction** — it is wired on both sides but OFF, and
   turning it on is the two-step in SETUP.md §7 that takes the app down if reversed.
 - **No real EOB has ever been through the product.** There is no public corpus (payer-specific,
