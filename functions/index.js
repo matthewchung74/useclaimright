@@ -7,7 +7,7 @@ import { findingsSchema, computeAtStake, verifyEvidence } from "./schema.js";
 import { buildDisputeLetter } from "./letter.js";
 import Stripe from "stripe";
 import {
-  LETTER_PRICE_CENTS, LETTER_PRODUCT_NAME, CURRENCY,
+  LETTER_PRICE_CENTS, LETTER_PRODUCT_NAME, CURRENCY, LETTER_TAX_CODE,
   entitlementsPath, letterAccess, spendCredit, grantCredits,
 } from "./payments.js";
 import { addUsage, estimateCostUsd } from "./cost.js";
@@ -204,7 +204,7 @@ export const createCheckoutSession = onCall(
         price_data: {
           currency: CURRENCY,
           unit_amount: LETTER_PRICE_CENTS,
-          product_data: { name: LETTER_PRODUCT_NAME },
+          product_data: { name: LETTER_PRODUCT_NAME, tax_code: LETTER_TAX_CODE },
         },
       }],
       success_url: `${APP_URL}/app?paid=1&audit=${encodeURIComponent(auditId)}`,
