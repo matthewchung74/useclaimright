@@ -17,8 +17,45 @@ The decision this rests on: **audits stay free, the appeal letter is paid.**
 | the gate in `generateLetter` | live but a no-op while off |
 | `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` | **placeholders**, so the code deploys — not real keys |
 
-Verified after deploying: an unsigned POST to the webhook returns 503, `PAYMENTS=on` is absent
-from all three functions, and the letter still comes back free (1,632 chars) on the live site.
+Verified after deploying: an unsigned POST to the webhook returns 503, `PAYMENTS=off` on all
+three functions, and the letter comes back free on the live site.
+
+## The full cycle, run in the Stripe sandbox 2026-08-26
+
+Switched `PAYMENTS=on`, ran it end to end against sandbox keys, then switched back off.
+
+| Step | Result |
+|---|---|
+| letter before payment | refused, `permission-denied` |
+| `createCheckoutSession` | real `checkout.stripe.com` URL |
+| **forged webhook signature** | **400, rejected** |
+| valid delivery | granted exactly **1** credit |
+| **same event id replayed** | granted **nothing** — still 1 |
+| first letter | 1,552 chars; credit spent 1 → 0 |
+| **same letter again** | returned free, **no second charge** |
+| a different audit | refused — the unlock is per-audit, not a pass |
+
+The card-entry leg on Stripe's hosted page was NOT driven from here; the webhook was exercised
+with a payload signed using the endpoint's own secret, which is the identical code path through
+`constructEvent`. What that does not cover is Stripe's own checkout UI, which is Stripe's to
+get right.
+
+### Two things this run turned up
+
+**Managed Payments is on by default and refuses a line item with no tax code.** The first
+`createCheckoutSession` call failed with `StripeInvalidRequestError: the product tax code is
+missing`. Keeping Managed Payments and adding `tax_code: txcd_10000000` was the deliberate
+choice — under it Stripe is merchant of record and handles sales-tax registration and
+remittance, which for one person selling a digital product into fifty states is worth more than
+the fee. The alternative, `managed_payments: { enabled: false }`, hands that problem back.
+**Tax classification is a business decision**; `LETTER_TAX_CODE` is the one line to change.
+
+**⚠️ Deleting `functions/.env` does NOT turn payments off.** A deployed function keeps env vars
+from previous deploys. After deleting the file and redeploying, all three functions still had
+`PAYMENTS=on` live, and the webhook proved it by returning 400 (signature failure) instead of
+503 (payments off). Disable by setting `PAYMENTS=off` **explicitly** and redeploying. This is
+the payments equivalent of the App Check ordering trap: the safe-looking action is not the safe
+one.
 
 ---
 

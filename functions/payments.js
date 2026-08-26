@@ -13,6 +13,20 @@ export const LETTER_PRICE_CENTS = 499;
 export const LETTER_PRODUCT_NAME = "UseClaimRight appeal letter";
 export const CURRENCY = "usd";
 
+// Stripe Managed Payments is on by default on this account and refuses a
+// line item with no tax code. Keeping it on is the deliberate choice: under
+// Managed Payments Stripe is merchant of record and handles sales-tax
+// registration and remittance, which for one person selling a digital product
+// into fifty states with their own nexus rules is worth more than the fee.
+// The alternative is managed_payments: { enabled: false }, which hands that
+// problem back.
+//
+// txcd_10000000 is "General - Electronically Supplied Services": a document
+// generated and delivered electronically, with no physical component. TAX
+// CLASSIFICATION IS A BUSINESS DECISION — if an accountant says this product is
+// something else, this constant is the one line to change.
+export const LETTER_TAX_CODE = "txcd_10000000";
+
 // One purchase grants one letter. Letters already paid for stay unlocked
 // forever: the buyer paid for THAT letter, and re-opening an audit they already
 // bought must not charge them twice.
