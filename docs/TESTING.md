@@ -904,9 +904,13 @@ on our own assumptions. These are genuine CMS publications in the ACA-mandated f
 **Edge cases**
 - **Wrong document on the SBC zone:** `real-eob/cms-sample-eob.pdf` is an EOB, not an SBC.
   ✓ Rejected with "This doesn't look like a Summary of Benefits."
-- **DOL samples:** two further completed SBCs for *different* plans are linked in
-  `real-sbc/README.md` and not yet pulled — they would add real variation in deductible and
-  cost-share structure rather than three versions of one plan.
+- **DOL samples — pulled and run 2026-08-26, and they do not deliver what was hoped.**
+  `dol-sample-2.pdf` (2018) and `dol-sample-3.pdf` (2022) both extracted cleanly on Vertex, but
+  both carry the SAME $500 / $1,000 deductible and $2,500 / $5,000 OOP as the three CMS files —
+  every government specimen SBC is the same plan. `dol-sample-3` still earns its place: its
+  "overall deductible?" row extracts with **no dollar figures beside the question**, a layout
+  that defeats text-adjacency parsing, and the model returned $500 / $1,000 anyway. Real
+  variation in plan structure still needs a real member's SBC.
 
 **Verified on production 2026-08-25** with `cms-2019.pdf`: extracted cleanly, plan on file as
 "Insurance Company 1: Plan Option 1", 2022-01-01 to 2022-12-31, deductible $500 / $1,000.
@@ -1048,12 +1052,15 @@ a rules change.
   full of PHI), so `family/family-eob.pdf` is synthesized from the CMS sample EOB's column
   vocabulary. Layout variety across real payers remains completely untested, and it is the
   hardest part of the product.
-- Out-of-period plan check (needs a bill dated outside 2026; verify the footer variant "service
-  dates fall outside your plan year"). Half of this is now closed: during P1 on 2026-08-26 the
-  out-of-period CMS plans put the **expired-plan renewal banner** on the dashboard — "Your plan
-  year ended 2025-12-31 — upload your new SBC." — which had been listed here as its own
-  untested gap. What remains untested is how an *audit* behaves against an expired plan, which
-  needs an audit run while one is on file.
+- ~~Out-of-period plan check~~ — **CLOSED 2026-08-26.** With `dol-sample-2` (plan year 2018) on
+  file, the p1 pair was audited and the report carried the exact footer variant: "Not checked
+  against your plan — this bill's service dates fall outside your plan year (ended
+  2018-12-31)." The stored audit reads `planApplied: false`, `planReason: "out_of_period"`, and
+  **no plan finding fired**. The A/B against M2 is the proof, since it is the same two fixtures:
+  with a valid plan the audit reports $150.00 (a $115 billed-above-allowed plus a $35
+  `copay_mismatch`); with the expired plan it reports **$115.00 and no copay finding**. The app
+  declined to apply stale terms and said so rather than silently applying them. The
+  expired-plan renewal banner ("Your plan year ended … — upload your new SBC.") also fired.
 - `loadPlan()` failing soft (a Firestore error should leave the empty plan card and no unhandled rejection) — needs network throttling or an injected failure.
 - Mobile / narrow widths: **partly covered 2026-08-26.** At a 606px viewport the 720px
   breakpoint is active (`matchMedia("(max-width:720px)").matches === true`), `.panes` and
