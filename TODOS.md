@@ -17,9 +17,11 @@ Deferred items with context. Created by /plan-ceo-review 2026-08-20.
       derived from the charges would make the detector never fire at all.
       Candidates: a statement number or account number extracted verbatim, or
       accepting the limitation and warning when two audits share every charge.
-- [ ] **`prompt()` on the email-link path** (`app.js:216`) is the last native
-      dialog. It blocks the renderer like the six confirms did, so that path
-      stays untestable by automation. Needs an input, not a yes/no.
+- [x] ~~**`prompt()` on the email-link path**~~ — GONE 2026-08-26. Resolved by
+      deleting the email-link sign-in path entirely: the link was never actually
+      delivered (Firebase's DEFAULT sender, no SPF/DKIM), and it carried the last
+      native dialog in the app. There is now no `prompt()`, `confirm()` or
+      `alert()` anywhere in the client.
 - [x] ~~**Stale copy on the processing screen:** "Everything up to analysis happens
       in your browser."~~ — DONE 2026-08-25. It was literally true (extraction IS
       local) but it sat on the screen shown *while the documents are in flight to

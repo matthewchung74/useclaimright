@@ -1,7 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
 import {
   getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup,
-  sendSignInLinkToEmail, isSignInWithEmailLink, signInWithEmailLink, signOut,
+  signOut,
   signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail,
   connectAuthEmulator,
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
@@ -192,7 +192,7 @@ const AUTH_MESSAGES = {
   "auth/network-request-failed": "Couldn't reach the server. Check your connection and try again.",
   // Password sign-in is enabled per project. Without it every attempt fails
   // with this, and the message should say so rather than blame the member.
-  "auth/operation-not-allowed": "Password sign-in isn't switched on for this app yet. Use Google or an email link.",
+  "auth/operation-not-allowed": "Password sign-in isn't switched on for this app yet. Use Continue with Google.",
 };
 const authError = (e) => AUTH_MESSAGES[e?.code] || e?.message || "Sign-in failed. Try again.";
 
@@ -253,27 +253,6 @@ $("forgot-password").onclick = async (e) => {
     else setError("signin-error", authError(e2));
   }
 };
-
-$("use-email-link").onclick = async (e) => {
-  e.preventDefault();
-  const email = $("email-input").value.trim();
-  if (!email) return setError("signin-error", "Enter your email first, then choose “Email me a link instead”.");
-  setError("signin-error", "");
-  try {
-    await sendSignInLinkToEmail(auth, email, { url: location.href, handleCodeInApp: true });
-    localStorage.setItem("emailForSignIn", email);
-    $("email-sent").hidden = false;
-  } catch (e2) {
-    setError("signin-error", authError(e2));
-  }
-};
-
-if (isSignInWithEmailLink(auth, location.href)) {
-  const email = localStorage.getItem("emailForSignIn") || prompt("Confirm your email to finish signing in:");
-  signInWithEmailLink(auth, email, location.href)
-    .then(() => history.replaceState(null, "", location.pathname))
-    .catch((e) => setError("signin-error", authError(e)));
-}
 
 $("menu-btn").onclick = (e) => {
   e.stopPropagation();
