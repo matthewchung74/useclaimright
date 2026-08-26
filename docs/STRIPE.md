@@ -26,9 +26,21 @@ So the first real decision is:
   that were computed when the audit ran.
 - **(B) Keep it client-side and accept the paywall is honour-system.**
 
-**Recommend (A).** It is the only version where the price means anything, and the work is
-small because the data is already where it needs to be. Do it *before* Stripe, not after
-— it is the load-bearing change, and Stripe is plumbing around it.
+**Recommend (A). DONE 2026-08-26**, shipped free so the move could be verified with nothing
+about payments in the diff. `functions/letter.js` holds the builder, `generateLetter` is a
+callable that reads `users/{uid}/audits/{auditId}` — scoped to the caller, so one member cannot
+read another's findings by guessing an id — and the client calls it. Verified on production:
+the shipped `app.js` contains no letter text and no builder (`buildDisputeEmail`,
+`INSURER_ONLY_TYPES` and the letter's own phrases are all absent), and the server returned a
+1,632-character letter with evidence quotes and placeholders intact. Seven unit tests cover the
+builder, including that an insurer-only finding addresses the letter to the plan rather than
+the provider.
+
+The entitlement check goes in that callable when there is a price. Nothing else has to move.
+
+*(Caught while verifying: `openAudit()` never set `lastAuditId`, so the button silently did
+nothing on any report opened from history. The old code keyed off `lastReport`, which was set
+in both paths. Fixed.)*
 
 Note what (A) implies about the business: the letter costs **nothing** to produce (no
 tokens), while the free audits are the entire cost centre. That is a sound shape — the
@@ -154,8 +166,7 @@ and starts retrying, which is how the duplicate above happens in the first place
 
 1. **Wait for the conversion number.** `dispute_email_generated` / `audit_completed{found}`.
    This is genuinely step one; everything below is wasted if that ratio is near zero.
-2. **Move letter generation server-side** (§0 option A). Ship it *free* first, so the
-   move is verified in isolation and nothing about payments is in the diff.
+2. ~~**Move letter generation server-side**~~ — **DONE 2026-08-26**, free, verified.
 3. Stripe account, test mode, product + price.
 4. `createCheckoutSession` + `stripeWebhook` + entitlement doc, all in test mode with
    `stripe listen --forward-to` and card `4242 4242 4242 4242`.
