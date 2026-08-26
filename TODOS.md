@@ -4,6 +4,14 @@ Deferred items with context. Created by /plan-ceo-review 2026-08-20.
 
 ## From running the suite on production (2026-08-25)
 
+- [ ] **Two sign-in links are 15px tap targets.** "Create an account" and
+      "Forgot password?" are inline text links in a `<p class="muted">` on the
+      sign-in card — 15px tall at a 390px viewport, against the ~44px that is
+      comfortable on a phone, and adjacent to each other so the wrong one is
+      easy to hit. Found 2026-08-26 testing at a true phone viewport. Everything
+      else interactive is 32px+. Worth batching with the DESIGN.md palette
+      alignment rather than patching alone.
+
 - [ ] **`billKey` cannot recognise the same paper across extraction methods, and
       the image path made this much worse.** `app.js:1138` hashes normalised
       text, and its own comment anticipates the failure: two extractions of one
