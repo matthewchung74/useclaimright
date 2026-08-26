@@ -1,10 +1,24 @@
-# Stripe — a plan, not yet an implementation
+# Stripe
 
-**Status 2026-08-25:** nothing is built. No Stripe code, no price anywhere in the
-product, no entitlement. The appeal letter — the thing to be sold — currently ships
-free at `web/js/app.js` `buildDisputeEmail()`, alongside a free Print/save PDF.
+**Status 2026-08-26: built and deployed, switched OFF.** The letter is server-side and still
+free; `createCheckoutSession`, `stripeWebhook` and the entitlement gate are all live but inert
+behind `PAYMENTS=on`, which is not set. Turning it on needs real Stripe keys — see §7.
 
 The decision this rests on: **audits stay free, the appeal letter is paid.**
+
+## What is live right now
+
+| Piece | State |
+|---|---|
+| `functions/letter.js` + `generateLetter` | live, **free**, verified on production |
+| entitlement logic (`functions/payments.js`) | live, 11 unit tests |
+| `createCheckoutSession` | deployed, refuses with `failed-precondition` while off |
+| `stripeWebhook` | deployed at `https://us-central1-useclaimright.cloudfunctions.net/stripeWebhook`, returns **503** while off |
+| the gate in `generateLetter` | live but a no-op while off |
+| `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` | **placeholders**, so the code deploys — not real keys |
+
+Verified after deploying: an unsigned POST to the webhook returns 503, `PAYMENTS=on` is absent
+from all three functions, and the letter still comes back free (1,632 chars) on the live site.
 
 ---
 
