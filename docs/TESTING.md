@@ -345,6 +345,13 @@ included it — so "" and "jane testpatient" read as different people and a genu
 went unreported. Identity now separates people only when EVERY bill in the group names one.
 Regression covered in `functions/test/family.test.js`.
 
+**Step 5's negative control — "auditing the same bill twice must produce none" — is the
+`billKey` case, and it was NOT covered by the run above.** It was verified separately on
+2026-08-26 in a stronger form: the same bill audited as a PDF and again as a photo, which is
+the version that used to fail. See the billKey section near the top of this file. Re-run that
+rather than auditing one PDF twice, because two identical extractions hash identically and pass
+even when the identity logic is broken.
+
 ⚠️ **Note when re-running:** hosting serves JS with `max-age=300`, so a freshly deployed
 module can take up to five minutes to reach an open tab. A page that still shows the old
 behaviour after a deploy is very likely cached — prime it with
@@ -402,6 +409,12 @@ services 1 / 20", each keeping its contributing-audit count. Exactly what the di
 1. Upload it to the SBC dropzone, confirm the review.
    ✓ Error: "**This doesn't look like a Summary of Benefits.**" — no plan stored, the empty-state card remains.
    (Note: this consumes a plan upload — the guard runs before extraction.)
+
+**Verified on production 2026-08-26 — its first run ever.** `series/t6-bill.pdf` uploaded to
+the SBC dropzone was rejected with exactly "This doesn't look like a Summary of Benefits." A
+stronger result than the plan asks for: a plan (Acme Silver PPO) WAS on file at the time and
+survived untouched, so the guard rejects without clobbering good data, not merely without
+storing bad data.
 
 **Cost:** 1 plan upload.
 
