@@ -549,6 +549,27 @@
 
     <div id="report-error" class="error no-print" hidden></div>
 
+    <!-- Shown only when the server refuses the letter for payment. The price
+         comes from the server on that refusal, never hardcoded here. -->
+    <div class="card no-print" id="paywall" hidden>
+      <h2>Unlock this appeal letter</h2>
+      <p class="muted" style="margin-bottom:14px">
+        The letter quotes your own bill and EOB line by line, cites the amounts, and asks for a
+        written response within 30 days. You send it yourself from your own email.
+      </p>
+      <p class="muted" style="margin-bottom:16px">
+        <b>Auditing stays free, always.</b> Every audit you have run and every one you run from now
+        on costs nothing. This is a one-off for this letter — not a subscription, and there is
+        nothing to cancel.
+      </p>
+      <button id="buy-letter" class="btn"><span id="buy-price">Unlock this letter</span></button>
+      <p class="muted" style="margin-top:10px;font-size:13px">
+        Secure checkout by Stripe — we never see your card. Once unlocked, this letter stays
+        available on this audit for good.
+      </p>
+      <div id="paywall-error" class="error" hidden></div>
+    </div>
+
     <div class="card no-print" id="email-card" hidden>
       <h2>Dispute email draft</h2>
       <p class="muted" style="margin-bottom:10px">Built from your findings. <b>Replace the [BRACKETED] placeholders

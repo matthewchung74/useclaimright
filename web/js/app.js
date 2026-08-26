@@ -58,6 +58,7 @@ const analyzeFn = httpsCallable(functions, "analyze", { timeout: 300_000 });
 const extractPlanFn = httpsCallable(functions, "extractPlan", { timeout: 300_000 });
 const submitFeedbackFn = httpsCallable(functions, "submitFeedback", { timeout: 30_000 });
 const generateLetterFn = httpsCallable(functions, "generateLetter", { timeout: 30_000 });
+const createCheckoutSessionFn = httpsCallable(functions, "createCheckoutSession", { timeout: 30_000 });
 // App Check attests that a request came from this app, not a script holding a
 // minted account. Skipped when no site key is set — the Functions must stay on
 // enforceAppCheck: false until both halves are in place, or every call 403s.
@@ -330,6 +331,10 @@ onAuthStateChanged(auth, async (user) => {
     } else {
       show("bills");
     }
+    // Returning from Stripe. Last, and only after history is loaded, because it
+    // opens a specific audit and would otherwise be overridden by the routing
+    // above.
+    await resumeAfterCheckout();
   } else {
     show("signin");
   }
@@ -1053,6 +1058,7 @@ $("gen-email").onclick = async () => {
   btn.textContent = "Preparing…";
   try {
     const { data } = await generateLetterFn({ auditId: lastAuditId });
+    $("paywall").hidden = true;
     $("email-text").value = data.letter;
     $("email-card").hidden = false;
     $("email-card").scrollIntoView({ behavior: "smooth" });
@@ -1060,12 +1066,60 @@ $("gen-email").onclick = async () => {
     // conversion rate decides whether the appeal letter is the thing to sell.
     track("dispute_email_generated", { findings: (lastReport?.findings || []).length });
   } catch (e) {
-    setError("report-error", e?.message || "Couldn't prepare the letter. Try again.");
+    // A refusal for payment is not an error to apologise for — it is the offer.
+    if (e?.code === "functions/permission-denied") showPaywall(e?.details);
+    else setError("report-error", e?.message || "Couldn't prepare the letter. Try again.");
   } finally {
     btn.disabled = false;
     btn.textContent = label;
   }
 };
+
+// The price is whatever the server just said it is. Never hardcoded here, so
+// the button cannot promise a number Stripe does not charge.
+function showPaywall(details) {
+  const cents = Number(details?.priceCents);
+  $("buy-price").textContent = Number.isFinite(cents)
+    ? `Unlock this letter — ${fmt(cents / 100)}`
+    : "Unlock this letter";
+  setError("paywall-error", "");
+  $("paywall").hidden = false;
+  $("paywall").scrollIntoView({ behavior: "smooth" });
+}
+
+$("buy-letter").onclick = async () => {
+  if (!lastAuditId) return;
+  const btn = $("buy-letter");
+  btn.disabled = true;
+  const label = $("buy-price").textContent;
+  $("buy-price").textContent = "Opening checkout…";
+  try {
+    const { data } = await createCheckoutSessionFn({ auditId: lastAuditId });
+    // Already paid on another device or tab — no reason to charge again.
+    if (data.alreadyEntitled) { $("paywall").hidden = true; $("gen-email").click(); return; }
+    if (!data.url) throw new Error("Checkout is unavailable right now.");
+    window.location.assign(data.url);
+  } catch (e) {
+    setError("paywall-error", e?.message || "Couldn't open checkout. Try again.");
+    btn.disabled = false;
+    $("buy-price").textContent = label;
+  }
+};
+
+// Coming back from Stripe. The audit id rides on the success URL because this
+// is a fresh page load — nothing from before the redirect survives.
+async function resumeAfterCheckout() {
+  const q = new URLSearchParams(location.search);
+  if (!q.has("paid")) return;
+  const auditId = q.get("audit");
+  // Clean the URL first, so a refresh does not look like a second purchase.
+  history.replaceState(null, "", location.pathname);
+  if (q.get("paid") !== "1" || !auditId) return;
+  await openAudit(auditId);
+  $("paywall").hidden = true;
+  // The webhook may still be in flight; the letter call is what confirms it.
+  $("gen-email").click();
+}
 
 $("copy-email").onclick = async () => {
   await navigator.clipboard.writeText($("email-text").value);
@@ -1181,6 +1235,8 @@ async function openAudit(id) {
   // too — not just a fresh run. Without it "Generate dispute email" silently
   // does nothing on every audit in the history.
   lastAuditId = id;
+  $("paywall").hidden = true;
+  setError("report-error", "");
   renderReport(data, {
     ocrLow: (data.ocrConfidence ?? 100) < OCR_CONFIDENCE_THRESHOLD,
     planApplied: data.planApplied, planReason: data.planReason,

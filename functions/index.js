@@ -157,7 +157,13 @@ export const generateLetter = onCall(
         return access;
       });
       if (!spent.allowed) {
-        throw new HttpsError("permission-denied", "This letter needs to be purchased first.");
+        // The price rides along on the refusal so the client never hardcodes it.
+        // One constant, server-side, and the button cannot drift from what
+        // Stripe actually charges.
+        throw new HttpsError("permission-denied", "This letter needs to be purchased first.", {
+          priceCents: LETTER_PRICE_CENTS,
+          currency: CURRENCY,
+        });
       }
     }
 
