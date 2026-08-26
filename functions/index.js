@@ -4,6 +4,7 @@ import { initializeApp } from "firebase-admin/app";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import Ajv from "ajv";
 import { findingsSchema, computeAtStake, verifyEvidence } from "./schema.js";
+import { buildDisputeLetter } from "./letter.js";
 import { addUsage, estimateCostUsd } from "./cost.js";
 import { runAudit, runPlanExtract } from "./providers/gemini.js";
 import { planSchema, buildDigest, replaceDecision, applyPlanGate } from "./plan.js";
@@ -94,6 +95,32 @@ export const submitFeedback = onCall(
       createdAt: FieldValue.serverTimestamp(),
     });
     return { ok: true };
+  }
+);
+
+// The appeal letter, built from an audit the caller owns.
+//
+// Server-side because this is the only thing there is any prospect of charging
+// for, and a paywall in the browser is decoration. There is deliberately NO
+// entitlement check here yet: the move is being shipped free first so it can be
+// verified on its own, with nothing about payments in the diff. When a price
+// exists, the check goes here — this function, not the button.
+//
+// No model call: every figure and quote is read back from the stored audit.
+export const generateLetter = onCall(
+  { region: "us-central1", memory: "256MiB", timeoutSeconds: 30, enforceAppCheck: ENFORCE_APP_CHECK },
+  async (request) => {
+    if (!request.auth) throw new HttpsError("unauthenticated", "Sign in to generate a letter.");
+    const auditId = String(request.data?.auditId || "").trim();
+    if (!auditId) throw new HttpsError("invalid-argument", "Which audit?");
+
+    // Scoped to the caller's own subtree, so one member can never read another's
+    // findings by guessing an id.
+    const snap = await db.doc(`users/${request.auth.uid}/audits/${auditId}`).get();
+    if (!snap.exists) throw new HttpsError("not-found", "That audit no longer exists.");
+    const a = snap.data() || {};
+
+    return { letter: buildDisputeLetter({ findings: a.findings, totals: a.totals }) };
   }
 );
 

@@ -57,6 +57,7 @@ if (["localhost", "127.0.0.1"].includes(location.hostname)) {
 const analyzeFn = httpsCallable(functions, "analyze", { timeout: 300_000 });
 const extractPlanFn = httpsCallable(functions, "extractPlan", { timeout: 300_000 });
 const submitFeedbackFn = httpsCallable(functions, "submitFeedback", { timeout: 30_000 });
+const generateLetterFn = httpsCallable(functions, "generateLetter", { timeout: 30_000 });
 // App Check attests that a request came from this app, not a script holding a
 // minted account. Skipped when no site key is set — the Functions must stay on
 // enforceAppCheck: false until both halves are in place, or every call 403s.
@@ -1040,68 +1041,30 @@ $("new-audit").onclick = () => { resetState(); show("upload"); };
 
 // ---------- Dispute email generator ----------
 
-const INSURER_ONLY_TYPES = new Set(["cost_share_error"]);
-
-function buildDisputeEmail({ findings, totals }) {
-  const insurerOnly = findings.length > 0 && findings.every((f) => INSURER_ONLY_TYPES.has(f.type));
-  const to = insurerOnly
-    ? "[YOUR INSURANCE COMPANY] Member Services"
-    : "[PROVIDER NAME] Billing Department";
-  const lines = [];
-  lines.push(`To: ${to}`);
-  lines.push(`From: [YOUR NAME]`);
-  lines.push(`Re: Billing review request — Account [YOUR ACCOUNT NUMBER], date of service [DATE OF SERVICE]`);
-  lines.push("");
-  lines.push("To whom it may concern,");
-  lines.push("");
-  lines.push(
-    "I have reviewed my itemized bill against the Explanation of Benefits (EOB) issued by my insurance " +
-    "plan for this claim, and I identified the following discrepancies. I am requesting a written, " +
-    "line-by-line review and a corrected statement before making further payment."
-  );
-  findings.forEach((f, i) => {
-    lines.push("");
-    lines.push(`${i + 1}. ${TYPE_LABELS[f.type] || f.type} — amount in question: ${fmt(f.amountAtStake)}`);
-    lines.push(`   ${f.description}`);
-    if (f.evidence?.billQuote) lines.push(`   Bill states: "${f.evidence.billQuote}"`);
-    if (f.evidence?.eobQuote) lines.push(`   EOB states: "${f.evidence.eobQuote}"`);
-    if (f.evidence?.sbcQuote) lines.push(`   My plan (SBC) states: "${f.evidence.sbcQuote}"`);
-  });
-  lines.push("");
-  if (findings.some((f) => f.type === "billed_vs_allowed_mismatch")) {
-    lines.push(
-      `Per the EOB, my total member responsibility for this claim is ${fmt(totals.patientResponsibility)}. ` +
-      "If this provider participates in my plan's network, amounts above the plan's allowed amount are " +
-      "contractual write-offs and may not be billed to me. Please confirm this provider's network status " +
-      "for the date of service and adjust the balance accordingly."
-    );
-    lines.push("");
+// The letter is built by the server from the stored audit, not here. It is the
+// one thing there is any prospect of charging for, and a gate in the browser is
+// decoration — so the text never exists client-side until the server hands it
+// over. Free today; when there is a price, the check goes in the callable.
+$("gen-email").onclick = async () => {
+  if (!lastAuditId) return;
+  const btn = $("gen-email");
+  const label = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = "Preparing…";
+  try {
+    const { data } = await generateLetterFn({ auditId: lastAuditId });
+    $("email-text").value = data.letter;
+    $("email-card").hidden = false;
+    $("email-card").scrollIntoView({ behavior: "smooth" });
+    // The paywall moment, if there is ever a paywall: this is the step whose
+    // conversion rate decides whether the appeal letter is the thing to sell.
+    track("dispute_email_generated", { findings: (lastReport?.findings || []).length });
+  } catch (e) {
+    setError("report-error", e?.message || "Couldn't prepare the letter. Try again.");
+  } finally {
+    btn.disabled = false;
+    btn.textContent = label;
   }
-  lines.push("Please:");
-  lines.push("  1. Provide a written response and an itemized, corrected statement within 30 days;");
-  lines.push("  2. Place any disputed balance on hold and refrain from collections activity while this review is pending.");
-  lines.push("");
-  lines.push("Thank you,");
-  lines.push("[YOUR NAME]");
-  lines.push("[YOUR PHONE] · [YOUR EMAIL]");
-  lines.push("");
-  lines.push("— Prepared with the help of UseClaimRight (self-help tool; not legal advice).");
-  return lines.join("\n");
-}
-
-$("gen-email").onclick = () => {
-  if (!lastReport) return;
-  if (!lastReport.findings.length) {
-    $("email-text").value =
-      "Good news — this audit found no discrepancies between the bill and the EOB, so there's nothing to dispute.";
-  } else {
-    $("email-text").value = buildDisputeEmail(lastReport);
-  }
-  $("email-card").hidden = false;
-  $("email-card").scrollIntoView({ behavior: "smooth" });
-  // The paywall moment, if there is ever a paywall: this is the step whose
-  // conversion rate decides whether the appeal letter is the thing to charge for.
-  track("dispute_email_generated", { findings: (lastReport?.findings || []).length });
 };
 
 $("copy-email").onclick = async () => {
@@ -1214,6 +1177,10 @@ function unrelatedPair(billText, eobText) {
 async function openAudit(id) {
   const full = await getDoc(doc(db, `users/${auth.currentUser.uid}/audits/${id}`));
   const data = full.data();
+  // The letter is fetched by id, so re-opening a stored report has to set this
+  // too — not just a fresh run. Without it "Generate dispute email" silently
+  // does nothing on every audit in the history.
+  lastAuditId = id;
   renderReport(data, {
     ocrLow: (data.ocrConfidence ?? 100) < OCR_CONFIDENCE_THRESHOLD,
     planApplied: data.planApplied, planReason: data.planReason,
