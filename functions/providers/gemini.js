@@ -42,6 +42,10 @@ Also extract, verbatim from the documents (NEVER inferred or guessed):
   Statement/processing dates are NOT dates of service. When the EOB is a consolidated statement
   covering other claims, do NOT include dates that appear only on the EOB — this bill's dates only.
 - provider: the billing provider or facility name.
+- statementId: the identifier printed on the BILL that names this statement — "Account #",
+  "Statement #", "Invoice #", "Bill #" or equivalent, copied exactly as printed including any
+  prefix. This identifies the piece of paper, not the visit. Do NOT substitute the member ID,
+  the MRN, the claim number, or a date. Empty string if the bill prints no such number.
 - patientName: the person the BILL is for, exactly as printed. Take it from the patient
   field, never the guarantor, subscriber or responsible party — on a child's bill those
   name a parent. Empty string if the bill does not say.

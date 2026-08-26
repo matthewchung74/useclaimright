@@ -19,7 +19,7 @@ import { firebaseConfig, APP_CHECK_SITE_KEY } from "./firebase-config.js";
 import { extractText } from "./extract.js";
 import { pairFiles, classifyFile, uniqueDocs } from "./batch.js";
 import { planYearStartMonthFrom, mergeSbcTrackers, deductibleTarget, oopTarget } from "./plan.js";
-import { crossBillDuplicates, runningTotals, groupAuditsByProvider, splitJustAudited } from "./crossbill.js";
+import { crossBillDuplicates, runningTotals, groupAuditsByProvider, splitJustAudited, billKeyOf } from "./crossbill.js";
 import { matchSavedEob, documentsRelated } from "./eobmatch.js";
 
 const $ = (id) => document.getElementById(id);
@@ -1182,7 +1182,7 @@ async function loadHistory() {
       createdAtDate: created ? isoDate(created) : "",
       // Dashboard fields: identity of the paper (so the same bill audited twice
       // is never mistaken for a double-bill), money, and a human summary.
-      billKey: billKeyOf(auditText(a, 'bill')),
+      billKey: billKeyOf(auditText(a, 'bill'), a.statementId, a.provider),
       patientName: a.patientName || "",
       atStake: a.totals?.totalAtStake || 0,
       findingTypes: findings.map((f) => f.type),
@@ -1192,21 +1192,6 @@ async function loadHistory() {
   renderDashboard();
   renderQuota();
   renderUsage();
-}
-
-// Cheap, stable identity for a bill's text (djb2). Two audits of the
-// same paper share it; two genuinely different statements do not.
-//
-// Whitespace and case are normalized first: the SAME document extracted from
-// HTML and from PDF differs in spacing, and without this those two extractions
-// get different keys — which reads to crossBillDuplicates() as one charge on
-// two statements and produces a duplicate finding for a bill that exists once.
-function billKeyOf(text) {
-  if (!text) return "";
-  const norm = text.toLowerCase().replace(/\s+/g, " ").trim();
-  let h = 5381;
-  for (let i = 0; i < norm.length; i++) h = ((h << 5) + h + norm.charCodeAt(i)) | 0;
-  return `b${h >>> 0}`;
 }
 
 // "Duplicate charge · Copay doesn't match your plan" — what was found, in the

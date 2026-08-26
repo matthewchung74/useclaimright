@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { crossBillDuplicates, runningTotals, groupAuditsByProvider, splitJustAudited } from "../../web/js/crossbill.js";
+import { crossBillDuplicates, runningTotals, groupAuditsByProvider, splitJustAudited, billKeyOf } from "../../web/js/crossbill.js";
 
 // Client-normalized audit shape (see loadHistory in web/js/app.js).
 const audit = (id, billKey, provider, code, dates, amount, extra = {}) => ({
@@ -154,4 +154,64 @@ test("no just-audited ids means no pinned section", () => {
   const audits = [audit("a1", "b1", "Clinic", "90837", ["2026-01-14"], 175, {})];
   assert.deepEqual(splitJustAudited(audits, []), []);
   assert.deepEqual(splitJustAudited(audits, undefined), []);
+});
+
+
+// --- billKeyOf: identity of the paper (production regression 2026-08-26) ---
+
+test("REGRESSION: the same bill as a PDF and as a photo is ONE paper", () => {
+  // The live failure. pdf.js text and the model's transcription of a scan differ
+  // by far more than whitespace, so the text hash saw two statements and the
+  // dashboard accused the provider of double-billing a bill that exists once.
+  const fromPdf = "ITEMIZED STATEMENT\nAccount #: ACCT-778899\n80053  Comprehensive metabolic panel  $145.50";
+  const fromScan = "Itemized Statement | Account No. ACCT 778899 | 80053 Comprehensive Metabolic Panel 145.50";
+  assert.notEqual(billKeyOf(fromPdf), billKeyOf(fromScan)); // text hash alone still cannot tell
+  assert.equal(
+    billKeyOf(fromPdf, "ACCT-778899", "St. Verification General Hospital"),
+    billKeyOf(fromScan, "Account No. ACCT 778899".replace("Account No. ", ""), "ST. VERIFICATION GENERAL HOSPITAL"),
+  );
+});
+
+test("two different statements for the same visit stay two papers", () => {
+  // The case that must keep working: a genuine double-bill shares provider,
+  // patient, date and codes, so ONLY the statement id separates them.
+  const a = billKeyOf("same text", "ACCT-FAM-101", "Testville Family Medicine");
+  const b = billKeyOf("same text", "ACCT-FAM-103", "Testville Family Medicine");
+  assert.notEqual(a, b);
+});
+
+test("the same account number at different providers is not the same paper", () => {
+  assert.notEqual(
+    billKeyOf("t", "ACCT-001", "Testville Family Medicine"),
+    billKeyOf("t", "ACCT-001", "St. Verification General Hospital"),
+  );
+});
+
+test("punctuation and case in the id do not change the key", () => {
+  const a = billKeyOf("t", "ACCT-778899", "Provider X");
+  assert.equal(billKeyOf("t", "acct 778899", "provider x"), a);
+  assert.equal(billKeyOf("t", "  ACCT#778899  ", "Provider X"), a);
+});
+
+test("a statement id with no digits is ignored as a mis-read label", () => {
+  // "Account #" copied without its number is a label, not an identity — falling
+  // back to the text hash is better than collapsing every such bill into one key.
+  assert.equal(billKeyOf("some text", "Account #", "P"), billKeyOf("some text"));
+});
+
+test("no id and no text means no identity, and callers skip those audits", () => {
+  assert.equal(billKeyOf("", "", "P"), "");
+  assert.equal(billKeyOf(undefined, undefined, undefined), "");
+});
+
+test("crossBillDuplicates: one bill audited twice via two extractions is not a duplicate", () => {
+  const shared = { provider: "Testville Clinic", serviceDates: ["2026-03-10"],
+    occurrenceTable: [{ code: "99213", description: "Office visit", dates: ["2026-03-10"], unitCharges: [210] }] };
+  const audits = [
+    { ...shared, id: "a1", patientName: "Emma R. Testpatient",
+      billKey: billKeyOf("pdf rendering", "ACCT-FAM-103", "Testville Clinic") },
+    { ...shared, id: "a2", patientName: "Emma R. Testpatient",
+      billKey: billKeyOf("a completely different scan transcription", "ACCT-FAM-103", "Testville Clinic") },
+  ];
+  assert.deepEqual(crossBillDuplicates(audits), []);
 });

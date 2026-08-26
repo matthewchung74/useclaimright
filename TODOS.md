@@ -12,19 +12,28 @@ Deferred items with context. Created by /plan-ceo-review 2026-08-20.
       else interactive is 32px+. Worth batching with the DESIGN.md palette
       alignment rather than patching alone.
 
-- [ ] **`billKey` cannot recognise the same paper across extraction methods, and
-      the image path made this much worse.** `app.js:1138` hashes normalised
-      text, and its own comment anticipates the failure: two extractions of one
-      document get different keys and `crossBillDuplicates` reports "the same
-      visit is on two statements" for a bill that exists once. Whitespace and
-      case normalisation covered the HTML-vs-PDF case it was written for. A
-      scan now returns the MODEL'S TRANSCRIPTION, which differs from pdf.js
-      extraction by far more than spacing, so auditing one bill as a PDF and
-      again as a photo reliably produces a false duplicate. Reproduced on
-      production. No clean fix: billKey must identify the PAPER, and anything
-      derived from the charges would make the detector never fire at all.
-      Candidates: a statement number or account number extracted verbatim, or
-      accepting the limitation and warning when two audits share every charge.
+- [x] ~~**`billKey` cannot recognise the same paper across extraction methods**~~ —
+      FIXED 2026-08-26. The model now extracts `statementId` — the account,
+      statement or invoice number printed on the bill — and `billKeyOf` prefers
+      it over the text hash, keyed with the provider so the same account number
+      at two providers stays two papers.
+      Why an identifier and not structured fields: provider, patient, date and
+      codes are *identical* between "one bill audited twice" and "one visit
+      billed on two statements", so no combination of them can separate the two.
+      The number on the paper is the only thing that differs. And because the
+      MODEL extracts it, a PDF and a photo of the same bill agree.
+      Verified on production: t6 audited as a PDF and again as a 110dpi PNG both
+      returned `ACCT-SER-006`; the stored bill text differed (406 vs 437 chars,
+      which is what defeated the old hash) and both keys came out `s11659ffa`.
+      The dashboard did not flag it.
+      **Limitation, deliberate:** audits stored before this change have no
+      `statementId` and still fall back to the text hash, so pre-existing false
+      duplicates persist until those bills are re-audited — 30 of 32 audits on
+      the test account. A bill that prints no identifier at all also still falls
+      back to the hash; going silent instead would have switched the detector
+      off for those bills entirely.
+      `billKeyOf` moved from `app.js` into `crossbill.js` so it is unit-testable;
+      six tests cover it, including the production regression.
 - [x] ~~**`prompt()` on the email-link path**~~ — GONE 2026-08-26. Resolved by
       deleting the email-link sign-in path entirely: the link was never actually
       delivered (Firebase's DEFAULT sender, no SPF/DKIM), and it carried the last

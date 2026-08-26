@@ -978,6 +978,40 @@ Reset shown as **"5:00 PM today"**, in local time: server counters roll on the U
 "midnight" would be wrong for most people. Refused in **551ms**, before any model call. The
 inline error remains underneath as the trace after the dialog is dismissed.
 
+## billKey — same paper, two extractions (regression fixed 2026-08-26)
+
+The failure: audit a bill as a PDF, then as a photo, and the dashboard announced "the same
+visit is on two statements — you likely owe one, not both" for a bill that exists once. A false
+accusation against a provider, carrying the member's name, in the place the headline figure
+comes from.
+
+`billKeyOf` hashed the bill's text, which identifies the EXTRACTION rather than the paper. A
+scan returns the model's transcription, which differs from pdf.js output by far more than
+whitespace, so the two hashed differently.
+
+The fix is a `statementId` the model extracts verbatim — account, statement or invoice number —
+preferred over the hash and keyed with the provider. The reasoning worth keeping: provider,
+patient, date and codes are identical between "one bill audited twice" and "one visit billed on
+two statements", so no combination of them can tell the two apart. Only the number printed on
+the paper can, and because the model reads it, both input paths agree.
+
+**Verified on production 2026-08-26.** `t6-bill.pdf` audited normally, then rasterised to a
+110dpi PNG and audited again:
+
+| | text path | image path |
+|---|---|---|
+| `statementId` | `ACCT-SER-006` | `ACCT-SER-006` |
+| stored bill text | 406 chars | 437 chars — **differs**, which is what broke the old hash |
+| `billKey` | `s11659ffa` | `s11659ffa` — **same paper** |
+
+The dashboard did not flag the June 10 bill. To re-run this, always use a bill whose account
+number is printed; `test-fixtures/series/*` all carry one.
+
+⚠️ **Legacy audits are not retroactively fixed.** Anything stored before this change has no
+`statementId` and still falls back to the text hash — 30 of 32 audits on the test account at
+the time, which is why a stale Feb 12 duplicate still shows there. Judge this plan on bills
+audited after the change, not on the existing dashboard.
+
 ## Vertex AI re-verification (2026-08-26)
 
 The backend moved from the Gemini Developer API to Vertex AI on 2026-08-25, which invalidated
