@@ -899,6 +899,43 @@ Reset shown as **"5:00 PM today"**, in local time: server counters roll on the U
 "midnight" would be wrong for most people. Refused in **551ms**, before any model call. The
 inline error remains underneath as the trace after the dialog is dismissed.
 
+## Vertex AI re-verification (2026-08-26)
+
+The backend moved from the Gemini Developer API to Vertex AI on 2026-08-25, which invalidated
+every model-dependent result in this file. All of them were re-run on Vertex. **Every plan
+reproduced its documented figures**, with two exceptions noted below — neither a Vertex fault.
+
+| Plan | Result on Vertex |
+|---|---|
+| E1 | $2,115.00 / $841.75 / $186.35 / **$804.15** — `duplicate_charge` 145.50 + `billed_vs_allowed` 658.65 |
+| M2 | $210.00 / $95.00 / $95.00 / **$150.00** — $115 high + $35 medium, SBC quote verbatim |
+| M3 | $175 / $120 / $120 / **$55**, one finding, **zero plan-mismatch**, `planApplied` with `planReason: null` |
+| M4 | JUST AUDITED "2 bills · $110.00", $55 each; `serviceDates` held **only each bill's own date**; no `deductible_misapplied` |
+| M5 | "matched by provider", missing claim flagged, **no** mismatched-pair warning (the E6 discrimination) |
+| M7 | remark banner fired verbatim, including the benefit name between "5 of 6 covered" and "visits" |
+| E2 | $175.00 / $0.00 / $0.00 / **$0.00**, zero findings |
+| E6 | review **and** post-run warnings both fired; worth disputing **$2,115.00 = billed** |
+| S1 | 📷 banner, `patientName: "Emma R. Testpatient"` read **from the image**, EOB allowed **$118.00** (mixed-document regression did not recur) |
+| FAM1 | **Matthew T.** and **Sarah L. Testpatient** — the guarantor trap held; family pair not flagged as duplicates |
+| E4 | **first run ever**: "This doesn't look like a Summary of Benefits.", existing plan left untouched |
+| P1 | all three CMS SBCs: **2025**, **2022**, **2017** periods, each $500/$1,000 deductible, $2,500/$5,000 OOP, limits carrying CPT hints |
+
+**Two things this run turned up.**
+
+1. **S1's documented figure was itself the over-total bug.** The plan recorded worth-disputing
+   **$600.00** on a **$420.00** bill as the expected result. On this run the findings summed to
+   $605.00 and the new billed cap returned **$420.00**. The suite had enshrined an instance of
+   the defect fixed on 2026-08-25 as the correct answer. Containment did not fire here (the
+   lineRefs do not nest) — this is the cap doing exactly the backstop job it exists for.
+2. **P1's cost-share row counts drift between runs.** cms-2025 extracted 15 rows against 13
+   documented, cms-2019 11 against 15. Deductible, OOP maximum, plan period and the CPT-hinted
+   limits were all exact. Counting rows in a scanned benefits table is the softest thing the
+   model does, so treat that column as indicative and the money figures as the assertion.
+
+**Not re-run, because they make no model call** and so cannot be affected by the backend:
+E1b, E3, E5, M6, D1, R2, F1, X1, E7, A1's password paths, FAM2, FAM3, G1. Their existing
+verification blocks stand.
+
 ## Always-on checks (every pass)
 - **Evidence is real:** spot-check two findings per pass — the quoted line must appear verbatim in the document it cites. A finding whose quote is absent should never render; `verifyEvidence` drops it server-side and logs `unverified evidence dropped`. Check the audit doc's `droppedUnverified` count after each run: a non-zero value is the model inventing evidence, and it is worth reading the log.
 - **Disclosure is present:** the audit form shows the "Where your documents go" banner naming Google's Gemini API, above the dropzones.
@@ -930,17 +967,8 @@ Chrome freezes `requestAnimationFrame` in hidden tabs. Two features broke on thi
   the native `confirm()` freeze, the patientName cohort regression, and the suppressed
   mismatched-EOB warning) were all invisible from reading the code, and the last two were
   found only because the plans were run against the live site.
-- **The suite is verified against a backend the app no longer uses.** Every model-dependent
-  result in this file was produced by the Gemini **Developer API**. On 2026-08-25 the backend
-  moved to **Vertex AI** (`docs/SETUP.md` §8). Only three model calls have run there: an E1
-  audit ($2,115.00 / $841.75 / $186.35 / $804.15 — the ground-truth figures), a t1 pair
-  ($175 / $120 / $120 / $55 — the t-series shape) and one plan extraction whose digest matched
-  the plan on file. That is real evidence the two backends agree, and it is not the same as
-  having run the suite. Re-running every model-dependent plan costs about **15 audits**, so
-  two days at the 10/day cap, or one day with a counter reset.
-- **E4 has never been run on production at all** — the only plan in this file with no
-  verification block. It costs 1 plan upload and asserts that a non-SBC upload is rejected
-  cleanly with nothing stored.
+- **A1's Google and email-link sign-in paths** have never run on production. Both need the
+  owner's real Google account or inbox, so they are not automatable from here.
 - **App Check is untested in either direction** — it is wired on both sides but OFF, and
   turning it on is the two-step in SETUP.md §7 that takes the app down if reversed.
 - **No real EOB has ever been through the product.** There is no public corpus (payer-specific,
