@@ -23,8 +23,19 @@ Verified 2026-08-24: `runPlanExtract` returns schema-valid output on all three,
 with correct plan years, deductibles, OOP maxima, 13–17 cost-share rows, and
 limits carrying CPT hints.
 
-More available and not yet pulled: DOL publishes two further completed samples
-for *different* plans, which would add real variation in deductible and
-cost-share structure rather than three versions of the same one.
-  https://www.dol.gov/agencies/ebsa/laws-and-regulations/laws/affordable-care-act/for-employers-and-advisers/sbc-completed-sample-2
-  https://www.dol.gov/agencies/ebsa/laws-and-regulations/laws/affordable-care-act/for-employers-and-advisers/sbc-completed-sample-3
+| `dol-sample-2.pdf` | 2018 | dol.gov/.../sbc-completed-sample-2.pdf |
+| `dol-sample-3.pdf` | 2022 | dol.gov/.../sbc-completed-sample-3.pdf |
+
+**The DOL samples do NOT add the variation this file used to promise.** They were pulled on
+2026-08-26 on the expectation that they were *different* plans with different deductible and
+cost-share structure. They are not. All five documents are the same specimen plan —
+**$500 / $1,000 deductible and $2,500 / $5,000 out-of-pocket maximum** — confirmed by running
+both through `runPlanExtract` on production. What they do add is real **year and layout**
+variation (2017, 2018, 2022, 2022, 2025), and `dol-sample-3` earns its place on layout alone:
+`pdftotext` renders its "overall deductible?" row with **no dollar figures beside the
+question**, yet extraction still returned $500 / $1,000. That is a layout which defeats naive
+text-adjacency parsing and the model handled it.
+
+So the "no real variation in plan structure" gap is **not** closed by these files, and cannot
+be closed by any government specimen — every published sample uses the same numbers. Only a
+real member's SBC will do it.
