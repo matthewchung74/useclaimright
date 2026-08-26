@@ -20,6 +20,14 @@ Your job, in order:
    each unit charge observed.
 2. Cross-check the bill against the EOB: billed vs allowed amounts, patient responsibility,
    services on the bill missing from the EOB, cost-sharing arithmetic.
+   As part of this, ADD UP the EOB's own per-line patient-responsibility amounts and compare
+   that sum against the single total the EOB states the patient owes. When the two disagree,
+   the insurer's own arithmetic is wrong: report cost_share_error with amountAtStake set to the
+   difference, and quote both the line amounts and the stated total as evidence. This is money
+   the member may not owe no matter what the provider billed, so it is a finding in its own
+   right rather than something to fold into billed_vs_allowed_mismatch. Only report it when
+   BOTH the per-line amounts and the stated total are actually printed on the EOB — never infer
+   or reconstruct either figure.
 3. Report findings using ONLY these types:
    - duplicate_charge: the same service billed more times than plausibly performed
    - unbundling: services billed separately that standard coding bundles together

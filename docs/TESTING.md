@@ -57,7 +57,22 @@ Three fixture sets, and they are not interchangeable:
    ✓ **Billed above EOB allowed** $658.65 — the bill demands ~$845 against $186.35 responsibility.
    ✓ **Charity care eligible** $186.35 — nonprofit-hospital financial assistance flag. Note it is deliberately **not** added into "Worth disputing": it's an avenue to pursue, not an overcharge, and adding it would double-count the responsibility figure.
    ✓ Sanity check: "Worth disputing" equals the duplicate plus the billed-above-allowed exactly. If it ever equals all three findings summed, that's a double-count bug.
-   ⚠️ *Known gap:* the planted **$18 cost-share error** (EOB states $186.35; its own lines sum to $168.35) is **not** reported as `cost_share_error` — the discrepancy gets folded into the billed-above-allowed finding. Treat a `cost_share_error` here as a bonus, not a requirement.
+   ✓ **Cost-sharing math error $18.00** — FIXED 2026-08-26, previously a known gap. The EOB
+   states $186.35 owed while its own per-line amounts sum to $168.35. The prompt named
+   `cost_share_error` but never asked the model to perform the check; it now says explicitly to
+   add up the EOB's per-line patient-responsibility column and compare it against the stated
+   total. The finding comes back with the arithmetic spelled out — "$8.24 + $4.55 + $124.00 +
+   $27.70 + $3.86 = $168.35 does not equal the stated total responsibility of $186.35" — and
+   quotes the EOB lines as evidence.
+   ⚠️ **This changes E1's expected total.** Worth disputing was $804.15 and is now **$822.15**
+   on a clean account ($145.50 + $658.65 + $18.00). The $18 does not double-count: $658.65 is
+   the bill above the *stated* responsibility and $18 is the stated responsibility above the
+   *true* one, and they sum to $676.65 = $845.00 − $168.35. With an SBC on file the total also
+   picks up whatever plan findings apply — the 2026-08-26 run showed $836.00 because a
+   `coinsurance_mismatch` of $13.85 fired as well.
+   ✓ **False-positive control:** M3 was re-run immediately after and stayed at $175 / $120 /
+   $120 / $55 with **no** `cost_share_error` and no plan mismatch. The check fires on a broken
+   EOB and stays silent on a consistent one.
    ✓ The found-money card is labelled just "**Worth disputing**" — the old sentence-long label ("money you may not owe; hold off paying this part") is gone from every report.
    ✓ Footer: "**Not checked against your plan** — add your Summary of Benefits under 'Your coverage' on the bills page to enable plan checks."
 done
