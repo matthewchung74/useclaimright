@@ -1061,8 +1061,13 @@ a rules change.
   found only because the plans were run against the live site.
 - **Every written case in this file has now been executed on production.** What follows are
   blind spots the suite does not attempt, not cases it skipped.
-- **App Check is untested in either direction** — it is wired on both sides but OFF, and
-  turning it on is the two-step in SETUP.md §7 that takes the app down if reversed.
+- **App Check: the client half is now live and verified, enforcement is not.** As of
+  2026-08-26 a reCAPTCHA Enterprise key is registered and the client mints tokens
+  (`ReCaptchaEnterpriseProvider`), and an audit was run to confirm nothing broke while the
+  Functions still ignore those tokens — $175 / $120 / $120 / $55, no error. What remains
+  untested is enforcement itself: `APP_CHECK=on` is deliberately off (SETUP.md §7), so nothing
+  has ever verified that a request WITHOUT a valid token is actually rejected. Testing that
+  needs enforcement on, which is the step that can take the app down.
 - **No real EOB has ever been through the product.** There is no public corpus (payer-specific,
   full of PHI), so `family/family-eob.pdf` is synthesized from the CMS sample EOB's column
   vocabulary. Layout variety across real payers remains completely untested, and it is the

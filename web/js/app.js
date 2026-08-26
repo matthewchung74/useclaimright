@@ -14,7 +14,7 @@ import {
 } from "./usage.js";
 import { getFunctions, httpsCallable, connectFunctionsEmulator } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-functions.js";
 import { getAnalytics, logEvent } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-analytics.js";
-import { initializeAppCheck, ReCaptchaV3Provider } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app-check.js";
+import { initializeAppCheck, ReCaptchaEnterpriseProvider } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app-check.js";
 import { firebaseConfig, APP_CHECK_SITE_KEY } from "./firebase-config.js";
 import { extractText } from "./extract.js";
 import { pairFiles, classifyFile, uniqueDocs } from "./batch.js";
@@ -62,7 +62,7 @@ const submitFeedbackFn = httpsCallable(functions, "submitFeedback", { timeout: 3
 // enforceAppCheck: false until both halves are in place, or every call 403s.
 if (APP_CHECK_SITE_KEY) {
   initializeAppCheck(app, {
-    provider: new ReCaptchaV3Provider(APP_CHECK_SITE_KEY),
+    provider: new ReCaptchaEnterpriseProvider(APP_CHECK_SITE_KEY),
     isTokenAutoRefreshEnabled: true,
   });
 }
