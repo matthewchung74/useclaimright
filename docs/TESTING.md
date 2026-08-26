@@ -1081,7 +1081,11 @@ a rules change.
   `copay_mismatch`); with the expired plan it reports **$115.00 and no copay finding**. The app
   declined to apply stale terms and said so rather than silently applying them. The
   expired-plan renewal banner ("Your plan year ended … — upload your new SBC.") also fired.
-- `loadPlan()` failing soft (a Firestore error should leave the empty plan card and no unhandled rejection) — needs network throttling or an injected failure.
+- ~~`loadPlan()` failing soft~~ — **CLOSED 2026-08-26.** Firestore transport was broken at both
+  `fetch` and `XMLHttpRequest`, then a sign-out/sign-in forced `onAuthStateChanged` to re-run
+  `loadPlan()` against it. The app routed to the bills list, rendered the empty plan card ("No
+  plan on file — add your Summary of Benefits · Add now"), stayed responsive, and produced
+  **zero unhandled rejections**.
 - Mobile / narrow widths: **covered 2026-08-26 at a true phone viewport.** Chrome will not
   shrink its *window* below ~600px, so this was run through Playwright, which sets the
   *viewport* directly: **390 × 844** (iPhone-class). Results across sign-in, the bills list and
@@ -1103,5 +1107,7 @@ a rules change.
   Still not covered: real touch interaction (drag-and-drop onto the dropzones from a phone),
   and iOS Safari specifically — this was Chromium at a phone viewport, which is not the same as
   a phone.
-- The planted **$18 cost-share error** in `fake-eob` (see E1's known gap) — currently not reported as `cost_share_error`.
+- ~~The planted **$18 cost-share error** in `fake-eob`~~ — **FIXED 2026-08-26.** Now reported as
+  `cost_share_error` with the arithmetic shown; see E1. M3 re-run as the false-positive control
+  and stayed clean.
 - Cross-bill duplicates spanning **different providers for the same visit** (e.g. facility + physician billing the same date) — the detector deliberately keys on provider, so this is out of scope by design, not an oversight.
