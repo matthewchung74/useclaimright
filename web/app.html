@@ -287,6 +287,14 @@
 
       <p id="reset-sent" class="muted" hidden>Password reset sent — check your inbox.</p>
       <div id="signin-error" class="error" hidden></div>
+      <!-- Required by Google's reCAPTCHA terms. App Check runs reCAPTCHA Enterprise in
+           invisible mode and its badge is hidden, which the terms allow ONLY if this
+           attribution is shown in the user flow. Do not remove it while App Check is on. -->
+      <p class="muted" style="margin-top:18px;font-size:12px;line-height:1.5">
+        Protected by reCAPTCHA to block automated abuse — you'll never be asked to solve a puzzle.
+        Google's <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Privacy Policy</a>
+        and <a href="https://policies.google.com/terms" target="_blank" rel="noopener">Terms of Service</a> apply.
+      </p>
     </div>
   </section>
 
