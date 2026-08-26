@@ -723,8 +723,22 @@ one remaining renderer-blocking dialog and the reason this path could never be a
 sign-in routes remain, both verified. The Firebase provider is left enabled — no client code
 calls it, and disabling it in the Console would also disable email+password, which is in use.
 
-**Still not run:** the provider-switched-off message, which needs Email/Password disabled in
-the Console.
+**Provider-switched-off verified on production 2026-08-26 — A1 is now complete.** Rather than
+click through the Console, `signIn.email.enabled` was set to `false` through the Identity
+Toolkit admin API, the message captured, and the flag restored within about a minute. With the
+provider off, a password sign-in returned exactly:
+
+> "Password sign-in isn't switched on for this app yet. Use Continue with Google."
+
+No raw `Firebase: Error (auth/…)` string, and the app stayed on the sign-in screen rather than
+half-navigating. The config came back to `{"enabled": true}`, byte-identical to what it was
+before, and a password sign-in immediately succeeded to the bills list with 26 audits intact.
+
+Note for anyone repeating this: setting `enabled:false` causes the API to add
+`passwordRequired: true` as a side effect, so restoring needs an updateMask covering **both**
+`signIn.email.enabled` and `signIn.email.passwordRequired`, or you will leave the project in a
+state it did not start in. While the provider is off, every password account is locked out —
+Google sign-in is unaffected, which is what makes this safe to do at all.
 
 # Family, scans, and real documents
 
@@ -1026,8 +1040,8 @@ a rules change.
   the native `confirm()` freeze, the patientName cohort regression, and the suppressed
   mismatched-EOB warning) were all invisible from reading the code, and the last two were
   found only because the plans were run against the live site.
-- **A1's provider-switched-off case** is the only plan step never run: it needs Email/Password
-  disabled in the Firebase Console, which also locks the test account out while it is off.
+- **Every written case in this file has now been executed on production.** What follows are
+  blind spots the suite does not attempt, not cases it skipped.
 - **App Check is untested in either direction** — it is wired on both sides but OFF, and
   turning it on is the two-step in SETUP.md §7 that takes the app down if reversed.
 - **No real EOB has ever been through the product.** There is no public corpus (payer-specific,
