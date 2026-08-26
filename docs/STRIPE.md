@@ -40,6 +40,27 @@ with a payload signed using the endpoint's own secret, which is the identical co
 `constructEvent`. What that does not cover is Stripe's own checkout UI, which is Stripe's to
 get right.
 
+### The purchase UI, verified in the browser 2026-08-26
+
+Built and driven end to end at `PAYMENTS=on`, then switched back off.
+
+| Step | Result |
+|---|---|
+| letter with no entitlement | paywall card appears; **no raw error**, no letter text |
+| price on the button | **$4.99** — read from the server's refusal, never hardcoded |
+| "Unlock this letter" | redirects to Stripe's hosted page: "UseClaimRight appeal letter", $4.99, Sandbox badge, tax computed from address |
+| return to `?paid=1&audit=…` | opens that audit, hides the paywall, delivers the 1,552-char letter |
+| the URL afterwards | **cleaned** — a refresh cannot look like a second purchase |
+| the ledger | 1 credit → 0, that audit unlocked, nothing else |
+
+The price travels on the `permission-denied` refusal as `details.priceCents`, so the button
+cannot promise a number Stripe does not charge. `resumeAfterCheckout()` runs last in
+`onAuthStateChanged`, after history loads, or the normal routing would override the audit it
+opens.
+
+**Not covered here:** typing a card into Stripe's hosted form. That leg is Stripe's own UI, and
+completing it needs a human at the keyboard. Everything on either side of it is verified.
+
 ### Two things this run turned up
 
 **Managed Payments is on by default and refuses a line item with no tax code.** The first
