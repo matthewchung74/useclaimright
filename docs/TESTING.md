@@ -9,7 +9,7 @@ Three fixture sets, and they are not interchangeable:
 - **real** (`real-sbc/`, `real-eob/`) — genuine CMS and DOL documents. The only fixtures we did not write ourselves, and therefore the only ones that can tell us extraction works on something other than our own assumptions. Used by **P1**.
 - **family** (`family/`) — a consolidated household EOB and three bills. Reproduces two defects fixed on 2026-08-23/24. Used by **FAM1–FAM3**.
 
-**Session setup:** open https://useclaimright.web.app/app, hard-refresh, sign in. Three ways in — Google, email + password, or an email link — see **A1**. A fresh account starts empty with full daily limits (**10 audits, 3 plan uploads**).
+**Session setup:** open https://useclaimright.web.app/app, hard-refresh, sign in. Two ways in — Google, or email + password — see **A1**. A fresh account starts empty with full daily limits (**10 audits, 3 plan uploads**).
 
 **Budget — the full suite does NOT fit in one day.** Core plans (E1, M1–M6, D1, E2, E4–E7) cost **10 audits + 3 plan uploads**, exactly the daily ceiling, leaving no room for the rate-limit check. Optional **M7** adds 3 more. Run it as:
 
@@ -638,7 +638,8 @@ there is one to attach.
 # Auth
 
 ## A1 — Three ways in, and the failures a real person hits
-**Use case:** password sign-in was added 2026-08-25 alongside Google and the email link.
+**Use case:** the two ways into the app. Password sign-in was added 2026-08-25; the email
+link was removed 2026-08-26 (see step 4).
 Most of this plan is the failure paths, because those are what a member sees when something
 goes wrong and they are where the raw Firebase strings used to leak through.
 **Data:** a throwaway address, e.g. `fam-test@useclaimright.test`.
@@ -650,8 +651,9 @@ goes wrong and they are where the raw Firebase strings used to leak through.
    it makes no sense in sign-up mode.
 2. **Sign out**, then sign back in with the same credentials. ✓ Works.
 3. **Google** still works, and lands the same place.
-4. **Email link** — "Email me a link instead" ✓ shows "Link sent — check your inbox on this
-   device", and the link signs you in. The address must be typed first.
+4. ~~**Email link**~~ — **REMOVED 2026-08-26.** ✓ The sign-in card offers exactly two routes:
+   "Continue with Google" and email + password. There is no "Email me a link instead" link, and
+   no `prompt()` anywhere in the app. See the note below for why it went.
 
 **Edge cases — each must show OUR copy, never a raw `Firebase: Error (auth/…)` string**
 - Wrong password → "That email and password don't match. Check both, or reset your password."
@@ -667,7 +669,7 @@ goes wrong and they are where the raw Firebase strings used to leak through.
 - Malformed address → "That doesn't look like an email address."
 - Empty email / empty password → asks for the missing one, and makes no network call.
 - **Provider switched off** in the Console → "Password sign-in isn't switched on for this app
-  yet. Use Google or an email link." Not a message blaming the member for a config problem.
+  yet. Use Continue with Google." Not a message blaming the member for a config problem.
 - **Reset does not leak account existence:** "Forgot password?" with an address that has NO
   account ✓ shows the same "check your inbox" as one that does. Anything else turns the form
   into an account-existence oracle.
@@ -710,11 +712,13 @@ To finish the test: search the mailbox for `from:noreply@useclaimright.firebasea
 including Spam and All Mail. To fix it properly: Console → Authentication → Templates → SMTP
 settings, pointed at a real sending domain with SPF/DKIM.
 
-⚠️ **Worth deciding whether to keep this path at all.** It is the only sign-in route that does
-not work reliably, and it is also the one carrying the last native `prompt()` in the app
-(`app.js:272`, open in TODOS) — which fires whenever the link is opened on a different device
-from the one that requested it. Google and password sign-in both work. Removing the email link
-would delete a broken path and the last renderer-blocking dialog in one change.
+**Resolved by removal, 2026-08-26.** Rather than configure SMTP for a launch that has not
+happened, the email-link path was deleted: the `use-email-link` control, the `email-sent`
+copy, the `sendSignInLinkToEmail` / `isSignInWithEmailLink` / `signInWithEmailLink` imports and
+both handlers. That also removed the **last native `prompt()` in the app**, which had been the
+one remaining renderer-blocking dialog and the reason this path could never be automated. Two
+sign-in routes remain, both verified. The Firebase provider is left enabled — no client code
+calls it, and disabling it in the Console would also disable email+password, which is in use.
 
 **Still not run:** the provider-switched-off message, which needs Email/Password disabled in
 the Console.
@@ -1003,8 +1007,8 @@ Chrome freezes `requestAnimationFrame` in hidden tabs. Two features broke on thi
   the native `confirm()` freeze, the patientName cohort regression, and the suppressed
   mismatched-EOB warning) were all invisible from reading the code, and the last two were
   found only because the plans were run against the live site.
-- **A1's Google and email-link sign-in paths** have never run on production. Both need the
-  owner's real Google account or inbox, so they are not automatable from here.
+- **A1's provider-switched-off case** is the only plan step never run: it needs Email/Password
+  disabled in the Firebase Console, which also locks the test account out while it is off.
 - **App Check is untested in either direction** — it is wired on both sides but OFF, and
   turning it on is the two-step in SETUP.md §7 that takes the app down if reversed.
 - **No real EOB has ever been through the product.** There is no public corpus (payer-specific,
