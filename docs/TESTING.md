@@ -678,8 +678,17 @@ goes wrong and they are where the raw Firebase strings used to leak through.
 
 **Verified on production 2026-08-25:** cases 1, 3, 4, 5, 6, 7, 8a, 8b, 8c, 9, 10 and the
 in-flight button disable all pass, with our copy in every case and never a raw Firebase
-string. Case 5 corrected as above. **Not run:** Google sign-in, the email link, and the
-provider-switched-off message (which needs the provider disabled in the Console).
+string. Case 5 corrected as above.
+
+**Step 3 (Google) verified on production 2026-08-26** by the owner. Identity Toolkit confirms
+the account carries the `google.com` provider and a fresh `lastLoginAt`; no sign-in error
+appeared, and it landed on **onboarding — "Set up your plan"**. That IS "the same place":
+this Google account has no plan and no audits, so the empty-account route is correct and
+matches what password sign-up does in step 1. The routing is shared (`onAuthStateChanged`),
+so the assertion is that the provider does not change it, and it does not.
+
+**Still not run:** the email link (step 4) and the provider-switched-off message, which needs
+Email/Password disabled in the Console.
 
 # Family, scans, and real documents
 
