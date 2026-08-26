@@ -1062,6 +1062,59 @@ reproduced its documented figures**, with two exceptions noted below — neither
 E1b, E3, E5, M6, D1, R2, F1, X1, E7, A1's password paths, FAM2, FAM3, G1. Their existing
 verification blocks stand.
 
+## PAY1 — Buying an appeal letter (sandbox only)
+
+**Use case:** the one paid thing in the product. Audits are free; the letter is $4.99.
+**Prerequisite:** `PAYMENTS=on` in `functions/.env` and a redeploy, plus sandbox
+`STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET`. Confirm it is really on: an unsigned POST to
+the webhook returns **400** (on, rejecting the signature) rather than **503** (off).
+**Data:** any audit WITH findings. A clean audit is free by design and cannot be used here.
+
+**Stripe test cards** — any future expiry, any CVC, any postcode:
+
+| Card | What it does |
+|---|---|
+| `4242 4242 4242 4242` | succeeds |
+| `4000 0000 0000 0002` | declined |
+| `4000 0000 0000 9995` | declined, insufficient funds |
+| `4000 0025 0000 3155` | requires 3-D Secure — tests the authentication step |
+
+1. **The gate.** Open a report with findings, click **Generate dispute email**.
+   ✓ The **paywall card** appears — "Unlock this appeal letter", the button reads
+     **"Unlock this letter — $4.99"**, and it says auditing stays free and there is nothing to
+     cancel.
+   ✓ **No raw error message**, and **no letter text anywhere on the page** — check the
+     dispute-email box is still empty. The letter must not exist client-side before payment.
+2. **Cancel path.** Click the button, then use the back arrow on Stripe's page.
+   ✓ You land back on the app with the paywall still showing and **no charge** in Stripe.
+3. **Buy it.** Click the button again, pay with `4242 4242 4242 4242`.
+   ✓ Stripe's page shows "UseClaimRight appeal letter", **$4.99**, and a Sandbox badge.
+   ✓ You are returned to the app, the paywall disappears, and the letter appears with your own
+     bill and EOB quoted.
+   ✓ The address bar is **clean** — no `?paid=1` left behind.
+4. **The double-charge guard.** Refresh. Then leave the report and re-open the same audit, and
+   click Generate again.
+   ✓ The letter comes back **free every time**. No paywall, no second charge.
+   ✓ Stripe shows exactly **one** payment.
+5. **The unlock is per-audit.** Open a DIFFERENT audit with findings, click Generate.
+   ✓ The paywall appears again. Buying one letter does not buy them all.
+6. **A declined card.** On a fresh audit, buy with `4000 0000 0000 0002`.
+   ✓ Stripe refuses on its own page; you are not returned as paid, and the letter stays locked.
+7. **A clean audit is never sold.** Open an audit with NO findings, click Generate.
+   ✓ "Good news — this audit found no discrepancies…" with **no paywall**. Charging for a null
+     result would be indefensible.
+8. **Stripe's own records.** Dashboard → Payments, and Developers → Webhooks → your endpoint.
+   ✓ One succeeded payment per purchase, and webhook deliveries showing **200**.
+   ✓ A delivery that shows 400 means the signing secret does not match the endpoint.
+
+**Cost:** $0 real money — sandbox only. Uses no audits.
+
+⚠️ **Switch it off when you are done:** set `PAYMENTS=off` in `functions/.env` and redeploy.
+**Deleting the file does NOT work** — a deployed function keeps env vars from previous deploys,
+so the flag must be set to off explicitly. Verify by POSTing an unsigned body to the webhook and
+seeing **503**. Leaving it on means the public site gates letters behind a checkout that only
+accepts test cards.
+
 ## Always-on checks (every pass)
 - **Evidence is real:** spot-check two findings per pass — the quoted line must appear verbatim in the document it cites. A finding whose quote is absent should never render; `verifyEvidence` drops it server-side and logs `unverified evidence dropped`. Check the audit doc's `droppedUnverified` count after each run: a non-zero value is the model inventing evidence, and it is worth reading the log.
 - **Disclosure is present:** the audit form shows the "Where your documents go" banner naming Google's Gemini API, above the dropzones.
