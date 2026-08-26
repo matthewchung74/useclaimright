@@ -958,12 +958,10 @@ Chrome freezes `requestAnimationFrame` in hidden tabs. Two features broke on thi
 - The Hide chip positions via `setTimeout`, not rAF — it must still appear when the tab regains focus after a background selection.
 
 ## Not covered by this suite (documented gaps)
-- **Production coverage is now broad, but not complete.** Through 2026-08-25 the live site was
-  exercised in a real Chrome against real Gemini calls: A1 (password sign-up, sign-in and its
-  error cases), E1b, E2, E3, E5, E6 (incl. step 5), M4, M5, M7, D1, R2, F1, S1, P1, G1, X1
-  (all six paths), E7, FAM1, FAM2 and FAM3. **Still never run on production:** E4, A1's Google
-  and email-link paths, and — see below — the whole suite against Vertex AI. Emulator-green is
-  still not production-green — five real defects this suite found (pairing, mixed documents,
+- **Production coverage: 26 of 26 plans, on the current backend.** Every plan has run against
+  the live site, and every model-dependent one has run against Vertex AI (see the
+  re-verification section above). The ONLY outstanding cases are the three in A1 listed below.
+  Emulator-green is still not production-green — five real defects this suite found (pairing, mixed documents,
   the native `confirm()` freeze, the patientName cohort regression, and the suppressed
   mismatched-EOB warning) were all invisible from reading the code, and the last two were
   found only because the plans were run against the live site.
@@ -975,10 +973,20 @@ Chrome freezes `requestAnimationFrame` in hidden tabs. Two features broke on thi
   full of PHI), so `family/family-eob.pdf` is synthesized from the CMS sample EOB's column
   vocabulary. Layout variety across real payers remains completely untested, and it is the
   hardest part of the product.
-- Out-of-period plan check (needs a bill dated outside 2026; verify the footer variant "service dates fall outside your plan year").
-- Expired-plan renewal banner (needs a past-dated SBC fixture or a clock change).
+- Out-of-period plan check (needs a bill dated outside 2026; verify the footer variant "service
+  dates fall outside your plan year"). Half of this is now closed: during P1 on 2026-08-26 the
+  out-of-period CMS plans put the **expired-plan renewal banner** on the dashboard — "Your plan
+  year ended 2025-12-31 — upload your new SBC." — which had been listed here as its own
+  untested gap. What remains untested is how an *audit* behaves against an expired plan, which
+  needs an audit run while one is on file.
 - Emulator rules tests (need Java).
 - `loadPlan()` failing soft (a Firestore error should leave the empty plan card and no unhandled rejection) — needs network throttling or an injected failure.
-- Mobile / narrow widths: nothing in this suite checks the 720px breakpoint, the dashboard grids, or the feedback bubble against the report's action row on a phone.
+- Mobile / narrow widths: **partly covered 2026-08-26.** At a 606px viewport the 720px
+  breakpoint is active (`matchMedia("(max-width:720px)").matches === true`), `.panes` and
+  `.dropzones` collapse to a single column, neither the bills list nor a report scrolls
+  horizontally, the report's action row does **not** overlap the feedback bubble (the specific
+  worry here), and a modal dialog renders readably with its buttons in reach. Not covered: a
+  true phone viewport — Chrome would not give a window narrower than ~600px on this display, so
+  320-390px is still unverified, as is touch interaction.
 - The planted **$18 cost-share error** in `fake-eob` (see E1's known gap) — currently not reported as `cost_share_error`.
 - Cross-bill duplicates spanning **different providers for the same visit** (e.g. facility + physician billing the same date) — the detector deliberately keys on provider, so this is out of scope by design, not an oversight.
