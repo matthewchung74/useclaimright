@@ -44,12 +44,30 @@ in order. Items marked ☐ are yours; ▶ are commands I (or you) can run once t
 ## 6. Deploy
 - ▶ `firebase deploy` (hosting + functions + firestore rules)
 
-## 7. App Check (after first successful end-to-end run)
+## 7. App Check — step 1 DONE 2026-08-26, step 2 deliberately NOT done
 **Order matters — reversing these two steps takes the app down for everyone.**
-- ☐ Console → App Check → register the web app with reCAPTCHA v3, copy the site key
-- ▶ set `APP_CHECK_SITE_KEY` in `web/js/firebase-config.js`, `firebase deploy --only hosting`
-- ☐ confirm audits still run (the client now sends tokens; the Functions still ignore them)
-- ▶ set `APP_CHECK=on` for the Functions, redeploy. Only now are tokens required.
+
+- ☑ **reCAPTCHA ENTERPRISE key created and registered**, not classic v3. Enterprise keys can be
+  created and bound to the app entirely through the API; a v3 key needs the reCAPTCHA admin
+  console. Site key `6LeWbJktAAAAAOqhrLJ8gEFi1bci2Kn416Km8Kub`, restricted to the five
+  authorized domains, registered at
+  `projects/useclaimright/apps/<appId>/recaptchaEnterpriseConfig` with `tokenTtl: 3600s` and
+  `minValidScore: 0.5`. Enabled `recaptchaenterprise.googleapis.com` and
+  `firebaseappcheck.googleapis.com` to do it.
+- ☑ `APP_CHECK_SITE_KEY` set in `web/js/firebase-config.js`, client switched from
+  `ReCaptchaV3Provider` to `ReCaptchaEnterpriseProvider`, hosting deployed.
+- ☑ **Confirmed audits still run** with the client minting tokens and the Functions still
+  ignoring them: a t2 audit returned $175.00 / $120.00 / $120.00 / $55.00, the t-series shape,
+  with no error. This is the checkpoint that proves step 2 is safe to take.
+- ☐ **NOT DONE, on purpose:** set `APP_CHECK=on` for the Functions and redeploy. Only then are
+  tokens required, and only then can a mistake here take the app down. Deferred because App
+  Check defends against scripted abuse of the endpoints and there are no users yet, while the
+  `meta/guard` ceiling already caps the daily spend. Firebase's App Check metrics will show what
+  fraction of requests carry a valid token; enforce once that is ~100% under real traffic.
+
+**Cost note:** reCAPTCHA Enterprise is billable with a 10,000 assessments/month free tier. One
+assessment is minted per client per `tokenTtl` (1 hour), so pre-launch usage is far inside the
+free tier — but it is a billable API on a project with a $25/mo budget.
 
 ## 7b. Spend guard
 The global ceiling and kill switch live in Firestore at `meta/guard`, so both can
