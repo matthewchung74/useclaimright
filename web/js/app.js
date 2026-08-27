@@ -406,7 +406,8 @@ function resetState() {
   $("bill-file").value = "";
   $("eob-file").value = "";
   $("eob-picked").textContent = "";
-  $("step-eob").hidden = true;   // a fresh form starts at one step again
+  $("step-eob").classList.remove("open");   // a fresh form starts collapsed again
+  $("step2-hint").hidden = false;
   $("saved-eob").value = "";
   setError("upload-error", "");
   batchFiles = [];
@@ -505,7 +506,10 @@ function renderFiles() {
   // is removing one file of several. Driven from here rather than the change
   // handler so it is correct on every path that mutates the list, including
   // batchBackToPanel() after a mid-batch error.
-  if (batchFiles.some((b) => b.role === "bill")) $("step-eob").hidden = false;
+  if (batchFiles.some((b) => b.role === "bill")) {
+    $("step-eob").classList.add("open");
+    $("step2-hint").hidden = true;   // the prompt to add a bill has been answered
+  }
   for (const kind of ["bill", "eob"]) {
     const list = $(`${kind}-list`);
     list.innerHTML = "";
