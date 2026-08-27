@@ -162,6 +162,8 @@
   #cta-quota.low{color:var(--gold);font-weight:700}
   #cta-quota.out{color:var(--bad);font-weight:700}
   .back-link{color:var(--brand-dark);font-size:14px;text-decoration:none}
+  #where-docs-go summary::-webkit-details-marker{display:none}
+  #where-docs-go[open] .wdg-more{display:none}
   .back-link:hover{text-decoration:underline}
   .just-block{background:#fff;border:1px solid var(--line);border-radius:12px;margin:14px 0;overflow:hidden}
   /* Highlighter as an underline, not a fill: the duplicate hero above owns the
@@ -382,11 +384,27 @@
     <h1>Audit a medical bill</h1>
     <p class="lead">Add your bill and, if you have it, the letter from your insurance. You'll see exactly what gets analyzed before anything is sent.</p>
     <div class="banner" style="background:var(--accent);border-color:var(--brand);color:var(--brand-dark)">
-      <b>Where your documents go:</b> to analyze a bill we send it, and the insurance letter, to Google's
-      Gemini models on Vertex AI (part of Google Cloud) — including your name and everything else printed on
-      them. Google states that customer data sent to Vertex AI is not used to train its models; their terms
-      govern what they do with it. We keep the text so you can re-open the audit later, and you can delete
-      any audit, or your whole account, whenever you like.
+      <!-- The SUMMARY carries the fact that matters and is always on screen: the
+           documents go to Google with the member's name on them. The detail sits one
+           click away rather than five lines of prose on every upload — a paragraph
+           nobody re-reads is a worse disclosure than a sentence they do. Opens by
+           itself the first time, then remembers. Never gate the summary behind the
+           toggle. -->
+      <details id="where-docs-go">
+        <summary style="cursor:pointer;list-style:none">
+          <b>Where your documents go:</b> your bill and insurance letter — <b>including your name and
+          everything else printed on them</b> — are sent to Google's Gemini models on Vertex AI.
+          <span class="wdg-more" style="text-decoration:underline">What that means</span>
+        </summary>
+        <div style="margin-top:10px">
+          Vertex AI is part of Google Cloud. Google states that customer data sent to it is not used to
+          train its models; their terms govern what they do with it, and they may retain it briefly for
+          abuse monitoring — "not used for training" is not the same as "not stored". We keep the text so
+          you can re-open the audit later, and you can delete any audit, or your whole account, whenever
+          you like. You will see exactly what is being sent on the next screen, before anything leaves.
+          <a href="/privacy" target="_blank" rel="noopener">Full privacy policy</a>.
+        </div>
+      </details>
     </div>
     <div class="card">
       <div class="step-row"><span class="step-n">1</span><div><b>Add your bill</b><div class="muted">The one from the hospital or doctor asking you for money. Ask for the <b>itemized</b> version — line by line, not just a total. Several bills? Add them all; each becomes its own audit.</div></div></div>
