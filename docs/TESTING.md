@@ -1164,33 +1164,25 @@ so the flag must be set to off explicitly. Verify by POSTing an unsigned body to
 seeing **503**. Leaving it on means the public site gates letters behind a checkout that only
 accepts test cards.
 
-## REV1 — The review screen shows what is sent, readably
+## REV1 — The review screen shows the pages we send
 
-**Use case:** the review is the consent gate — "you see exactly what gets analyzed before
-anything is sent" — and it is where a wrong EOB is caught before an audit is spent. It only
-works if people actually read it.
-**Changed 2026-08-27:** the right pane was a raw dump of extracted text, which nobody reads. An
-unread disclosure is a worse disclosure.
-**Data:** any digital PDF bill.
+**Use case:** the review is the consent gate — "this is what we send" — and where a wrong EOB
+is caught before an audit is spent.
+**Changed 2026-08-27, twice.** First the raw text dump became a summary; then the text layer
+was removed entirely, so the pages ARE what is sent and there is nothing to compare them
+against. The screen is now one document, shown large.
 
-1. Upload a bill, Prepare audit. On the review screen:
-   ✓ **Left** shows the rendered page — the document as you recognise it.
-   ✓ **Right** leads with what was picked up: page count, word count, **dates found**, **codes
-     found** — checkable at a glance against the page on the left.
-   ✓ The exact text is behind "**Show the exact text being sent**", collapsed. It must stay
-     reachable: "see exactly what is sent" has to remain literally true.
-   ✓ The pane is headed "**What we send**", not "What we'll analyze".
-2. ✓ For a scan, the right pane explains the pages go as images and says what to check
-   (right pages, right way up, in focus) — no summary, because there is no text layer.
-
-⚠️ **This plan exists because the summary caught a bug the raw dump had been hiding.** Codes
-found on `fake-bill.pdf` included **90000**, which is Testville's ZIP, not a procedure code.
-`codesIn()` matched any five-digit number, so two providers in the same town shared a "code",
-`documentsRelated()` judged a mismatched pair RELATED, and the wrong-EOB warning was
-suppressed — the one guard separating "you paired the wrong EOB" from "your insurer never
-processed this". E6 passed only because its two fixtures print different ZIPs; a member's own
-address on both documents would not have been so lucky. Fixed by stripping
-`STATE + 5 digits` before scanning. Four regression tests in `eobmatch.test.js`.
+1. Upload a **one-page** bill, Prepare audit.
+   ✓ Heading reads "**This is what we send**".
+   ✓ The page is shown large, and there are **no page pills** — a "1" pill is a control that
+     can do nothing.
+2. Add a **multi-page** document (`real-sbc/cms-2025.pdf` is 5 pages) and switch to its tab.
+   ✓ **Five numbered pills**, page 1 active. Clicking pill 3 shows page 3 and moves the
+     highlight. Switching tabs resets to page 1.
+3. Upload a **.txt or .html** file.
+   ✓ No pills and no page view — there is nothing to render, so the text itself is shown. This
+     is the only path where text is still what gets sent.
+4. ✓ A **saved EOB** says its text was kept but the file was not, so there are no pages.
 
 **Cost:** 0 audits — back out with **Start over**.
 

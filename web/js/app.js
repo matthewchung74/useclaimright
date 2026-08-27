@@ -20,7 +20,7 @@ import { extractText } from "./extract.js";
 import { pairFiles, classifyFile, uniqueDocs } from "./batch.js";
 import { planYearStartMonthFrom, mergeSbcTrackers, deductibleTarget, oopTarget } from "./plan.js";
 import { crossBillDuplicates, runningTotals, groupAuditsByProvider, splitJustAudited, billKeyOf } from "./crossbill.js";
-import { matchSavedEob, documentsRelated, datesIn, codesIn } from "./eobmatch.js";
+import { matchSavedEob, documentsRelated } from "./eobmatch.js";
 
 const $ = (id) => document.getElementById(id);
 let currentSection = "signin";
@@ -740,7 +740,7 @@ async function prepareBatch() {
 // remainder (including the failed item) goes back to the pairing panel.
 async function runBatch() {
   for (const d of batchDocs) { d.previews = null; }
-  $("original-pane").textContent = "";
+  $("page-view").textContent = "";
   const byFile = new Map(batchDocs.filter((d) => d.file).map((d) => [d.file, d]));
   const bySaved = new Map(batchDocs.filter((d) => d.savedEob).map((d) => [d.savedEob.id, d]));
   const total = batchQueue.length;
@@ -793,58 +793,51 @@ function setStatus(msg) {
 
 const tidy = (s) => (s ?? "").replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
 
+let reviewPage = 0;   // which page of the current document is on screen
+
 function renderReview() {
   const docState = batchDocs ? batchDocs[batchDocIndex] : state[state.activeDoc];
-  // Left pane: the ACTUAL document (rendered pages) when we have it, so the
-  // text on the right can be checked against it. This is the only place a bad
-  // OCR pass is catchable before an audit is spent on it.
-  const orig = $("original-pane");
+  const pages = docState.previews || docState.images || [];
+  if (reviewPage >= pages.length) reviewPage = 0;
+
+  const view = $("page-view");
+  const pills = $("page-pills");
+  const textView = $("text-view");
+  view.textContent = "";
+  pills.textContent = "";
+
   if (docState.saved) {
-    orig.textContent = "This is a saved EOB — its text was stored when you first uploaded it; the file itself was not.";
-  } else if (docState.previews?.length) {
-    orig.textContent = "";
-    for (const src of docState.previews) {
-      const img = document.createElement("img");
-      img.src = src;
-      img.alt = "Your document (local preview)";
-      orig.appendChild(img);
+    // A saved EOB is text we kept; the file itself was never stored.
+    view.hidden = true; pills.hidden = true;
+    textView.hidden = false;
+    textView.textContent = "This is a saved EOB. Its text was stored when you first uploaded it — the file itself was not, so there are no pages to show.\n\n" + tidy(docState.text);
+  } else if (pages.length) {
+    textView.hidden = true;
+    view.hidden = false;
+    const img = document.createElement("img");
+    img.src = pages[reviewPage];
+    img.alt = `Page ${reviewPage + 1} of ${pages.length}`;
+    view.appendChild(img);
+    // Only worth a control when there is somewhere to go.
+    pills.hidden = pages.length < 2;
+    if (pages.length > 1) {
+      for (let i = 0; i < pages.length; i++) {
+        const b = document.createElement("button");
+        b.textContent = String(i + 1);
+        b.className = i === reviewPage ? "active" : "";
+        b.onclick = () => { reviewPage = i; renderReview(); };
+        pills.appendChild(b);
+      }
     }
   } else {
-    orig.textContent = "Text was read straight from the file — no page images to show.";
+    // HTML and .txt uploads have no page to render — the text IS the document.
+    view.hidden = true; pills.hidden = true;
+    textView.hidden = false;
+    textView.textContent = tidy(docState.text);
   }
-  // The right pane used to be a raw dump of extracted text, which nobody reads —
-  // and an unread disclosure is a worse disclosure. It now leads with what was
-  // actually picked up (pages, dates, codes), which is the thing you can check at
-  // a glance against the page on the left. The exact text stays one click away,
-  // because "see exactly what is sent" has to remain literally true.
-  const pane = $("sent-pane");
-  pane.textContent = "";
-  if (docState.method === "image") {
-    pane.textContent =
-      "This is a scan, so there is no text to read out of the file. The pages on the left are " +
-      "sent as images and read directly — which is more accurate than reading a photo as text. " +
-      "Check they are the right pages, and the right way up.";
-    return renderReviewTabs();
-  }
-  const text = docState.text || "";
-  const dates = [...datesIn(text)].sort();
-  const codes = [...codesIn(text)];
-  const summary = document.createElement("div");
-  summary.innerHTML = `
-    <p style="margin-bottom:10px"><b>${docState.previews?.length || 1} page(s) read</b> —
-    ${text.replace(/\s+/g, " ").trim().split(" ").length.toLocaleString()} words.</p>
-    <p class="muted" style="margin-bottom:6px"><b>Dates found:</b>
-      ${dates.length ? dates.map(escapeHtml).join(" · ") : "<i>none — check the page on the left</i>"}</p>
-    <p class="muted" style="margin-bottom:12px"><b>Codes found:</b>
-      ${codes.length ? codes.slice(0, 12).map(escapeHtml).join(" · ") + (codes.length > 12 ? ` +${codes.length - 12}` : "") : "<i>none — check the page on the left</i>"}</p>`;
-  pane.appendChild(summary);
-  const det = document.createElement("details");
-  det.innerHTML = `<summary style="cursor:pointer;font-weight:600">Show the exact text being sent</summary>`;
-  const pre = document.createElement("div");
-  pre.style.cssText = "white-space:pre-wrap;font-family:ui-monospace,Menlo,monospace;font-size:12.5px;margin-top:10px";
-  pre.textContent = tidy(text);
-  det.appendChild(pre);
-  pane.appendChild(det);
+
+  $("ocr-banner").hidden = true;   // every PDF is pages now; the old scan caveat is moot
+
   const rd = $("review-doc");
   rd.hidden = !batchDocs;
   if (batchDocs) {
@@ -853,8 +846,6 @@ function renderReview() {
   renderReviewTabs();
 }
 
-// Single mode uses the two fixed Bill/EOB tabs; a batch gets one tab per
-// unique document instead.
 function renderReviewTabs() {
   const tabs = document.querySelector(".tabs");
   for (const b of tabs.querySelectorAll("button.doc-tab")) b.remove();
@@ -870,13 +861,13 @@ function renderReviewTabs() {
     const b = document.createElement("button");
     b.className = "doc-tab" + (i === batchDocIndex ? " active" : "");
     b.textContent = d.name;
-    b.onclick = () => { batchDocIndex = i; renderReview(); };
+    b.onclick = () => { batchDocIndex = i; reviewPage = 0; renderReview(); };
     tabs.appendChild(b);
   });
 }
 
-$("tab-bill").onclick = () => { state.activeDoc = "bill"; renderReview(); };
-$("tab-eob").onclick = () => { state.activeDoc = "eob"; renderReview(); };
+$("tab-bill").onclick = () => { state.activeDoc = "bill"; reviewPage = 0; renderReview(); };
+$("tab-eob").onclick = () => { state.activeDoc = "eob"; reviewPage = 0; renderReview(); };
 
 
 $("confirm-review").onclick = async () => {
@@ -895,7 +886,7 @@ $("confirm-review").onclick = async () => {
   // Release the rendered page images; the text itself is what we are sending.
   state.bill.previews = null;
   if (state.eob) state.eob.previews = null;
-  $("original-pane").textContent = "";
+  $("page-view").textContent = "";
   $("bill-file").value = "";
   $("eob-file").value = "";
 
@@ -1648,7 +1639,7 @@ async function runSbcExtraction(force = false) {
   const sbc = asDoc(state.bill);
   const sourceName = state.sbcName || "";
   state.bill.previews = null;
-  $("original-pane").textContent = "";
+  $("page-view").textContent = "";
   show("processing");
   setStatus("Reading your plan's terms…");
   try {
