@@ -92,6 +92,13 @@ reminder under Your coverage.
 **Getting here:** on E1's report, click **← Back to bills**, then **Audit a new bill**. (**New audit** on the report goes to the same form directly; either route clears E1's files.)
 
 1. On the audit page: ✓ both dropzones read "**Drop one or more files**, or click to choose"; the SBC dropzone reads "Drop it here" — one plan only.
+   ✓ **Step 2 (the EOB) is not shown on arrival.** Changed 2026-08-27: the form opens at
+     ~910px, one screen, showing only step 1. Staging a bill reveals step 2 beneath it. The
+     form used to open at 1703px — two screens, 71% of it a single card — which read as work
+     before you had done anything.
+   ✓ Removing the staged bill **leaves step 2 open**. Collapsing it again would pull content
+     out from under someone mid-edit; it only resets when the form itself does.
+   ✓ Returning to a fresh form collapses back to one step.
 2. Drop two bills one at a time. ✓ They accumulate as rows, nothing is replaced, the button becomes "Start 2 audits →", and the summary reads "**2 audits**: 0 bill+EOB pairs, 2 with no EOB" (no saved EOB exists yet on a fresh account).
 3. Open **☰**. ✓ Your full email wraps without breaking mid-word; **Sign out**; then **Reset account — erase all my data** below a divider, in red, with a red (not teal) hover.
 4. ✓ The "What's an EOB, and where do I find it?" explainer sits with the **insurance-letter step (step 2)**, directly under that dropzone — not stranded after the bill section.

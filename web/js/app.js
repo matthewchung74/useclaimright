@@ -406,6 +406,7 @@ function resetState() {
   $("bill-file").value = "";
   $("eob-file").value = "";
   $("eob-picked").textContent = "";
+  $("step-eob").hidden = true;   // a fresh form starts at one step again
   $("saved-eob").value = "";
   setError("upload-error", "");
   batchFiles = [];
@@ -499,6 +500,12 @@ const appliedSavedEob = () =>
 
 function renderFiles() {
   const { pairs, billOnly, orphanEobs } = pairFiles(batchFiles);
+  // Step 2 appears once there is a bill to pair it with, and stays once shown —
+  // collapsing it again mid-flow would yank content out from under someone who
+  // is removing one file of several. Driven from here rather than the change
+  // handler so it is correct on every path that mutates the list, including
+  // batchBackToPanel() after a mid-batch error.
+  if (batchFiles.some((b) => b.role === "bill")) $("step-eob").hidden = false;
   for (const kind of ["bill", "eob"]) {
     const list = $(`${kind}-list`);
     list.innerHTML = "";
@@ -578,7 +585,7 @@ $("run-audit").onclick = async () => {
   // silence — spending the day's allowance on the weakest kind of audit.
   if (billOnly.length && !savedEob && !skipEob) {
     return setError("upload-error", billOnly.length === audits
-      ? "Add your EOB (step 1), pick a saved one, or check “I don't have an EOB”."
+      ? "Add your EOB (step 2), pick a saved one, or check “I don't have an EOB”."
       : `${billOnly.length} of these bills ${billOnly.length === 1 ? "has" : "have"} no matching EOB. ` +
         "Add the missing EOB, pick a saved one, or check “I don't have an EOB”.");
   }
