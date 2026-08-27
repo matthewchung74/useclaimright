@@ -253,7 +253,10 @@
 
 <header class="no-print">
   <div class="wrap nav">
-    <a class="logo" href="/"><span class="mark">✓</span>UseClaimRight</a>
+    <!-- Signed out this is the marketing page; signed in, app.js rewires it to the
+         bills list. The logo is the reflex people try first, and dumping a signed-in
+         member on the marketing site is the worst thing it could do. -->
+    <a class="logo" href="/" id="logo-link"><span class="mark">✓</span>UseClaimRight</a>
     <div class="user-bar">
       <button id="menu-btn" class="btn ghost sm" aria-label="Menu">☰</button>
       <div id="menu" class="menu" hidden>
@@ -522,6 +525,11 @@
   </section>
 
   <section id="report" hidden>
+    <!-- Above the fold, matching the audit form. The copy at the bottom of the action
+         row stays: one for people who bounce straight out, one for people who read to
+         the end. A report runs well over a screen, so a single exit at the bottom
+         meant scrolling back through the whole thing to leave. -->
+    <p><a href="#" class="back-link" id="back-to-bills-report-top">← Back to bills</a></p>
     <div class="card">
       <div id="batch-progress-report" class="muted" style="font-weight:700" hidden></div>
       <h1>Audit findings</h1>

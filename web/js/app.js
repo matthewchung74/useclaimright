@@ -900,6 +900,17 @@ for (const el of document.querySelectorAll(".back-link")) {
   el.onclick = (e) => { e.preventDefault(); show("bills"); };
 }
 
+// The logo is the thing people click first to get home, and while signed in it
+// was an href="/" that left the app for the marketing page. The header is the
+// only control visible from every screen, so this is the one exit that is
+// always in reach. Signed out it still goes to the marketing page, which is
+// where a logo should go when there is no home to return to.
+$("logo-link").onclick = (e) => {
+  if (!auth.currentUser) return;           // signed out: let the href do its job
+  e.preventDefault();
+  show("bills");
+};
+
 // ---------- Report ----------
 
 const TYPE_LABELS = {
