@@ -9,6 +9,11 @@ Three fixture sets, and they are not interchangeable:
 - **real** (`real-sbc/`, `real-eob/`) — genuine CMS and DOL documents. The only fixtures we did not write ourselves, and therefore the only ones that can tell us extraction works on something other than our own assumptions. Used by **P1**.
 - **family** (`family/`) — a consolidated household EOB and three bills. Reproduces two defects fixed on 2026-08-23/24. Used by **FAM1–FAM3**.
 
+⚠️ **Add the bill FIRST, in every plan.** Since 2026-08-27 the audit form opens showing only
+step 1; the EOB dropzone appears once a bill is staged (E1b step 1). Any plan that says "upload
+both" or "add all three" still works, but the bill has to land first — there is no EOB zone to
+drop into before that.
+
 **Session setup:** open https://useclaimright.web.app/app, hard-refresh, sign in. Two ways in — Google, or email + password — see **A1**. A fresh account starts empty with full daily limits (**10 audits, 3 plan uploads**).
 
 **Budget — the full suite does NOT fit in one day.** Core plans (E1, M1–M6, D1, E2, E4–E7) cost **10 audits + 3 plan uploads**, exactly the daily ceiling, leaving no room for the rate-limit check. Optional **M7** adds 3 more. Run it as:
@@ -51,7 +56,7 @@ Three fixture sets, and they are not interchangeable:
    | Billed | **$2,115.00** | sum of the bill's line items |
    | EOB allowed | **$841.75** | the plan's allowed amount |
    | Your responsibility | **$186.35** | what the EOB says you owe |
-   | Worth disputing | **$804.15** | $145.50 duplicate + $658.65 billed-above-allowed |
+   | Worth disputing | **$822.15** | $145.50 duplicate + $658.65 billed-above-allowed + $18.00 cost-share error |
 
    ✓ **Duplicate charge** $145.50 — 80053 metabolic panel billed twice (occurrence table count 2).
    ✓ **Billed above EOB allowed** $658.65 — the bill demands ~$845 against $186.35 responsibility.
@@ -78,8 +83,11 @@ Three fixture sets, and they are not interchangeable:
 done
 **Cost:** 1 audit.
 
-**Verified on production 2026-08-25**, from a freshly reset account: every figure matched the
-answer key exactly — billed $2,115.00, EOB allowed $841.75, responsibility $186.35, worth
+**Verified on production 2026-08-25 — figures below PREDATE the cost-share fix.** They read
+$804.15 because the planted $18 error was not yet reported as its own finding; the table above
+($822.15) is what a run today should produce. Kept as the record of that run, not as the
+expectation. From a freshly reset account, every figure matched the answer key of the time —
+billed $2,115.00, EOB allowed $841.75, responsibility $186.35, worth
 disputing **$804.15**, with `duplicate_charge` $145.50, `billed_vs_allowed_mismatch` $658.65
 and `charity_care_eligible` $186.35 at medium confidence. The sanity check holds:
 145.50 + 658.65 = 804.15 exactly, charity care excluded. `droppedUnverified` 0,
@@ -216,7 +224,9 @@ did not fire. `droppedUnverified` 0.
 **Use case:** many bills + one EOB in a single review-all pass; plan checks apply to every audit in the batch.
 **Data:** `series/t2-bill.pdf`, `series/t3-bill.pdf`, `series/t-eob.pdf` (consolidated statement covering t1–t3; leave "save this EOB" checked).
 
-1. Add all three files (any order, any zone — filenames route them). ✓ Rows accumulate; summary "2 audits: 2 bill+EOB pairs"; button "Start 2 audits →".
+1. Add all three files — **bills first** (see the session-setup note: the EOB dropzone only
+   appears once a bill is staged). Beyond that, any zone: filenames route them. ✓ Rows
+   accumulate; summary "2 audits: 2 bill+EOB pairs"; button "Start 2 audits →".
 2. Start. ✓ Per-document extraction progress, then ONE review screen with 3 tabs + "Reviewing <name> — document N of 3".
 3. Confirm once. ✓ "Analyzing audit 1 of 2… 2 of 2" with no pauses, then the batch **lands on the Bills & coverage page — not on one audit's report**. (Before this change it showed whichever audit the queue ordered last, with no signal the other existed.)
    ✓ A **highlighter-ribboned "JUST AUDITED" block** sits above "Your bills": "JUST AUDITED · **2 bills** · **$110.00** worth disputing", then one row per audit — date · plain-English finding · amount. Each t-audit is $55 (bill demands $175, EOB responsibility $120), so the block's total is the real batch total; no screen shows $55 as if it were the answer for the whole batch.
