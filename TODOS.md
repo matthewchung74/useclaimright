@@ -4,6 +4,35 @@ Deferred items with context. Created by /plan-ceo-review 2026-08-20.
 
 ## From running the suite on production (2026-08-25)
 
+- [ ] **Consider deleting the local text-extraction path entirely — send every
+      document as pages and let the model read it.** Tested 2026-08-27 with
+      `fake-bill` + `fake-eob` rasterised to 150dpi PNGs against the same pair as
+      digital PDFs, same model, same day:
+      | | text | image |
+      |---|---|---|
+      | worth disputing | $822.15 | **$822.15** |
+      | duplicate / billed-above / cost-share | 145.50 / 658.65 / 18.00 | **identical** |
+      | input tokens | 3,098 | 4,462 (1.44x) |
+      | cost | $0.01112 | $0.01202 (+8%) |
+      The image path also recovered `statementId` ACCT-778899, `patientName`
+      Jane Q. Testpatient, and dropped zero evidence quotes as unverified. It
+      found the planted $18 cost-share error by doing arithmetic across the
+      EOB's own columns, from an image.
+      **What it would delete:** pdf.js text extraction, the text/image branch in
+      `buildAuditParts` (the branch that caused the mixed-document bug), the
+      review screen's two-pane comparison, `ocrConfidence`, and `billKey`'s
+      text-hash fallback. The disclosure gets simpler and truer too: "we send
+      your document" rather than "we send text we extracted from it".
+      **The case FOR it beyond simplicity:** a text layer serialises a table and
+      loses column association. Real payer EOBs are dense multi-column tables,
+      and that is the one input this product has never been tested against — so
+      the image path may be BETTER exactly where we are weakest.
+      **Before doing it, two things this test does not prove:** it is one pair,
+      one run, on a clean single-page fixture we generated ourselves. Repeat it,
+      and test a multi-page document — `real-sbc/cms-2025.pdf` is 6+ dense pages,
+      where the 1.44x token multiplier would compound and the comparison could
+      look very different.
+
 - [ ] **Two sign-in links are 15px tap targets.** "Create an account" and
       "Forgot password?" are inline text links in a `<p class="muted">` on the
       sign-in card — 15px tall at a 390px viewport, against the ~44px that is
