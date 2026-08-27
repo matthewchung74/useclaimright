@@ -100,13 +100,20 @@ reminder under Your coverage.
 **Getting here:** on E1's report, click **← Back to bills**, then **Audit a new bill**. (**New audit** on the report goes to the same form directly; either route clears E1's files.)
 
 1. On the audit page: ✓ both dropzones read "**Drop one or more files**, or click to choose"; the SBC dropzone reads "Drop it here" — one plan only.
-   ✓ **Step 2 (the EOB) is not shown on arrival.** Changed 2026-08-27: the form opens at
-     ~910px, one screen, showing only step 1. Staging a bill reveals step 2 beneath it. The
-     form used to open at 1703px — two screens, 71% of it a single card — which read as work
-     before you had done anything.
-   ✓ Removing the staged bill **leaves step 2 open**. Collapsing it again would pull content
-     out from under someone mid-edit; it only resets when the form itself does.
-   ✓ Returning to a fresh form collapses back to one step.
+   ✓ **All three step headings — 1, 2 and 3 — are visible on arrival**, but step 2's INPUTS
+     are collapsed. Changed 2026-08-27. The form opens at ~1079px against a 1703px original.
+     Nothing materialises from nowhere: you can see steps 2 and 3 waiting.
+   ✓ Under step 2, "**Add your bill above and this opens up.**" is shown while collapsed and
+     disappears once a bill is staged.
+   ✓ Staging a bill **expands step 2 with a short ease-out**, not a jump. To check it is really
+     animating, measure `#upload`'s height ~120ms after the drop — it should be BETWEEN the
+     collapsed and open heights, not already at the final value.
+   ✓ Removing the staged bill **leaves step 2 open**. Collapsing mid-edit pulls content out
+     from under the user; only a fresh form resets it.
+   ✓ Returning to a fresh form collapses again and the hint returns.
+   *(The reveal animates `grid-template-rows: 0fr → 1fr`, which is the only way to transition
+   to an unknown height without a hardcoded max-height that clips or lags. It is disabled under
+   `prefers-reduced-motion`.)*
 2. Drop two bills one at a time. ✓ They accumulate as rows, nothing is replaced, the button becomes "Start 2 audits →", and the summary reads "**2 audits**: 0 bill+EOB pairs, 2 with no EOB" (no saved EOB exists yet on a fresh account).
 3. Open **☰**. ✓ Your full email wraps without breaking mid-word; **Sign out**; then **Reset account — erase all my data** below a divider, in red, with a red (not teal) hover.
 4. ✓ The "What's an EOB, and where do I find it?" explainer sits with the **insurance-letter step (step 2)**, directly under that dropzone — not stranded after the bill section.

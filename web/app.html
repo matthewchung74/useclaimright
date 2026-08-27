@@ -161,6 +161,14 @@
   #cta-quota{font-family:ui-monospace,Menlo,monospace;font-size:13px;color:var(--ink-soft)}
   #cta-quota.low{color:var(--gold);font-weight:700}
   #cta-quota.out{color:var(--bad);font-weight:700}
+  /* Expanding to auto height: 0fr -> 1fr on a grid row is the only way to animate to
+     an unknown height without hardcoding a max-height that either clips or leaves a
+     pause at the end. enter(ease-out), short duration — DESIGN.md motion. */
+  .reveal{display:grid;grid-template-rows:0fr;opacity:0;
+    transition:grid-template-rows 240ms ease-out,opacity 180ms ease-out}
+  .reveal>*{overflow:hidden;min-height:0}
+  .reveal.open{grid-template-rows:1fr;opacity:1}
+  @media(prefers-reduced-motion:reduce){.reveal{transition:none}}
   .back-link{color:var(--brand-dark);font-size:14px;text-decoration:none}
   #where-docs-go summary::-webkit-details-marker{display:none}
   #where-docs-go[open] .wdg-more{display:none}
@@ -422,8 +430,13 @@
            document; showing both steps at once made this screen two viewports tall,
            71% of it one card. Revealing rather than paging keeps the common case at
            one click, keeps batch upload, and keeps the required document first. -->
-      <div id="step-eob" hidden>
-      <div class="step-row" style="margin-top:22px"><span class="step-n">2</span><div><b>Add the letter from your insurance, if you have it</b><div class="muted">The one headed “this is not a bill” — it says what your plan allowed and what you actually owe. It's the answer key we check the bill against. No luck finding it? Tick the box below and we'll audit the bill on its own.</div></div></div>
+      <!-- The step-2 and step-3 HEADINGS stay visible. The visible three-step structure
+           is what stops the form feeling like a surprise; only the inputs collapse.
+           Step 3's heading used to sit INSIDE this wrapper while its button sat outside,
+           so a heading popped in above a button that was already on screen. -->
+      <div class="step-row" style="margin-top:22px"><span class="step-n">2</span><div><b>Add the letter from your insurance, if you have it</b><div class="muted"><span id="step2-hint"><b>Add your bill above and this opens up.</b> </span>The letter headed “this is not a bill” says what your plan allowed and what you actually owe — it's the answer key we check the bill against. No luck finding it? Tick the box and we'll audit the bill on its own.</div></div></div>
+      <div id="step-eob" class="reveal">
+        <div>
       <div class="dropzones" style="grid-template-columns:1fr">
         <label class="dz" id="dz-eob">
           <span class="ico">📋</span>
@@ -461,9 +474,10 @@
 
       <p class="banner">📄 <b>Best results with digital PDFs</b> downloaded from your portals. Photos and scans work, but reading accuracy may suffer — check the review screen carefully.</p>
       <div id="upload-error" class="error" hidden></div>
+        </div>
+      </div>
       <div class="step-row" style="margin-top:10px"><span class="step-n">3</span><div><b>Prepare the audit</b><div class="muted">Next you'll see exactly what gets analyzed, so you can check we read the documents correctly.</div></div></div>
       <div id="audit-summary" class="muted" hidden></div>
-      </div>
       <button id="run-audit" class="btn" style="margin-top:10px">Prepare audit →</button>
     </div>
 
