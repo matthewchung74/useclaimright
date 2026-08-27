@@ -622,6 +622,13 @@ and therefore outside the Firestore snapshot.
 2. ✓ The feedback bubble is visible here, as it is on the audit form and reports.
 3. Open any report. ✓ The fourth totals card reads exactly "**Worth disputing**" — not "Worth disputing — money you may not owe; hold off paying this part".
 4. ✓ Both exits work: "← Back to bills" returns to the list; "New audit" goes to the form, whose "← Back to bills" also returns.
+   ✓ **A report has a back link ABOVE the fold**, matching the audit form — not only at the
+     bottom of the action row. A report runs well over a screen, and a single exit at the end
+     meant scrolling back through the whole thing to leave.
+   ✓ **The logo returns to the bills list while signed in** and does not leave for the marketing
+     page. It is the only control visible from every screen, and it is the first thing people
+     click to get home. Signed out it still goes to `/`, which is correct when there is no home
+     to return to.
 5. ✓ From the list, "**Audit a new bill**" shows "EOB on file: …" when the library has one, and its "Start an audit →" opens the form with the previous run's files cleared.
 6. **Pairing summary tells the truth about the EOB.** On the audit form, stage two bills with no EOB file, and confirm a saved EOB is selected in the dropdown.
    ✓ The summary reads "**2 audits**: 0 bill+EOB pairs, 2 **with your saved EOB**" — not "no matching EOB", which is what it used to say even though the run does attach the saved EOB to every bill.
