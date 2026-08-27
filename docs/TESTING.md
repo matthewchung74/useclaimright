@@ -1157,6 +1157,36 @@ so the flag must be set to off explicitly. Verify by POSTing an unsigned body to
 seeing **503**. Leaving it on means the public site gates letters behind a checkout that only
 accepts test cards.
 
+## REV1 — The review screen shows what is sent, readably
+
+**Use case:** the review is the consent gate — "you see exactly what gets analyzed before
+anything is sent" — and it is where a wrong EOB is caught before an audit is spent. It only
+works if people actually read it.
+**Changed 2026-08-27:** the right pane was a raw dump of extracted text, which nobody reads. An
+unread disclosure is a worse disclosure.
+**Data:** any digital PDF bill.
+
+1. Upload a bill, Prepare audit. On the review screen:
+   ✓ **Left** shows the rendered page — the document as you recognise it.
+   ✓ **Right** leads with what was picked up: page count, word count, **dates found**, **codes
+     found** — checkable at a glance against the page on the left.
+   ✓ The exact text is behind "**Show the exact text being sent**", collapsed. It must stay
+     reachable: "see exactly what is sent" has to remain literally true.
+   ✓ The pane is headed "**What we send**", not "What we'll analyze".
+2. ✓ For a scan, the right pane explains the pages go as images and says what to check
+   (right pages, right way up, in focus) — no summary, because there is no text layer.
+
+⚠️ **This plan exists because the summary caught a bug the raw dump had been hiding.** Codes
+found on `fake-bill.pdf` included **90000**, which is Testville's ZIP, not a procedure code.
+`codesIn()` matched any five-digit number, so two providers in the same town shared a "code",
+`documentsRelated()` judged a mismatched pair RELATED, and the wrong-EOB warning was
+suppressed — the one guard separating "you paired the wrong EOB" from "your insurer never
+processed this". E6 passed only because its two fixtures print different ZIPs; a member's own
+address on both documents would not have been so lucky. Fixed by stripping
+`STATE + 5 digits` before scanning. Four regression tests in `eobmatch.test.js`.
+
+**Cost:** 0 audits — back out with **Start over**.
+
 ## Always-on checks (every pass)
 - **Evidence is real:** spot-check two findings per pass — the quoted line must appear verbatim in the document it cites. A finding whose quote is absent should never render; `verifyEvidence` drops it server-side and logs `unverified evidence dropped`. Check the audit doc's `droppedUnverified` count after each run: a non-zero value is the model inventing evidence, and it is worth reading the log.
 - **Disclosure is present:** the audit form shows the "Where your documents go" banner naming Google's Gemini API, above the dropzones.

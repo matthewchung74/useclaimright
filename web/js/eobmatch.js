@@ -15,7 +15,7 @@ const ISO_DATE = /\b(20\d{2})-(\d{2})-(\d{2})\b/g;
 const US_DATE = /\b(\d{1,2})\/(\d{1,2})\/(20\d{2})\b/g;
 const CODE = /\b(\d{5}|[A-Z]\d{4})\b/g;
 
-function datesIn(text) {
+export function datesIn(text) {
   const out = new Set();
   for (const m of String(text).matchAll(ISO_DATE)) out.add(`${m[1]}-${m[2]}-${m[3]}`);
   for (const m of String(text).matchAll(US_DATE)) {
@@ -24,9 +24,19 @@ function datesIn(text) {
   return out;
 }
 
-function codesIn(text) {
+// A US ZIP is five digits and so is a CPT code, so the code regex cannot tell them
+// apart on shape alone. Context can: a ZIP follows a two-letter state abbreviation,
+// a procedure code never does. Left unstripped, two providers in the same town share
+// a "code", documentsRelated() calls a mismatched pair RELATED, and the wrong-EOB
+// warning goes silent — the one guard that stops a member acting on an audit of two
+// documents that have nothing to do with each other. The fixtures only pass because
+// they happen to print different ZIPs; a member's own address on both would not.
+const ZIP_IN_ADDRESS = /\b[A-Z]{2}[.,]?\s+\d{5}(?:-\d{4})?\b/g;
+
+export function codesIn(text) {
   const out = new Set();
-  for (const m of String(text).matchAll(CODE)) out.add(m[1]);
+  const scrubbed = String(text).replace(ZIP_IN_ADDRESS, " ");
+  for (const m of scrubbed.matchAll(CODE)) out.add(m[1]);
   return out;
 }
 
