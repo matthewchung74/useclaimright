@@ -905,6 +905,19 @@ for (const el of document.querySelectorAll(".back-link")) {
 // only control visible from every screen, so this is the one exit that is
 // always in reach. Signed out it still goes to the marketing page, which is
 // where a logo should go when there is no home to return to.
+// Open the disclosure the first time someone reaches the audit form, then let it
+// stay closed. The summary line is always visible either way, so what changes is
+// how much prose a returning member re-reads — not whether they were told.
+const WDG_SEEN = "ucr-seen-doc-disclosure";
+{
+  const d = $("where-docs-go");
+  if (d) {
+    d.open = localStorage.getItem(WDG_SEEN) !== "1";
+    d.addEventListener("toggle", () => { if (d.open) localStorage.setItem(WDG_SEEN, "1"); });
+    if (d.open) localStorage.setItem(WDG_SEEN, "1");
+  }
+}
+
 $("logo-link").onclick = (e) => {
   if (!auth.currentUser) return;           // signed out: let the href do its job
   e.preventDefault();

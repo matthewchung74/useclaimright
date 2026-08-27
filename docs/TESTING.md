@@ -95,6 +95,17 @@ reminder under Your coverage.
 2. Drop two bills one at a time. ✓ They accumulate as rows, nothing is replaced, the button becomes "Start 2 audits →", and the summary reads "**2 audits**: 0 bill+EOB pairs, 2 with no EOB" (no saved EOB exists yet on a fresh account).
 3. Open **☰**. ✓ Your full email wraps without breaking mid-word; **Sign out**; then **Reset account — erase all my data** below a divider, in red, with a red (not teal) hover.
 4. ✓ The "What's an EOB, and where do I find it?" explainer sits with the **insurance-letter step (step 2)**, directly under that dropzone — not stranded after the bill section.
+5. **The "Where your documents go" disclosure.** Changed 2026-08-27 from five lines of prose on
+   every visit to a one-line summary that expands.
+   ✓ The **summary is always visible** and still carries the load-bearing fact — the bill and
+     insurance letter go to Google **"including your name and everything else printed on them"**.
+     That sentence must never move behind the toggle.
+   ✓ It is **open on a first visit** (clear `ucr-seen-doc-disclosure` from localStorage to test)
+     and **collapsed on return**, ~45px instead of a paragraph.
+   ✓ Expanded, it covers the no-training claim, that "not used for training" is not "not
+     stored", deletion, and links to the full privacy policy.
+   *Why: a paragraph nobody re-reads is a worse disclosure than a sentence they do. The
+   before-anything-is-sent consent gate is the review screen, which is unchanged.*
 5. **Clean up before M1**: remove both staged bills with their **✕**. ✓ The rows disappear and the button returns to "Prepare audit →".
 
 **Verified on production 2026-08-25 (steps 1, 3, 4):** step 1 — both bill/EOB dropzones read
