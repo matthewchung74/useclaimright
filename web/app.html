@@ -418,6 +418,11 @@
       </div>
       <div id="bill-list"></div>
 
+      <!-- Step 2 unfolds once a bill is staged. The bill is the only required
+           document; showing both steps at once made this screen two viewports tall,
+           71% of it one card. Revealing rather than paging keeps the common case at
+           one click, keeps batch upload, and keeps the required document first. -->
+      <div id="step-eob" hidden>
       <div class="step-row" style="margin-top:22px"><span class="step-n">2</span><div><b>Add the letter from your insurance, if you have it</b><div class="muted">The one headed “this is not a bill” — it says what your plan allowed and what you actually owe. It's the answer key we check the bill against. No luck finding it? Tick the box below and we'll audit the bill on its own.</div></div></div>
       <div class="dropzones" style="grid-template-columns:1fr">
         <label class="dz" id="dz-eob">
@@ -458,6 +463,7 @@
       <div id="upload-error" class="error" hidden></div>
       <div class="step-row" style="margin-top:10px"><span class="step-n">3</span><div><b>Prepare the audit</b><div class="muted">Next you'll see exactly what gets analyzed, so you can check we read the documents correctly.</div></div></div>
       <div id="audit-summary" class="muted" hidden></div>
+      </div>
       <button id="run-audit" class="btn" style="margin-top:10px">Prepare audit →</button>
     </div>
 
