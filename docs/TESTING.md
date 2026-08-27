@@ -972,6 +972,13 @@ on our own assumptions. These are genuine CMS publications in the ACA-mandated f
    `cms-2025.pdf` the one to leave on file for FAM2.
 
 **Edge cases**
+- **A SCANNED SBC** — rasterise `cms-2025.pdf` (`pdftoppm -png -r 150`, recombine to a PDF) so
+  it has no text layer. ✓ The 📷 banner fires and the plan extracts normally.
+  ⚠️ **This was broken until 2026-08-27 and nobody had tried it.** `prepareSbc()` built
+  `state.bill` from the extraction WITHOUT `images`, so a scan sent empty text and empty
+  images and the server answered "The SBC is required, as text or page images." A photographed
+  plan document could not be uploaded at all. The audit path always carried images; this one
+  did not. Found while measuring the image path, not by a plan — worth a step of its own now.
 - **Wrong document on the SBC zone:** `real-eob/cms-sample-eob.pdf` is an EOB, not an SBC.
   ✓ Rejected with "This doesn't look like a Summary of Benefits."
 - **DOL samples — pulled and run 2026-08-26, and they do not deliver what was hoped.**

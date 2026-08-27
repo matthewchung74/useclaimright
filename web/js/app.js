@@ -1616,7 +1616,12 @@ async function prepareSbc(file) {
   try {
     setStatus("Reading your Summary of Benefits…");
     const ex = await extractText(file);
-    state.bill = { text: ex.text, previews: ex.previews, method: ex.method, confidence: ex.confidence };
+    // images, not just previews: for a SCANNED SBC the text is "" and the pages
+    // ARE the document. Dropping them here sent an empty payload, and the server
+    // answered "The SBC is required, as text or page images." — so a photographed
+    // or scanned plan document could never be uploaded at all. The audit path
+    // always carried images; this path quietly did not.
+    state.bill = { text: ex.text, images: ex.images, previews: ex.previews, method: ex.method, confidence: ex.confidence };
     state.sbcName = file.name;
     // Free duplicate check: same text means the same document.
     // Duplicate check needs text on both sides; a scanned SBC has none until

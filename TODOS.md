@@ -27,11 +27,21 @@ Deferred items with context. Created by /plan-ceo-review 2026-08-20.
       loses column association. Real payer EOBs are dense multi-column tables,
       and that is the one input this product has never been tested against — so
       the image path may be BETTER exactly where we are weakest.
-      **Before doing it, two things this test does not prove:** it is one pair,
-      one run, on a clean single-page fixture we generated ourselves. Repeat it,
-      and test a multi-page document — `real-sbc/cms-2025.pdf` is 6+ dense pages,
-      where the 1.44x token multiplier would compound and the comparison could
-      look very different.
+      **Multi-page tested 2026-08-27 and it got BETTER, not worse.** `cms-2025.pdf`
+      (5 dense pages) as text vs the same pages rasterised to a no-text-layer PDF:
+      | | text | image |
+      |---|---|---|
+      | input tokens | 5,422 | 6,494 (**1.20x** — single-page was 1.44x) |
+      | cost | $0.00857 | $0.01131 (1.32x, +$0.003) |
+      | plan year, deductible, OOP max | — | **identical** |
+      | cost-share rows / limits | 13 / 4 | **17 / 5** |
+      The multiplier SHRINKS with page count, because fixed prompt overhead
+      amortises, and the image path extracted more structure — which is what you
+      would expect when the table layout survives instead of being serialised.
+      **Still open before deleting:** repeat runs (LLM output varies; two exact
+      matches are encouraging, not proof), and a decision on the review screen —
+      if the page IS what is sent, the two-pane compare collapses to one pane and
+      the whole screen needs redesigning, not just trimming.
 
 - [ ] **Two sign-in links are 15px tap targets.** "Create an account" and
       "Forgot password?" are inline text links in a `<p class="muted">` on the
