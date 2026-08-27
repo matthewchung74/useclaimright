@@ -11,15 +11,14 @@
 // back everything the extracted text was needed for.
 //
 // Returns { text, images, method, confidence, previews }:
-//   method "pdf" | "html" | "text" — text is authoritative, images empty
-//   method "image"                 — text is "", the model reads `images`
+//   method "image"                — PDFs and photos: text is "", the model reads `images`
+//   method "html" | "text"        — nothing to render, so the text IS the document
 
 import * as pdfjsLib from "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.min.mjs";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc =
   "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.worker.min.mjs";
 
-const MIN_CHARS_PER_PAGE = 200; // below this average, the PDF has no useful text layer
 
 async function renderPageToDataUrl(page, scale = 1.5) {
   const viewport = page.getViewport({ scale });
@@ -33,26 +32,26 @@ async function renderPageToDataUrl(page, scale = 1.5) {
   return canvas;
 }
 
+// Every PDF goes to the model as PAGES, never as an extracted text layer.
+//
+// Measured 2026-08-27 on two documents, both ways: the image path reproduced
+// every figure exactly — a $822.15 audit down to its three findings, and a
+// 5-page SBC's plan year, deductible and OOP max — while costing 1.32x on the
+// multi-page one and LESS multiple as pages grow (1.44x on one page, 1.20x on
+// five; the fixed prompt overhead amortises). On the SBC it extracted MORE
+// structure, 17 cost-share rows against 13, which is what you would expect when
+// a table survives instead of being serialised into a line of numbers.
+//
+// What that buys, beyond a third of a cent: a text layer throws away column
+// association, and an EOB is a table. It also removes the whole class of bug
+// where a page looks perfect and its text layer is garbage — invisible until
+// the audit comes back wrong.
 async function extractFromPdf(file) {
-  const buf = await file.arrayBuffer();
-  const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
-  const pages = [];
-  const previews = []; // rendered pages: shown in the review pane, and sent when there is no text layer
-  let totalChars = 0;
-
+  const pdf = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
+  const previews = [];
   for (let i = 1; i <= pdf.numPages; i++) {
-    const page = await pdf.getPage(i);
-    const content = await page.getTextContent();
-    const text = content.items.map((it) => it.str).join(" ");
-    pages.push({ page, text });
-    totalChars += text.length;
-    previews.push((await renderPageToDataUrl(page)).toDataURL("image/jpeg", 0.85));
+    previews.push((await renderPageToDataUrl(await pdf.getPage(i))).toDataURL("image/jpeg", 0.85));
   }
-
-  if (totalChars / pdf.numPages >= MIN_CHARS_PER_PAGE) {
-    return { text: pages.map((p) => p.text).join("\n\n"), images: [], method: "pdf", confidence: 100, previews };
-  }
-  // Scanned: no text worth having. Send the pages themselves.
   return { text: "", images: previews, method: "image", confidence: null, previews };
 }
 
