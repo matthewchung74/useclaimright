@@ -20,7 +20,7 @@ import { extractText } from "./extract.js";
 import { pairFiles, classifyFile, uniqueDocs } from "./batch.js";
 import { planYearStartMonthFrom, mergeSbcTrackers, deductibleTarget, oopTarget } from "./plan.js";
 import { crossBillDuplicates, runningTotals, groupAuditsByProvider, splitJustAudited, billKeyOf } from "./crossbill.js";
-import { matchSavedEob, documentsRelated } from "./eobmatch.js";
+import { matchSavedEob, documentsRelated, datesIn, codesIn } from "./eobmatch.js";
 
 const $ = (id) => document.getElementById(id);
 let currentSection = "signin";
@@ -812,14 +812,39 @@ function renderReview() {
   } else {
     orig.textContent = "Text was read straight from the file — no page images to show.";
   }
+  // The right pane used to be a raw dump of extracted text, which nobody reads —
+  // and an unread disclosure is a worse disclosure. It now leads with what was
+  // actually picked up (pages, dates, codes), which is the thing you can check at
+  // a glance against the page on the left. The exact text stays one click away,
+  // because "see exactly what is sent" has to remain literally true.
+  const pane = $("sent-pane");
+  pane.textContent = "";
   if (docState.method === "image") {
-    $("sent-pane").textContent =
+    pane.textContent =
       "This is a scan, so there is no text to read out of the file. The pages on the left are " +
       "sent as images and read directly — which is more accurate than reading a photo as text. " +
       "Check they are the right pages, and the right way up.";
-  } else {
-    $("sent-pane").textContent = tidy(docState.text);
+    return renderReviewTabs();
   }
+  const text = docState.text || "";
+  const dates = [...datesIn(text)].sort();
+  const codes = [...codesIn(text)];
+  const summary = document.createElement("div");
+  summary.innerHTML = `
+    <p style="margin-bottom:10px"><b>${docState.previews?.length || 1} page(s) read</b> —
+    ${text.replace(/\s+/g, " ").trim().split(" ").length.toLocaleString()} words.</p>
+    <p class="muted" style="margin-bottom:6px"><b>Dates found:</b>
+      ${dates.length ? dates.map(escapeHtml).join(" · ") : "<i>none — check the page on the left</i>"}</p>
+    <p class="muted" style="margin-bottom:12px"><b>Codes found:</b>
+      ${codes.length ? codes.slice(0, 12).map(escapeHtml).join(" · ") + (codes.length > 12 ? ` +${codes.length - 12}` : "") : "<i>none — check the page on the left</i>"}</p>`;
+  pane.appendChild(summary);
+  const det = document.createElement("details");
+  det.innerHTML = `<summary style="cursor:pointer;font-weight:600">Show the exact text being sent</summary>`;
+  const pre = document.createElement("div");
+  pre.style.cssText = "white-space:pre-wrap;font-family:ui-monospace,Menlo,monospace;font-size:12.5px;margin-top:10px";
+  pre.textContent = tidy(text);
+  det.appendChild(pre);
+  pane.appendChild(det);
   const rd = $("review-doc");
   rd.hidden = !batchDocs;
   if (batchDocs) {

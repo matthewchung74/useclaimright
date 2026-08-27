@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { matchSavedEob, documentsRelated } from "../../web/js/eobmatch.js";
+import { matchSavedEob, documentsRelated, codesIn } from "../../web/js/eobmatch.js";
 
 // --- documentsRelated: catches a bill paired with someone else's EOB ---
 
@@ -74,4 +74,37 @@ test("matchSavedEob: ties break toward the earlier (most recent) entry", () => {
   const b = { id: "b", provider: "Same Clinic", serviceDates: ["2026-04-01"] };
   const m = matchSavedEob([a, b], "SAME CLINIC statement, no dates printed");
   assert.equal(m.eob.id, "a");
+});
+
+// --- ZIP codes are not procedure codes (found 2026-08-27) ---
+
+test("REGRESSION: a shared ZIP does not make two unrelated documents 'related'", () => {
+  // Both print an address in the same town. Before this, "90000" counted as a shared
+  // procedure code, documentsRelated said related, and the wrong-EOB warning — the only
+  // thing that separates "you paired the wrong EOB" from "your insurer never processed
+  // this" — was suppressed.
+  const bill = "ST. VERIFICATION GENERAL HOSPITAL, Testville, CA 90000  80053 panel  2026-06-12";
+  const eob  = "TESTVILLE PHYSICAL THERAPY GROUP, Testville, CA 90000  97110 exercises  2026-03-20";
+  const r = documentsRelated(bill, eob);
+  assert.deepEqual(r.sharedCodes, [], "a ZIP is not a shared procedure code");
+  assert.equal(r.related, false, "so the pair is correctly judged unrelated");
+  assert.equal(r.confident, true);
+});
+
+test("a real shared procedure code still relates two documents", () => {
+  const bill = "CLINIC, Testville, CA 90000  97110 Therapeutic exercises  2026-03-20";
+  const eob  = "INSURER, Otherville, NY 10001  97110 Therapeutic exercises  2026-03-20";
+  const r = documentsRelated(bill, eob);
+  assert.deepEqual(r.sharedCodes, ["97110"]);
+  assert.equal(r.related, true);
+});
+
+test("ZIP+4 and a comma after the state are both stripped", () => {
+  const codes = [...codesIn("Somewhere, TX 75001-1234 and Elsewhere WA 98101  99213 visit")];
+  assert.deepEqual(codes, ["99213"]);
+});
+
+test("a five-digit code not following a state abbreviation is kept", () => {
+  // Codes appear in tables next to descriptions, never after a state.
+  assert.ok([...codesIn("Line 1  80053  Comprehensive metabolic panel  $145.50")].includes("80053"));
 });
