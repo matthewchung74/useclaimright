@@ -802,12 +802,12 @@ Both bills: flu vaccine 90686, $85.00, 03/10/2026, Testville Family Medicine Ass
 - **Same person, two statements:** re-audit `matthew-bill.pdf` against the same EOB. ✓ Same
   `billKey`, so still no duplicate — re-auditing one bill is the user re-running us, not a
   double-bill. *(+1 audit)*
-- ⚠️ **Known gap, reproduced on production 2026-08-25:** the same paper audited once as a PDF
-  and once as a SCAN does NOT share a `billKey`, and is reported as "the same visit is on two
-  statements". `billKey` hashes normalised text; the scan path returns the model's
-  transcription, which differs from pdf.js extraction by much more than the whitespace and
-  case the normalisation handles. Auditing `emma-bill.pdf` and then a rasterisation of it
-  produced a $210.00 duplicate hero for a bill that exists once. See TODOS.
+- ~~⚠️ **Known gap:** the same paper as a PDF and as a SCAN did not share a `billKey`~~ —
+  **FIXED 2026-08-26.** It used to report "the same visit is on two statements" for a bill that
+  exists once, because `billKey` hashed normalised text and the scan path returns the model's
+  transcription, which differs from pdf.js by far more than whitespace. The model now extracts
+  `statementId` and the key is built from that. Re-verified with t6 as a PDF and as a 110dpi
+  PNG: same key, not flagged. See the billKey section near the top of this file.
 - **Empty patient name:** any pre-2026-08-24 audit in history has no `patientName`. ✓ Those
   still participate in duplicate detection exactly as before (empty names share a key).
 
