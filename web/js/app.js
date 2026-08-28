@@ -920,7 +920,14 @@ $("confirm-review").onclick = async () => {
 
 $("back-to-upload").onclick = () => { resetState(); show("upload"); };
 
-$("go-audit").onclick = () => { resetState(); show("upload"); };
+const startAudit = () => { resetState(); show("upload"); };
+$("go-audit").onclick = startAudit;
+// The card, not just the button. Keyboard gets the same affordance the pointer
+// does, which is the half people forget when they make a div clickable.
+$("cta-card").onclick = startAudit;
+$("cta-card").onkeydown = (e) => {
+  if (e.key === "Enter" || e.key === " ") { e.preventDefault(); startAudit(); }
+};
 $("ld-close").onclick = () => $("limit-dialog").close();
 $("ld-bills").onclick = () => { $("limit-dialog").close(); show("bills"); };
 for (const el of document.querySelectorAll(".back-link")) {
@@ -1366,13 +1373,17 @@ function renderDashboard() {
         <span class="count">${just.length} bill${just.length === 1 ? "" : "s"}</span>
         <span class="money-pill">${fmt(jt.atStake)}</span>
         <span class="muted">worth disputing</span></div>
-      ${just.map((b) => `<div class="bill-row${b.atStake ? "" : " quiet"}">
+      ${just.map((b) => `<div class="bill-row tap${b.atStake ? "" : " quiet"}">
         <span class="when">${escapeHtml(shortDate(b.serviceDates[0] || b.createdAtDate))}</span>
         <button class="what" data-audit="${escapeHtml(b.id)}">${escapeHtml(b.summary || "Nothing to dispute")}</button>
         ${b.atStake ? `<span class="money-pill">${fmt(b.atStake)}</span>` : ""}
       </div>`).join("")}
     </div>`;
-    for (const el of ja.querySelectorAll(".what")) el.onclick = () => openAudit(el.dataset.audit);
+    // The ROW is the target, not the 22px text line inside it. The ✕ stops
+    // propagation itself, so deleting never opens the audit on the way past.
+    for (const el of ja.querySelectorAll(".what")) {
+      el.closest(".bill-row").onclick = () => openAudit(el.dataset.audit);
+    }
   }
 
   // Bills, money first.
@@ -1388,7 +1399,7 @@ function renderDashboard() {
         <summary><span class="caret">▾</span> ${escapeHtml(g.provider)}
           <span class="count">${g.bills.length} bill${g.bills.length === 1 ? "" : "s"}</span>
           <span class="money-pill">${fmt(g.atStake)}</span></summary>
-        ${g.bills.map((b) => `<div class="bill-row">
+        ${g.bills.map((b) => `<div class="bill-row tap">
           <span class="when">${escapeHtml(shortDate(b.serviceDates[0] || b.createdAtDate))}</span>
           <button class="what" data-audit="${escapeHtml(b.id)}">${escapeHtml(b.summary)}</button>
           <span class="money-pill">${fmt(b.atStake)}</span>
@@ -1409,10 +1420,12 @@ function renderDashboard() {
     : "";
 
   for (const el of document.querySelectorAll("#bill-groups .what, #clean-bills .what")) {
-    el.onclick = () => openAudit(el.dataset.audit);
+    el.closest(".bill-row").onclick = () => openAudit(el.dataset.audit);
   }
   for (const el of document.querySelectorAll("#bill-groups .rm, #clean-bills .rm")) {
-    el.onclick = () => deleteAudit(el.dataset.del);
+    // stopPropagation matters now that the row is clickable: without it, deleting
+    // would ALSO open the audit underneath on the way past.
+    el.onclick = (e) => { e.stopPropagation(); deleteAudit(el.dataset.del); };
   }
 }
 
@@ -1814,6 +1827,9 @@ function renderUsage() {
         track("tracker_created", { source: "remark" });
         return;
       }
+      // The remark named a limit but printed no number, so ask for it. The form
+      // is hidden by default now, so it has to be revealed here.
+      $("tracker-form-wrap").hidden = false;
       $("tracker-form-wrap").open = true;
       $("tf-preset").value = "custom";
       $("tf-codes").value = s.code;
@@ -1858,6 +1874,7 @@ $("tracker-form").onsubmit = async (e) => {
   });
   $("tf-limit").value = "";
   $("tracker-form-wrap").open = false;
+  $("tracker-form-wrap").hidden = true;   // back out of sight until a remark needs it
   await loadTrackers();
   renderUsage();
   track("tracker_created", { source: "manual" });

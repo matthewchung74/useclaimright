@@ -107,6 +107,11 @@ reminder under Your coverage.
      Nothing materialises from nowhere: you can see steps 2 and 3 waiting.
    ✓ Under step 2, "**Add your bill above and this opens up.**" is shown while collapsed and
      disappears once a bill is staged.
+   ✓ **No "Bills & coverage", "Your bills" or "Your coverage" headings appear on the audit
+     form.** Until 2026-08-28 the whole dashboard was DUPLICATED inside `<section id="upload">`
+     — 17 duplicated element ids, so `getElementById` always returned the copy in `#bills` and
+     the copy on the form was never populated. It rendered as empty headings and was most of
+     why the form measured 1703px. Deleted; the form is now ~803px.
    ✓ Staging a bill **expands step 2 with a short ease-out**, not a jump. To check it is really
      animating, measure `#upload`'s height ~120ms after the drop — it should be BETWEEN the
      collapsed and open heights, not already at the final value.
@@ -1189,6 +1194,31 @@ against. The screen is now one document, shown large.
 4. ✓ A **saved EOB** says its text was kept but the file was not, so there are no pages.
 
 **Cost:** 0 audits — back out with **Start over**.
+
+## TAP1 — One rule for what is tappable
+
+**Use case:** three different click affordances on one screen taught people three different
+things. Changed 2026-08-28 to a single rule: **if a card or row exists to do ONE thing, the
+whole card or row is the target.** Destructive controls are the exception — they stay their own
+target, with room around them.
+
+| Target | Before | After |
+|---|---|---|
+| "Audit a new bill" card | a 161×42 button inside a 912px card — **18%** | the **whole 912×160 card** |
+| A bill row | the 630×**22** text line only | the **whole 910×49 row** |
+| Delete (✕) | **11×16** | **31×36**, and it stops propagation |
+
+1. ✓ Clicking anywhere on the "Audit a new bill" card opens the form — the padding, the
+   sub-text, the quota line, not only the button.
+2. ✓ The card is reachable by keyboard: it carries `role="button"`, is focusable, and responds
+   to **Enter and Space**. This is the half that gets forgotten when a div is made clickable.
+3. ✓ Clicking anywhere on a bill row opens that audit.
+4. ✓ Clicking the **✕** deletes and does **NOT** also open the audit underneath. Without
+   `stopPropagation` the row's handler fires on the way past — check this specifically, because
+   it fails silently in the direction of doing too much.
+5. ✓ Hover shows the whole card or row responding, not just the inner control.
+
+**Cost:** 0 audits (step 4 deletes one audit — use a disposable one).
 
 ## Always-on checks (every pass)
 - **Evidence is real:** spot-check two findings per pass — the quoted line must appear verbatim in the document it cites. A finding whose quote is absent should never render; `verifyEvidence` drops it server-side and logs `unverified evidence dropped`. Check the audit doc's `droppedUnverified` count after each run: a non-zero value is the model inventing evidence, and it is worth reading the log.
