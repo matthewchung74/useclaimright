@@ -86,5 +86,18 @@ export async function extractText(file) {
   if (file.type === "text/plain" || name.endsWith(".txt")) {
     return { text: await file.text(), images: [], method: "text", confidence: 100, previews: [] };
   }
+  // Apple's default camera format since iOS 11, and the single likeliest thing
+  // someone photographing a bill will hand us. Chrome reports it as
+  // application/octet-stream, so it misses the image/* branch above and used to
+  // land on the generic message below — which tells a person who just uploaded
+  // a photo to upload a photo. Chrome cannot decode HEIC at all, so the honest
+  // answer is what to do instead, not a silent failure further down.
+  if (/\.hei[cf]$/.test(name)) {
+    throw new Error(
+      "iPhone photos in HEIC format can't be read by the browser. On your iPhone: " +
+      "Settings → Camera → Formats → Most Compatible, then retake it. Or open the photo " +
+      "on a Mac and File → Export as JPEG."
+    );
+  }
   throw new Error(`Unsupported file type: ${file.type || file.name}. Use PDF, photo, HTML, or text.`);
 }
