@@ -211,6 +211,8 @@ $95.00, worth disputing **$150.00** — `billed_vs_allowed_mismatch` $115.00 hig
 "Rehabilitation services (physical, occupational therapy) $60". The arithmetic holds exactly:
 115 + 35 = 150.
 
+matt checked 8/28
+
 ## M3 — Consistent claim: no false positives + combined deductible sourcing
 **Use case:** plan terms that agree with the EOB stay silent; deductible card merges SBC target with EOB progress.
 **Data:** `series/t1-bill.pdf` + `series/t1-eob.pdf` (90837, $175 billed, $120 to deductible — consistent with the SBC's "$0 coinsurance after deductible" row).
@@ -238,6 +240,9 @@ stay silent rather than being skipped — which is the whole point of this plan 
 direction to get right. Accumulators picked up `deductibleToDate` 120 against
 `deductibleLimit` 1500. The documented regression (a false `deductible_misapplied` at $95)
 did not fire. `droppedUnverified` 0.
+
+matt checked 8/28
+
 ---
 ## M4 — Batch with a consolidated EOB, plan still applied
 **Use case:** many bills + one EOB in a single review-all pass; plan checks apply to every audit in the batch.
@@ -269,6 +274,8 @@ disputing" with $55.00 on each row; both audits carried `planApplied: true`; no
 `deductible_misapplied` on either. Both regression guards held — each audit's `serviceDates`
 held only its own bill's date (`["2026-03-11"]` and `["2026-02-12"]`), not all three from the
 consolidated EOB.
+
+matt checked 8/28
 
 **Cost:** 2 audits.
 
@@ -568,6 +575,64 @@ Fixed by passing `payload.bill.text` / `payload.eob.text`. Re-verified with a *d
 mismatched pair (`p1-bill.pdf`, PT 2026-03-20 + `t5-eob.pdf`, psychotherapy 2026-05-13): the
 review banner fired before analysis, and the post-run report showed the warning **above the
 totals**, which read $210.00 / $0.00 / $210.00 / $210.00 — the documented failure signature.
+
+### The second failure, 2026-08-28: no findings, no warning
+
+Reported from a live M5 run: a psychotherapy bill audited against an unrelated ER EOB reported
+**$175.00 billed / $0.00 allowed / $0.00 worth disputing** and *"No discrepancies found"*, with
+no mismatch warning anywhere.
+
+Two independent causes, both introduced when PDFs began being sent as page images:
+
+1. **The pre-send guard read text the browser no longer had.** Pages replaced the text layer, so
+   `documentsRelated("", "")` returned "cannot judge" on every PDF and the banner could never
+   fire. A guard that is structurally incapable of firing is worse than no guard: it reads as
+   coverage. Removed, and the report-side guard now runs on the model's own transcription
+   (`auditText`), which is the only text that still exists.
+2. **The report-side guard was gated on findings existing** — `anyMissing && (…)`. With the
+   wrong EOB the model found *nothing*, so `anyMissing` was false and the warning stayed hidden.
+   The quietest possible way to be wrong: a confident "no discrepancies found" against a
+   document that was never about this bill. Now `pairUnrelated` shows the warning on its own,
+   and when there are no findings the copy says so explicitly — *"a finding of 'nothing wrong'
+   carries no weight against the wrong EOB."*
+
+Third change, upstream of both: **a saved EOB is only pre-selected when the library holds exactly
+one.** "Most recent" was a guess, and with no bill text there is nothing left to check it
+against before an audit is spent. That guess is what attached the ER EOB in the first place.
+
+A fourth cause surfaced only by testing it: **the callable never returned the transcription.**
+`analyze` wrote `bill`/`eob` to Firestore but returned `{auditId, planApplied, planReason,
+...result}` — and `result` has findings and totals, no text. So the post-run report called
+`unrelatedPair("", "")` and the warning stayed hidden, while the *re-opened* report (which reads
+the Firestore doc) showed it correctly. That is the identical shape as the `[object Object]`
+bug above: the post-run and re-opened reports disagree because they get their text from
+different places. `analyze` now returns `bill: billStore, eob: eobStore`.
+
+The same missing text was corrupting the EOB library: `maybeSaveEob(state.eob.text, …)` filed
+`""` for every PDF EOB, under a real-looking label — and because `savedEobText(e) === ""` matches
+any empty entry, the dedup check would then treat every later EOB as already saved. Now saves
+`data.eob`, and refuses to file an empty string at all.
+
+**Regression assertion for this plan:** a mismatched pair that yields *zero* findings must still
+show the warning. Testing only the "every line missing" shape is what let this through.
+
+### Verified on production 2026-08-28
+
+`t5-bill.pdf` (psychotherapy, 90837, 2026-05-13, $175.00) against the saved ER EOB
+(St. Verification General Hospital, 2026-06-12, codes 80053/85025/99284/71046/J1200):
+
+| Check | Result |
+|---|---|
+| saved EOB pre-selected with 2 in the library | **no** — dropdown reads "— choose a saved EOB —" |
+| label copy | follows the behaviour: "Choose which saved EOB covers this bill…" |
+| `documentsRelated` on the pair | `{related: false, confident: true}` — no shared dates, no shared codes |
+| **post-run** report | ⚠️ warning rendered **above the totals** |
+| **re-opened** report | ⚠️ same warning |
+| the finding | $175.00 `not_in_eob`, high confidence — **worth disputing $175.00** |
+| screen trace | `bills → upload → processing → review → processing → report`, no stray routing |
+
+The $175 answers the original report: the bill *should* be disputed, and the earlier
+"no discrepancies found" was the wrong EOB talking.
 
 WARNING — **when re-running this plan, assert on the report you get straight after the run, not
 on a re-opened one.** The two go through different code paths, and only the re-opened one was
