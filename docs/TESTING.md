@@ -80,8 +80,10 @@ drop into before that.
    EOB and stays silent on a consistent one.
    ✓ The found-money card is labelled just "**Worth disputing**" — the old sentence-long label ("money you may not owe; hold off paying this part") is gone from every report.
    ✓ Footer: "**Not checked against your plan** — add your Summary of Benefits under 'Your coverage' on the bills page to enable plan checks."
-done
+
 **Cost:** 1 audit.
+
+matt checked 8/28
 
 **Verified on production 2026-08-25 — figures below PREDATE the cost-share fix.** They read
 $804.15 because the planted $18 error was not yet reported as its own finding; the table above
@@ -145,6 +147,8 @@ instead. That behaviour is covered by R2 step 6, which was verified. Hover colou
 beats the teal `.menu-item:hover { background: var(--accent) }` at (0,2,0). So Reset account
 hovers red, not teal, as the plan requires.
 **Cost:** 0 audits.
+
+matt checked 8/28
 
 ---
 

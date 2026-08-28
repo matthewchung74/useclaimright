@@ -1811,7 +1811,7 @@ function renderUsage() {
         });
         await loadTrackers();
         renderUsage();
-        track("tracker_created");
+        track("tracker_created", { source: "remark" });
         return;
       }
       $("tracker-form-wrap").open = true;
@@ -1850,13 +1850,17 @@ $("tracker-form").onsubmit = async (e) => {
   await addDoc(collection(db, `users/${auth.currentUser.uid}/trackers`), {
     label, codes, limit,
     planYearStartMonth: parseInt($("tf-month").value, 10) || 1,
+    // SBC and remark trackers both carry a source; hand-made ones carried none,
+    // so "how many limits did people have to enter themselves" was unanswerable
+    // from the data as well as from the analytics.
+    source: "manual",
     createdAt: serverTimestamp(),
   });
   $("tf-limit").value = "";
   $("tracker-form-wrap").open = false;
   await loadTrackers();
   renderUsage();
-  track("tracker_created");
+  track("tracker_created", { source: "manual" });
 };
 
 // Report integration: "visit N of L" line for the audit being viewed.
