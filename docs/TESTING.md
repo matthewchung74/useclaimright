@@ -24,6 +24,35 @@ drop into before that.
 - **Day 3 (auth, family, scans, real documents):** A1 (0 audits) → FAM1 (2 audits) → FAM2 (0, reads FAM1's) → FAM3 (0) → S1 (1 audit) → P1 (3 plan uploads) → G1 (0). Total **3 audits + 3 plan uploads**, so it fits comfortably and can be folded into Day 2 if Day 2 ran light.
 - Or use **☰ → Reset account** between passes: it clears data and returns you to onboarding, but **daily counters intentionally survive**, so it does not buy more audits.
 
+## What you can reorder, and what you can't
+
+Most plans are self-contained. The ones that aren't consume state an earlier plan produced, and
+**they fail silently** — no error, just a plausible-looking wrong report. M5 read an EOB that a
+previous plan was supposed to have saved and reported "no discrepancies found" on a $175 bill.
+Check this table before jumping.
+
+| Plan | Needs first | What breaks if you skip it |
+|---|---|---|
+| **E1** | **no plan on file** | The whole point is the honest "plan check didn't run" footer. Once M1 has run, E1 tests nothing — run it before M1, or after E3 removes the plan. |
+| **E1b** | **E1, immediately** | Starts from E1's report and ends by clearing the files M1 needs gone. Not movable. |
+| M2, M3, M4, M6, E2, D1 | **M1** (plan on file) | The plan-gate assertions all pass vacuously with no SBC. |
+| E3 | M1 | Nothing to remove. |
+| E5 | **E3** | Restores what E3 removed. |
+| **M5** | **M4** (saves the consolidated EOB) | Auto-picks whatever EOB *is* in the library — a different provider's — and the missing-claim assertion becomes meaningless. |
+| R2 | M4 | Needs any saved EOB in the library. |
+| X1 | M1 + M4 + any audit | Needs an audit, a saved EOB, a plan and a tracker all present to have six things to delete. |
+| M7 | **no mental-health tracker** | With an SBC on file the trackers already exist, so the one-click-from-remark path never appears. Delete that tracker first, or run without a plan. |
+| FAM2 | **FAM1** | Reads FAM1's audits. |
+| PAY1 | any audit **with findings** | A clean audit is free by design and cannot exercise the paywall. |
+| E7 | **run last** | Destructive: wipes the account. |
+
+Free to run in any order, no prior state: **E4, E6, F1, A1, FAM1, FAM3, S1, P1, G1, REV1, TAP1**,
+the Firestore rules tests, and the Always-on checks.
+
+**Before any plan that reads the EOB library, expand "My saved EOBs" and look at it.** A library
+that is missing the EOB a plan expects — or holding one from a different provider — is the single
+most likely reason a plan "passes" while asserting nothing.
+
 **Automated tests first:** `cd functions && npm test`. Rules tests need the emulator + Java: `firebase emulators:exec --only firestore "npm --prefix functions test"`.
 
 **Reading the totals tables:** every plan that spends an audit states its four totals cards in the same table — Billed, EOB allowed, Your responsibility, Worth disputing — with the arithmetic behind "Worth disputing" spelled out in the last column, followed by the findings that produce it. Amounts are model-extracted: treat them as ± a few dollars, but the **relationships must hold exactly** — Worth disputing equals its listed findings summed (nothing else folded in), and EOB allowed is $0.00 whenever there is no EOB.
