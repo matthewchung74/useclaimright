@@ -153,6 +153,12 @@ function quoteIsSupported(quote, doc) {
 //
 // Returns the input object unchanged when nothing is dropped, so the common case
 // allocates nothing. Drops carry the offending quote for the log.
+const DOC_OF = { billQuote: "bill", eobQuote: "eob", sbcQuote: "sbc" };
+
+// sources: { bill, eob, sbc, supplied? }. `supplied` names the documents the
+// user actually gave us, which is what separates "cannot check" from "cited a
+// document that does not exist". Omit it and every empty source is treated as
+// never-uploaded, which is the safe reading for callers that cannot tell.
 export function verifyEvidence(result, sources) {
   const docs = {
     billQuote: normalizeForMatch(sources?.bill),
@@ -160,10 +166,32 @@ export function verifyEvidence(result, sources) {
     sbcQuote: normalizeForMatch(sources?.sbc),
   };
   const dropped = [];
+  const unverifiable = [];
   const kept = (result?.findings || []).filter((f) => {
     for (const field of ["billQuote", "eobQuote", "sbcQuote"]) {
       const quote = normalizeForMatch(f?.evidence?.[field]);
       if (!quote) continue;
+      // Two different situations produce no source text, and they need
+      // opposite answers:
+      //
+      //   never uploaded  → a quote from it is fabricated → DROP. A bill-only
+      //                     audit citing an EOB is the case this catches.
+      //   uploaded, but we hold no text for it → we cannot check, and absence
+      //                     of a check is not a failed check → KEEP, and say
+      //                     so. Reachable on the main path: pages are sent for
+      //                     every PDF, so the model's billText is the only bill
+      //                     text there is, and the schema does not require it.
+      //                     Dropping there deleted every quoted finding and
+      //                     re-derived the total to $0 — a confident "no
+      //                     discrepancies found" on a real dispute.
+      if (!docs[field]) {
+        if (!sources?.supplied?.[DOC_OF[field]]) {
+          dropped.push({ type: f.type, field, quote: f.evidence[field] });
+          return false;
+        }
+        unverifiable.push({ type: f.type, field });
+        continue;
+      }
       if (!quoteIsSupported(quote, docs[field])) {
         dropped.push({ type: f.type, field, quote: f.evidence[field] });
         return false;
@@ -171,12 +199,13 @@ export function verifyEvidence(result, sources) {
     }
     return true;
   });
-  if (!dropped.length) return { result, dropped };
+  if (!dropped.length) return { result, dropped, unverifiable };
   // Re-derive rather than subtract, for the reason applyPlanGate re-derives: one
   // formula, one place. Subtracting would inherit whatever the model asserted.
   return {
     result: { ...result, findings: kept, totals: { ...result.totals, totalAtStake: computeAtStake(kept, result.totals?.billed) } },
     dropped,
+    unverifiable,
   };
 }
 

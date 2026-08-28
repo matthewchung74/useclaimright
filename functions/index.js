@@ -403,8 +403,24 @@ export const analyze = onCall(
     // truth, but it still catches a quote the model did not read anywhere.
     const billSource = billDoc.text.trim() || result.billText || "";
     const eobSource = eobDoc.text.trim() || result.eobText || "";
-    const verified = verifyEvidence(result, { bill: billSource, eob: eobSource, sbc: planDigest });
+    // What the member actually uploaded, which is NOT the same as what we hold
+    // text for. billText/eobText are optional in the schema, so a PDF the model
+    // declines to echo back leaves us with no text for a document that very
+    // much exists — and dropping its findings would zero out a real audit.
+    const supplied = {
+      bill: !!(billDoc.text.trim() || billDoc.images.length),
+      eob: !!(eobDoc.text.trim() || eobDoc.images.length),
+      sbc: !!planDigest,
+    };
+    const verified = verifyEvidence(result, { bill: billSource, eob: eobSource, sbc: planDigest, supplied });
     result = verified.result;
+    if (verified.unverifiable?.length) {
+      // Not a fabrication — the opposite. It means the model gave findings for a
+      // document whose text it never returned, so nothing could be checked. If
+      // this is common, make billText/eobText required rather than optional.
+      console.warn("evidence could not be verified: no text for a supplied document",
+        { uid, count: verified.unverifiable.length, fields: verified.unverifiable.map((u) => u.field) });
+    }
     if (verified.dropped.length) {
       // Loud, because the drop is silent to the user: this is the only place a
       // fabrication rate becomes visible.

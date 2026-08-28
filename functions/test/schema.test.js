@@ -276,3 +276,50 @@ test("a quote with no numbers at all needs its wording to hold up", () => {
   const no = verifyEvidence(resultWith(finding({ eobQuote: "prior authorization was never obtained" })), SRC);
   assert.equal(no.result.findings.length, 0);
 });
+
+test("verifyEvidence: no source text keeps findings instead of zeroing the audit", () => {
+  // The main path: a PDF is sent as pages, so the model's billText is the only
+  // bill text there is — and the schema does not require it. When it is absent
+  // the old code dropped every quoted finding and re-derived the total to $0,
+  // which reads as a confident "no discrepancies found" on a real dispute.
+  const result = {
+    findings: [
+      { type: "not_in_eob", lineRef: "1", amountAtStake: 175,
+        evidence: { billQuote: "90837 Psychotherapy 60 minutes $175.00" } },
+    ],
+    totals: { billed: 175, totalAtStake: 175 },
+  };
+  const v = verifyEvidence(result, { bill: "", eob: "", sbc: "", supplied: { bill: true } });
+  assert.equal(v.result.findings.length, 1, "the finding survives an unavailable source");
+  assert.equal(v.result.totals.totalAtStake, 175, "the total is not re-derived to zero");
+  assert.equal(v.dropped.length, 0);
+  assert.equal(v.unverifiable.length, 1, "and the audit records that it went unchecked");
+});
+
+test("verifyEvidence: an invented quote is still dropped when there IS a source", () => {
+  const result = {
+    findings: [
+      { type: "not_in_eob", lineRef: "1", amountAtStake: 999,
+        evidence: { billQuote: "99999 Cranial reattachment $9,999.00" } },
+    ],
+    totals: { billed: 175, totalAtStake: 999 },
+  };
+  const v = verifyEvidence(result, { bill: "90837 Psychotherapy 60 minutes $175.00", eob: "", sbc: "", supplied: { bill: true } });
+  assert.equal(v.result.findings.length, 0);
+  assert.equal(v.dropped.length, 1);
+});
+
+test("verifyEvidence: a quote from a document that was never supplied is still dropped", () => {
+  // The distinction that makes the fail-open safe: "we hold no text for a
+  // document you gave us" is not the same as "you never gave us that document".
+  const result = {
+    findings: [
+      { type: "billed_above_eob", lineRef: "1", amountAtStake: 40,
+        evidence: { eobQuote: "80053 allowed $41.20" } },
+    ],
+    totals: { billed: 175, totalAtStake: 40 },
+  };
+  const v = verifyEvidence(result, { bill: "90837 $175.00", eob: "", sbc: "", supplied: { bill: true } });
+  assert.equal(v.result.findings.length, 0, "no EOB was uploaded, so the quote is invented");
+  assert.equal(v.dropped.length, 1);
+});
