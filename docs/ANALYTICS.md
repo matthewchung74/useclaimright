@@ -32,7 +32,8 @@ medical bill into a third-party analytics system.
 | `dispute_email_generated` | the appeal letter is produced | `findings` (count) |
 | `limit_reached` | the daily cap dialog opens | `kind`: audits \| plans |
 | `error_shown` | **any** visible error (`setError()`) | `where` (element id), `reason` (enum below) |
-| `eob_saved`, `plan_added`, `tracker_created`, `tracker_warning_shown` | feature use | — |
+| `eob_saved`, `plan_added`, `tracker_warning_shown` | feature use | — |
+| `tracker_created` | a plan limit starts being tracked | `source`: sbc \| remark \| manual |
 
 `stage_viewed` and `error_shown` are wired into `show()` and `setError()` rather than
 sprinkled at call sites, so they cannot drift out of date: a new screen or a new error
@@ -64,6 +65,11 @@ needs a new entry.
 
 `limit_reached { kind: "audits" }` is the fourth number worth watching: it says whether
 the 10/day cap is protecting the budget or capping the business.
+
+`tracker_created { source }` answers a question that cannot be answered by argument: the SBC
+path auto-creates limits, the remark path offers them in one click, and "Add a custom limit" is
+the hand-entry fallback. If `manual` is a rounding error next to `sbc` and `remark`, that form
+is UI weight for a path nobody takes.
 
 ## Deliberately excluded
 
