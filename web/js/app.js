@@ -1429,6 +1429,10 @@ function renderDashboard() {
   }
 }
 
+// How many limits came from the SBC — shown in the remove dialog so the count is
+// in the promise rather than discovered afterwards.
+const sbcTrackerCount = () => allTrackers.filter((t) => t.source === "sbc").length;
+
 async function loadTrackers() {
   const user = auth.currentUser;
   if (!user) return;
@@ -1563,7 +1567,7 @@ function renderPlanCard() {
       <span class="plan-period">${escapeHtml(s.planYearStart || "?")} → ${escapeHtml(s.planYearEnd || "?")}</span>
       <span class="pl-actions">
         <a href="#" id="plan-view">View</a>
-        <label>Replace<input id="sbc-file-replace" type="file" hidden accept="application/pdf,image/*,text/html,.html,.htm,text/plain,.txt"></label>
+        <a href="#" id="plan-replace">Replace</a>
         <a href="#" id="plan-remove" style="color:var(--bad)">Remove</a>
       </span>
     </div>
@@ -1578,18 +1582,34 @@ function renderPlanCard() {
       e.preventDefault();
       if (!await confirmAction({
         title: "Remove your plan?",
-        body: `${s.planName || "Your SBC"} will be removed, and audits will no longer be checked against it. Trackers you've created stay.`,
+        // Says what actually happens now. The old wording promised "trackers you've
+        // created stay" while silently keeping SBC-created ones too — limits the
+        // member never asked for, left labelled "from your SBC" with no SBC on file.
+        body: `${s.planName || "Your SBC"} will be removed, and audits will no longer be checked against it. `
+          + `${sbcTrackerCount()} limit${sbcTrackerCount() === 1 ? "" : "s"} this plan set up will go with it. `
+          + `Limits you added yourself, or accepted from an EOB, stay.`,
         confirmLabel: "Remove plan", danger: true,
       })) return;
       await deleteDoc(doc(db, `users/${auth.currentUser.uid}/plan/active`));
+      // What the plan created goes with the plan. Manual and remark trackers are
+      // the member's own and survive. Re-uploading an SBC recreates its limits,
+      // and the counts are derived from audits, so nothing is really lost.
+      for (const t of allTrackers.filter((t) => t.source === "sbc")) {
+        await deleteDoc(doc(db, `users/${auth.currentUser.uid}/trackers/${t.id}`));
+      }
       activePlan = null;
       $("plan-full").hidden = true;
+      await loadTrackers();
       renderPlanCard();
       renderUsage();
     };
   }
-  const rep = $("sbc-file-replace");
-  if (rep) rep.onchange = () => { if (rep.files[0]) prepareSbc(rep.files[0]); rep.value = ""; };
+  // Same destination as "Add now". It was a <label> wrapping a hidden file input,
+  // so it could only open the OS dialog — no drag-and-drop, and the smallest
+  // target on the card. The onboarding screen already has the dropzone and an
+  // origin-aware way back ("Not now — back to your audits").
+  const rep = $("plan-replace");
+  if (rep) rep.onclick = (e) => { e.preventDefault(); openOnboarding("bills"); };
 }
 
 // The SBC dropzone is static markup in the onboarding section — wire it once.

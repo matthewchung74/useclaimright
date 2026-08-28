@@ -180,6 +180,9 @@ Extracted Acme Silver PPO, 2026-01-01 to 2026-12-31, deductible $1,500/$3,000, O
 $6,000/$12,000, limits "Outpatient mental health services 6/yr" and "Rehabilitation services
 20/yr", with both trackers auto-created and tagged `source: sbc`.
 
+matt checked 8/28
+
+
 ## M2 — Audit with a planted plan violation
 **Use case:** the audit quotes the SBC against the bill and highlights the dollar gap.
 **Data:** `series/p1-bill.pdf` + `series/p1-eob.pdf` (PT 97110, 2026-03-20; EOB member responsibility $95 vs SBC's "$60 copay, deductible does not apply").
@@ -432,8 +435,18 @@ $0.00, `worthDisputing` $0.00, zero findings, no EOB stored against the audit, a
 **Use case:** deleting the plan reverts the app to the no-SBC state without touching trackers or history.
 **Data:** none.
 
-1. Click **Remove** on the plan line. ✓ Confirm dialog names the plan and says trackers stay.
-2. Confirm. ✓ The dashed "No plan on file — add your Summary of Benefits · Add now" reminder returns under **Your coverage**; trackers remain (tags still cleared/uncleared as they were); deductible card falls back to EOB-stated values ("$120.00 of $1,500.00" from t-series EOBs, no "Target from your plan" line... EOB-only sourcing).
+1. Click **Remove** on the plan line. ✓ Confirm dialog names the plan, **counts the limits that
+   go with it** ("5 limits this plan set up will go with it"), and says limits you added
+   yourself or accepted from an EOB stay.
+2. Confirm. ✓ The dashed "No plan on file — add your Summary of Benefits · Add now" reminder
+   returns under **Your coverage**.
+   ✓ **Changed 2026-08-28: trackers the SBC created are removed with it.** They used to
+   survive, still labelled "from your SBC" with no SBC on file — limits the member never asked
+   for, kept by a dialog that promised only "trackers you've created stay". Manual and remark
+   trackers still stay; re-uploading an SBC recreates its limits, and counts derive from audits,
+   so nothing is lost.
+   ✓ With no EOB stating its own figures, the deductible and out-of-pocket cards disappear
+   entirely. Where an EOB DOES state them, they fall back to EOB-stated values ("$120.00 of $1,500.00" from t-series EOBs, no "Target from your plan" line... EOB-only sourcing).
 
 **Verified on production 2026-08-25:** the dialog read "Remove your plan?" / "Acme Silver PPO
 will be removed, and audits will no longer be checked against it. Trackers you've created
@@ -463,6 +476,10 @@ storing bad data.
 **Cost:** 1 plan upload.
 
 ## E5 — Restore the plan (closes the loop)
+0. ✓ **Replace** on the plan line opens the same onboarding screen as **Add now** — "Set up
+   your plan", with a real dropzone and the origin-aware "Not now — back to your audits". It
+   used to be a `<label>` wrapping a hidden file input, so it could only open the OS file
+   dialog: no drag-and-drop, and the smallest target on the card.
 1. Upload `fake-sbc.pdf` again via **Add now** under "Your coverage". ✓ Full M1 checkpoints repeat (plan line, trackers update in place — no duplicates, `source:"sbc"` trackers refreshed).
 
 **Verified on production 2026-08-25:** re-uploading `fake-sbc.pdf` through **Add now** restored
