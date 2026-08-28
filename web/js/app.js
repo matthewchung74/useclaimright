@@ -20,7 +20,7 @@ import { extractText } from "./extract.js";
 import { pairFiles, classifyFile, uniqueDocs } from "./batch.js";
 import { planYearStartMonthFrom, mergeSbcTrackers, deductibleTarget, oopTarget } from "./plan.js";
 import { crossBillDuplicates, runningTotals, groupAuditsByProvider, splitJustAudited, billKeyOf } from "./crossbill.js";
-import { matchSavedEob, documentsRelated } from "./eobmatch.js";
+import { documentsRelated } from "./eobmatch.js";
 
 const $ = (id) => document.getElementById(id);
 let currentSection = "signin";
@@ -121,6 +121,11 @@ const OCR_CONFIDENCE_THRESHOLD = 75;
 
 // Page images travel as bare base64; the data: prefix is a browser convenience.
 const b64 = (dataUrl) => String(dataUrl).slice(String(dataUrl).indexOf(",") + 1);
+// One path in, one path out. A PDF arrives as page images with text: "", an HTML
+// or .txt file as text with no images, and the model gets whichever it is. The
+// browser deliberately no longer reads a PDF's text layer for its own purposes:
+// a second, invisible copy of the document is what let two guards run on text
+// the review screen never showed, and then silently stop working.
 const asDoc = (d) => (d ? { text: d.text || "", images: (d.images || []).map(b64) } : { text: "", images: [] });
 
 // Confidence is a property of TEXT EXTRACTION, and a scanned page has none —
@@ -427,6 +432,7 @@ function resetState() {
   // After the file list is cleared — a stale EOB row from the previous audit
   // would otherwise suppress the saved-EOB pre-selection (bug found live).
   defaultEobSelection();
+  renderSavedEobLabel();
   renderFiles();
   setBatchLabels(null);
 }
@@ -625,16 +631,7 @@ async function prepareAudit(billFile, eobFile, savedEob = null) {
     const bill = await extractText(billFile);
     const eob = eobFile ? await extractText(eobFile) : null;
 
-    // An auto-picked library EOB can be improved now that the bill is readable:
-    // swap only on a provider-strength match, and say why on the review screen.
-    if (savedEob && savedEobAutoSelected) {
-      const m = matchSavedEob(savedEobs, bill.text);
-      if (m && m.score >= 2 && m.eob.id !== savedEob.id) savedEob = m.eob;
-      const chosen = m && m.eob.id === (savedEob?.id) ? m : null;
-      setBatchLabels(chosen
-        ? `Using saved EOB: ${savedEob.label} — ${chosen.reason}`
-        : `Using saved EOB: ${savedEob.label} — most recent in your library`);
-    }
+    if (savedEob) setBatchLabels(`Using saved EOB: ${savedEob.label}`);
 
     state.bill = { text: bill.text, images: bill.images, previews: bill.previews, method: bill.method, confidence: bill.confidence };
     if (savedEob) {
@@ -646,12 +643,6 @@ async function prepareAudit(billFile, eobFile, savedEob = null) {
       state.eob = null;
     }
 
-    $("ocr-banner").hidden = !(bill.method === "image" || state.eob?.method === "image");
-    // Wrong-EOB guard: warn BEFORE analysis, since a mismatched pair reports
-    // every line as "missing from the EOB" and inflates "worth disputing".
-    showPairWarning(
-      state.eob && !state.eob.saved && eob ? [{ name: billFile.name, rel: documentsRelated(bill.text, eob.text) }] : []
-    );
     state.activeDoc = state.eob ? "eob" : "bill";
     $("tab-eob").style.display = state.eob ? "" : "none";
     $("save-eob").checked = true;
@@ -665,19 +656,6 @@ async function prepareAudit(billFile, eobFile, savedEob = null) {
     show("upload");
     batchBackToPanel();
   }
-}
-
-// pairs: [{name, rel}] from documentsRelated. Only confident mismatches warn —
-// an unreadable scan must never raise a false alarm.
-function showPairWarning(pairs) {
-  const bad = pairs.filter((p) => p.rel && p.rel.confident && !p.rel.related);
-  const el = $("pair-banner");
-  el.hidden = !bad.length;
-  if (!bad.length) return;
-  const names = bad.map((p) => escapeHtml(p.name)).join(", ");
-  el.innerHTML = `⚠️ <b>This EOB may not cover ${bad.length === 1 ? "this bill" : "these bills"}</b> (${names}) —
-    they share no service dates and no procedure codes. Check you picked the right EOB: analyzing a
-    mismatched pair reports every line as “missing from the EOB” and overstates what's worth disputing.`;
 }
 
 function resetStatePreservingFiles() {
@@ -711,15 +689,6 @@ async function prepareBatch() {
     }
     batchDocs = prepared;
     batchDocIndex = 0;
-    $("ocr-banner").hidden = !batchDocs.some((d) => d.method === "image");
-    // Same guard per pair — name the bills whose EOB looks unrelated.
-    const byFileDoc = new Map(prepared.filter((d) => d.file).map((d) => [d.file, d]));
-    showPairWarning(batchQueue
-      .filter((it) => it.eob)
-      .map((it) => ({
-        name: it.bill.name,
-        rel: documentsRelated(byFileDoc.get(it.bill)?.text || "", byFileDoc.get(it.eob)?.text || ""),
-      })));
     $("save-eob").checked = true;
     $("save-eob-wrap").hidden = !batchDocs.some((d) => d.kind === "eob" && !d.saved);
     setBatchLabels(`Batch: ${batchQueue.length} audits — review every document below, then they run without stopping.`);
@@ -760,7 +729,7 @@ async function runBatch() {
       lastAuditId = data.auditId || null;
       if (data.auditId) justAuditedIds.push(data.auditId);
       if (eobDoc && !eobDoc.saved && $("save-eob").checked) {
-        await maybeSaveEob(eobDoc.text, data);
+        await maybeSaveEob(data.eob || eobDoc.text, data);
         eobDoc.saved = true; // shared EOB: save once, not once per audit
       }
       track("audit_completed", { ...auditShape(data), mode: "batch" });
@@ -805,6 +774,13 @@ function renderReview() {
   const textView = $("text-view");
   view.textContent = "";
   pills.textContent = "";
+  // Both are scroll containers, and replacing their contents does NOT reset the
+  // scroll position — so after reading to the bottom of one document, the next
+  // one opened already scrolled to its end. Reset on every render, and again
+  // once the image has loaded: the container is short until then, so a reset
+  // before load can be undone when the real height arrives.
+  view.scrollTop = 0;
+  textView.scrollTop = 0;
 
   if (docState.saved) {
     // A saved EOB is text we kept; the file itself was never stored.
@@ -817,6 +793,7 @@ function renderReview() {
     const img = document.createElement("img");
     img.src = pages[reviewPage];
     img.alt = `Page ${reviewPage + 1} of ${pages.length}`;
+    img.onload = () => { view.scrollTop = 0; };
     view.appendChild(img);
     // Only worth a control when there is somewhere to go.
     pills.hidden = pages.length < 2;
@@ -836,8 +813,6 @@ function renderReview() {
     textView.textContent = tidy(docState.text);
   }
 
-  $("ocr-banner").hidden = true;   // every PDF is pages now; the old scan caveat is moot
-
   const rd = $("review-doc");
   rd.hidden = !batchDocs;
   if (batchDocs) {
@@ -852,7 +827,15 @@ function renderReviewTabs() {
   const isBatch = !!batchDocs;
   $("tab-bill").style.display = isBatch ? "none" : "";
   $("tab-eob").style.display = isBatch || !state.eob ? "none" : "";
+  // Same rule as the page pills: a switcher with nothing to switch to is a
+  // control that can only disappoint. One document means no tab strip at all.
+  const switchable = isBatch ? batchDocs.length : 1 + (state.eob ? 1 : 0);
+  tabs.hidden = switchable < 2;
   if (!isBatch) {
+    // A saved EOB was never uploaded in this run — say so, or the tab reads as a
+    // file the member chose just now. Which saved EOB it is matters: it is the
+    // difference between auditing against the right claim and the wrong one.
+    $("tab-eob").textContent = state.eob?.saved ? "EOB (saved)" : "EOB";
     $("tab-bill").classList.toggle("active", state.activeDoc === "bill");
     $("tab-eob").classList.toggle("active", state.activeDoc === "eob");
     return;
@@ -900,11 +883,14 @@ $("confirm-review").onclick = async () => {
       // that yields "[object Object]" — no dates, no codes, so documentsRelated
       // reported "can't judge" and the warning was silently suppressed on the one
       // report that matters most, the one you see right after paying for the audit.
-      pairUnrelated: unrelatedPair(payload.bill.text, payload.eob.text) });
+      // The client no longer holds any document text — pages are all it ever
+      // had. Judge the pair on what the model transcribed, exactly as
+      // openAudit() does, so this warning survives having no local text layer.
+      pairUnrelated: unrelatedPair(auditText(data, "bill"), auditText(data, "eob")) });
     show("report");
     track("audit_completed", { ...auditShape(data), mode: "single" });
     if (state.eob && !state.eob.saved && $("save-eob").checked) {
-      await maybeSaveEob(state.eob.text, data);
+      await maybeSaveEob(data.eob || state.eob.text, data);
     }
     await loadHistory(); // refreshes allAudits (incl. this audit) + usage cards
     renderReportUsage(data);
@@ -1031,14 +1017,17 @@ function renderReport(data, { ocrLow, model, planApplied, planReason, pairUnrela
   // two documents share any dates or codes — so it is carried through here.
   const anyMissing = findings.some((f) => f.type === "not_in_eob");
   const allMissing = findings.length >= 2 && findings.every((f) => f.type === "not_in_eob");
-  const showPairWarn = anyMissing && (pairUnrelated || allMissing);
+  const showPairWarn = pairUnrelated || (anyMissing && allMissing);
   $("report-pair-warning").hidden = !showPairWarn;
   if (showPairWarn) {
     // Say which evidence fired: "every line missing" is untrue when the trigger
     // was two documents that simply don't correspond.
     const why = pairUnrelated
-      ? `<b>This EOB may not cover this bill.</b> They share no service dates and no procedure codes,
-         so charges here may be marked "missing from the EOB" only because your insurer never processed this bill.`
+      ? `<b>This EOB may not cover this bill.</b> They share no service dates and no procedure codes.
+         ${findings.length
+           ? `Charges here may be marked "missing from the EOB" only because your insurer never processed this bill.`
+           : `A finding of "nothing wrong" carries no weight against the wrong EOB — re-run this bill against
+              the EOB for this visit, or with no EOB at all.`}`
       : `<b>Every line on this bill came back missing from the EOB.</b>
          That usually means these two documents don't go together.`;
     $("report-pair-warning").innerHTML =
@@ -1279,7 +1268,8 @@ function summarizeFindings(findings) {
 
 // True when a bill and EOB share no service dates and no procedure codes, i.e.
 // they very likely don't belong together. Unreadable documents return related,
-// so a doc we couldn't parse never raises a false alarm.
+// so a doc we couldn't parse never raises a false alarm. Both texts come from
+// the model's transcription; nothing is read from the file in the browser.
 function unrelatedPair(billText, eobText) {
   if (!billText || !eobText) return false;
   const rel = documentsRelated(billText, eobText);
@@ -1471,6 +1461,7 @@ async function loadEobs() {
     savedEobs.map((e) => `<option value="${e.id}">${escapeHtml(e.label)}</option>`).join("");
   if (savedEobs.some((e) => e.id === prev)) sel.value = prev;
   defaultEobSelection();
+  renderSavedEobLabel();
 
   const list = $("saved-eob-list");
   list.innerHTML = "";
@@ -1492,21 +1483,27 @@ async function loadEobs() {
   }
 }
 
-// With a library on file, the EOB step answers itself: pre-select the most
-// recent saved EOB so a new bill can be audited with zero extra clicks.
-// Auto picks may be improved by the content matcher once the bill is read;
-// a user's explicit dropdown choice is never overridden.
-let savedEobAutoSelected = false;
-
+// Pre-select a saved EOB only when there is exactly one, so the common case
+// still costs zero clicks. With several, "most recent" is a guess — and since
+// the browser only ever holds page images, there is nothing to check it
+// against before the audit runs. A wrong EOB silently turns a real dispute into
+// "no discrepancies found", so with a library of more than one, ask.
 function defaultEobSelection() {
-  if (!savedEobs.length || $("saved-eob").value || batchFiles.some((b) => b.role === "eob") || $("no-eob").checked) return;
+  if (savedEobs.length !== 1 || $("saved-eob").value || batchFiles.some((b) => b.role === "eob") || $("no-eob").checked) return;
   $("saved-eob").value = savedEobs[0].id;
-  savedEobAutoSelected = true;
   $("eob-picked").textContent = `✓ using saved: ${savedEobs[0].label} — change below if this isn't the right one`;
 }
 
+// The label has to follow the behaviour: it used to promise a pre-selection that
+// now only happens with a library of one, and copy that describes something the
+// screen isn't doing is how a wrong EOB gets past someone reading carefully.
+function renderSavedEobLabel() {
+  $("saved-eob-label").textContent = savedEobs.length === 1
+    ? "Your saved EOB is pre-selected — new bills audit against it unless you upload a different one"
+    : "Choose which saved EOB covers this bill — the wrong one makes an audit look clean when it isn't";
+}
+
 $("saved-eob").onchange = () => {
-  savedEobAutoSelected = false; // explicit choice
   if ($("saved-eob").value) {
     $("eob-picked").textContent = `✓ saved: ${$("saved-eob").selectedOptions[0].textContent}`;
     $("no-eob").checked = false;
@@ -1518,6 +1515,7 @@ $("saved-eob").onchange = () => {
 };
 
 async function maybeSaveEob(text, data) {
+  if (!text) return; // nothing worth filing, and "" would match every later EOB
   if (savedEobs.some((e) => savedEobText(e) === text)) return; // already saved
   const label = `${data.provider || "EOB"} · ${(data.serviceDates || [])[0] || todayISO()}`;
   await addDoc(collection(db, `users/${auth.currentUser.uid}/eobs`), {
@@ -1654,7 +1652,6 @@ async function prepareSbc(file) {
       show(state.sbcOrigin);
       return setError(sbcErrTarget(), "This plan is already on file.");
     }
-    $("ocr-banner").hidden = ex.method !== "image";
     state.activeDoc = "bill";
     $("tab-eob").style.display = "none";
     $("save-eob-wrap").hidden = true;

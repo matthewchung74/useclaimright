@@ -478,7 +478,7 @@
       </div>
       <div id="eob-list"></div>
       <div id="saved-eob-wrap" style="margin-top:10px" hidden>
-        <label for="saved-eob" class="muted" style="font-weight:600">Your most recent saved EOB is pre-selected — new bills audit against it unless you upload a different one</label>
+        <label for="saved-eob" id="saved-eob-label" class="muted" style="font-weight:600">Or audit this bill against an EOB you've already saved</label>
         <select id="saved-eob" style="margin-top:4px"><option value="">— choose a saved EOB —</option></select>
         <details class="explain" style="margin-top:8px"><summary>My saved EOBs</summary>
           <p>We save the text, not the file itself. Good for consolidated EOBs that cover several bills.</p>
@@ -526,8 +526,6 @@
     <p class="lead">Your pages go to the model exactly as they are — nothing is retyped or
       summarised first. Check they're the right pages, the right way up, and that nothing is cut
       off. If a page is unreadable here, the audit will be wrong too.</p>
-    <div id="ocr-banner" class="banner" hidden></div>
-    <div id="pair-banner" class="banner" hidden></div>
     <div class="tabs">
       <button id="tab-bill" class="active">Bill</button>
       <button id="tab-eob">EOB</button>

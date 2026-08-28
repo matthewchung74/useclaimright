@@ -460,7 +460,11 @@ export const analyze = onCall(
       createdAt: FieldValue.serverTimestamp(),
     });
 
-    return { auditId: auditRef.id, planApplied, planReason, ...result };
+    // billStore/eobStore go back too. They are the ONLY text the client has —
+    // pages are sent, nothing is read from the file in the browser — and the
+    // mismatched-pair warning on the report needs them. Returning them exposes
+    // nothing new: this is the same caller that just uploaded the documents.
+    return { auditId: auditRef.id, planApplied, planReason, ...result, bill: billStore, eob: eobStore };
   }
 );
 
