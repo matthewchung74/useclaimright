@@ -1451,9 +1451,18 @@ async function loadEobs() {
     query(collection(db, `users/${user.uid}/eobs`), orderBy("createdAt", "desc"))
   );
   savedEobs = [];
-  snap.forEach((d) => savedEobs.push({ id: d.id, ...d.data() }));
+  const emptyEobs = [];
+  snap.forEach((d) => {
+    const e = { id: d.id, ...d.data() };
+    // A saved EOB IS its text. Entries with none were written while PDFs were
+    // being sent as pages and the client had no text to file — they carry a real
+    // label and real metadata, so they look picked-correctly right up until the
+    // audit runs against nothing and reports "no discrepancies found" on a bill
+    // that has them. Never offer one; list it so it can be deleted.
+    (savedEobText(e) ? savedEobs : emptyEobs).push(e);
+  });
 
-  $("saved-eob-wrap").hidden = !savedEobs.length;
+  $("saved-eob-wrap").hidden = !savedEobs.length && !emptyEobs.length;
   $("cta-eob").textContent = savedEobs.length ? `EOB on file: ${savedEobs[0].label}` : "";
   const sel = $("saved-eob");
   const prev = sel.value;
@@ -1465,10 +1474,13 @@ async function loadEobs() {
 
   const list = $("saved-eob-list");
   list.innerHTML = "";
-  for (const e of savedEobs) {
+  for (const e of [...savedEobs, ...emptyEobs]) {
+    const broken = !savedEobText(e);
     const row = document.createElement("div");
     row.className = "batch-row";
-    row.innerHTML = `<span class="fname">${escapeHtml(e.label)}</span><button class="rm" title="Delete">✕</button>`;
+    row.innerHTML = `<span class="fname">${escapeHtml(e.label)}${
+      broken ? ` <span class="muted">— empty, can't be audited against. Delete it and save the EOB again.</span>` : ""
+    }</span><button class="rm" title="Delete">✕</button>`;
     row.querySelector(".rm").onclick = async () => {
       if (await confirmAction({
         title: "Delete this saved EOB?",
