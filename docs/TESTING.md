@@ -313,9 +313,17 @@ matt checked 8/28
 **Data:** `series/t4-bill.pdf` alone (April visit — not in the consolidated EOB).
 
 1. Expand "My saved EOBs". ✓ The consolidated EOB saved ONCE despite 2 audits sharing it.
-2. Upload `t4-bill.pdf` only. ✓ Saved EOB pre-selected ("✓ using saved: …").
+2. Upload `t4-bill.pdf` only.
+   ✓ **With more than one saved EOB, nothing is pre-selected** and the label reads "Choose which
+   saved EOB covers this bill — the wrong one makes an audit look clean when it isn't". Pick
+   **the consolidated Testville EOB** explicitly. *(Changed 2026-08-28. This step used to read
+   "✓ Saved EOB pre-selected"; auto-picking the most recent is exactly what attached an ER EOB
+   to a psychotherapy bill and produced "no discrepancies found" on $175. A single saved EOB is
+   still pre-selected, so the zero-click case survives.)*
 3. Prepare, review, analyze.
-   ✓ On the review screen, the label above reads "Using saved EOB: … — **matched by provider and service date**" (or "most recent in your library" if no content match) — the auto-pick is explained, and an explicit dropdown choice is never overridden.
+   ✓ On the review screen the label reads "Using saved EOB: …". *(The "matched by provider and
+   service date" explanation is gone: it was produced by a content matcher that read the bill's
+   text layer, and the browser no longer has one — every PDF is sent as pages.)*
    ✓ "**On the bill, missing from the EOB**" (`not_in_eob`) — mental-health tracker 4/6.
    ✓ **The four totals cards** (re-verified 2026-08-11):
 
@@ -337,6 +345,30 @@ BEHAVIORAL HEALTH ASSOCIATES · 2026-02-12 — change below if this isn't the ri
 the review screen explained the pick — "matched by provider". Totals $175.00 / $0.00 /
 $175.00 / **$175.00** from a single `not_in_eob`, and the "every line came back missing"
 backstop correctly did NOT fire on one finding. `droppedUnverified` 0.
+
+**Re-verified on production 2026-08-28**, from a reset account with E1→M1→M2→M3→M4 run in order
+so the consolidated EOB was genuinely in the library:
+
+| Card | Expected | Got |
+|---|---|---|
+| Billed | $175.00 | **$175.00** |
+| EOB allowed | $0.00 | **$0.00** |
+| Your responsibility | $175.00 | **$175.00** |
+| Worth disputing | $175.00 | **$175.00** |
+
+`not_in_eob` $175.00 high confidence, mental-health tracker **visit 4 of 6**,
+`droppedUnverified` 0. Nothing was pre-selected (4 saved EOBs on file); the consolidated EOB
+was chosen explicitly.
+
+**The discrimination, confirmed in both directions on the same day:**
+
+| Pair | `documentsRelated` | Warning |
+|---|---|---|
+| M5 — t4-bill + consolidated Testville EOB | `related: true, confident: true, sharedCodes: ["90837"]` | correctly **hidden** |
+| E6 — t5-bill + St. Verification ER EOB | `related: false, confident: true, sharedCodes: []` | correctly **shown** |
+
+A genuine missing claim and a mismatched pair look identical on the totals cards — $175.00
+billed against $0.00 allowed in both — so this comparison is the only thing separating them.
 
 ## M6 — Plan lifecycle: duplicate re-upload
 **Use case:** re-uploading the same SBC never re-extracts or duplicates.
