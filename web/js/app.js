@@ -1756,7 +1756,14 @@ function renderUsage() {
     list.appendChild(card);
   }
   if (!allTrackers.length) {
-    list.innerHTML = '<p class="muted">Nothing tracked yet — add a limit below.</p>';
+    // "add a limit below" pointed at the custom-limit form, which is now hidden.
+    // Limits arrive from the SBC or from an EOB remark, so say which one is
+    // missing rather than naming a control that is not on the page.
+    list.innerHTML = activePlan
+      ? '<p class="muted">Nothing tracked yet. Your plan didn\'t list any visit limits we could read — ' +
+        'if an EOB mentions one ("5 of 6 visits used"), we\'ll offer to track it in one click.</p>'
+      : '<p class="muted">Nothing tracked yet. Add your Summary of Benefits above and any visit limits ' +
+        'it lists — therapy visits, home health, and so on — get tracked here automatically.</p>';
   }
 
   // Deductible card — the SBC owns the limit, the EOB owns progress (see plan.js deductibleTarget).
