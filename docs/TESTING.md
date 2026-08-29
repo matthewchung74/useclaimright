@@ -599,6 +599,12 @@ report**; de-overlap changes the total, never what is surfaced.
    ✓ **Fixed 2026-08-16.** It originally failed here: the model returned `duplicate_charge` and `charity_care_eligible` alongside `not_in_eob`, and the old condition demanded *every* finding be `not_in_eob`. The report now also fires when the two documents share **no dates and no codes** — the same `documentsRelated()` evidence the step-2 banner uses — and the wording adapts: "**This EOB may not cover this bill.** They share no service dates and no procedure codes…".
    ✓ The discrimination that matters: this audit shows the warning, while **M5's genuine missing claim does not** (its bill and EOB do share a code). Verified live on both.
 
+**Step 5 verified on production 2026-08-29** with `by-plan/E6-wrong-eob-paired/` (ED-visit bill,
+PT EOB, matching stems so they pair by filename): billed **$2,115.00**, EOB allowed **$0.00**,
+responsibility **$845.00**, worth disputing **$2,115.00** — the documented mismatched-pair
+signature — and the warning rendered **on the post-run report**, which is the path this plan
+warns you to assert on.
+
 **Verified on production 2026-08-25 (steps 1-2):** `fake-bill.pdf` (ED visit, 2026-06-12) and
 `p1-eob.pdf` (PT, 2026-03-20) paired under the new rule and the guard fired immediately —
 "⚠️ This EOB may not cover this bill (fake-bill.pdf) — they share no service dates and no
@@ -1479,6 +1485,20 @@ stayed.
 **What this means for the suite:** any assertion that depends on `statementId` matching across
 runs is only as stable as the model's phrasing that day. Re-audit the same document twice as a
 standing check, not just once per fixture.
+
+## The cap, verified 2026-08-29
+
+Let the 10th audit land, then start an 11th. The dialog reads **"That's today's 10 audits"**,
+explains the cost reason, states the reset time in mono (**"Your allowance comes back at 5:00 PM
+on Saturday"**), and says nothing is lost. Both analytics events fire:
+
+```
+limit_reached { kind: "audits" }
+error_shown   { where: "upload-error", reason: "limit_reached" }
+```
+
+Do this once per pass **before** resetting the counter — a reset by habit means this path is
+never exercised.
 
 ## Resetting the daily counters mid-run
 
