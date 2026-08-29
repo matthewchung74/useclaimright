@@ -1076,7 +1076,8 @@ and saved-EOB matching then run on.
 **Data:** photograph a bill, or rasterize one: `pdftoppm -png -r 150 test-fixtures/fake-bill.pdf out`.
 
 1. Upload the photo. ✓ Processing is quick and there is **no model download** (the 500MB NER is gone).
-2. On review: ✓ the **📷 banner** appears. ✓ The right pane does **not** show extracted text —
+2. On review: ~~✓ the **📷 banner** appears.~~ **Removed 2026-08-28** — every document is
+   sent as pages now, so a banner announcing it was permanently on and carried no text. ✓ The right pane does **not** show extracted text —
    it explains the pages are sent as images and says what to check.
 3. Analyze. ✓ Findings return with quoted evidence.
 4. ✓ The audit appears in history with a readable summary, which is only possible if the
@@ -1444,6 +1445,23 @@ target, with room around them.
 5. ✓ Hover shows the whole card or row responding, not just the inner control.
 
 **Cost:** 0 audits (step 4 deletes one audit — use a disposable one).
+
+## Resetting the daily counters mid-run
+
+The cap is 10 audits/day at `users/{uid}/meta/usage` as `{day, count}`. Client writes are denied
+by rules, but the Firebase CLI is authenticated, and `checkRateLimit` reads a missing document as
+zero:
+
+```
+firebase firestore:delete "users/<uid>/meta/usage" --force
+```
+
+Get the uid from the signed-in browser (`getAuth().currentUser.uid`). This also clears `fbCount`
+and `planCount`, so feedback and plan-upload caps reset too.
+
+**Do this deliberately, not by habit.** The cap and its dialog are themselves under test — if you
+reset every time you approach it, `limit_reached` and the cap dialog never get exercised. Let it
+hit naturally once per pass, verify the dialog, then reset.
 
 ## Always-on checks (every pass)
 - **Evidence is real:** spot-check two findings per pass — the quoted line must appear verbatim in the document it cites. A finding whose quote is absent should never render; `verifyEvidence` drops it server-side and logs `unverified evidence dropped`. Check the audit doc's `droppedUnverified` count after each run: a non-zero value is the model inventing evidence, and it is worth reading the log.
