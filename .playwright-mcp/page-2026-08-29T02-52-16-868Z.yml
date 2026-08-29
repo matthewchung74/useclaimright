@@ -1,0 +1,9 @@
+- generic [active] [ref=f11e1]:
+  - banner [ref=f11e2]:
+    - generic [ref=f11e3]:
+      - link "✓ UseClaimRight" [ref=f11e4] [cursor=pointer]:
+        - /url: /
+        - generic [ref=f11e5]: ✓
+        - text: UseClaimRight
+      - button "Menu" [ref=f11e7] [cursor=pointer]: ☰
+  - main [ref=f11e8]

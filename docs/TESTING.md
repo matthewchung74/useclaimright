@@ -1389,6 +1389,37 @@ against. The screen is now one document, shown large.
 
 **Cost:** 0 audits — back out with **Start over**.
 
+## PHONE1 — Phone layout (0 audits)
+**Use case:** the app is designed against a 960px column. This is what that assumption costs on
+a 375px screen, measured rather than eyeballed.
+**How:** Chrome's window will not go below ~1232px of viewport, so use **Playwright at 375×844**
+or **Cmd+Shift+M** in DevTools. A real iPhone SE simulator (`xcrun simctl boot "iPhone SE (3rd
+generation)"`, then `xcrun simctl openurl … <url>`) is better still for anything iOS-specific.
+
+| Check | Expected |
+|---|---|
+| horizontal overflow | **0** elements past the viewport, `scrollWidth === clientWidth` |
+| form controls | **none under 16px** — iOS Safari zooms the page on focus below that |
+| tap targets | nothing under 44px except inline links inside prose paragraphs |
+| totals order | **"Worth disputing" first**, not fourth |
+| content width | the totals column is ~309px of 375, not ~269px |
+
+**Verified 2026-08-28** at 375px, before → after:
+
+| | Before | After |
+|---|---|---|
+| controls under 16px | 8 | **0** |
+| tap targets under 44px | 44 | **2** (both reCAPTCHA attribution links, left deliberately) |
+| totals content width | 269px | **309px** |
+| hero card position | 4th | **1st** |
+| horizontal overflow | 0 | 0 |
+
+The two remaining short targets are Google's reCAPTCHA "Privacy Policy" and "Terms of Service"
+links. They are inline in a wrapped 12px paragraph, where a 44px band would overlap its
+neighbours and break the prose — left short on purpose, not missed.
+
+**Cost:** 0 audits.
+
 ## TAP1 — One rule for what is tappable
 
 **Use case:** three different click affordances on one screen taught people three different
