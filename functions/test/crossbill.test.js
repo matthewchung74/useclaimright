@@ -215,3 +215,24 @@ test("crossBillDuplicates: one bill audited twice via two extractions is not a d
   ];
   assert.deepEqual(crossBillDuplicates(audits), []);
 });
+
+test("billKeyOf: the same statement survives the model attaching a field label", () => {
+  // Found live 2026-08-29: t5-bill.pdf audited twice returned
+  // "Account #: ACCT-SER-005" once and "ACCT-SER-005" the other time, so one
+  // bill audited twice was reported as "the same visit is on two statements".
+  const withLabel = billKeyOf("", "Account #: ACCT-SER-005", "Testville Behavioral Health Associates");
+  const bare = billKeyOf("", "ACCT-SER-005", "TESTVILLE BEHAVIORAL HEALTH ASSOCIATES");
+  assert.equal(withLabel, bare, "label prefix and casing must not change the key");
+});
+
+test("billKeyOf: genuinely different statements still differ", () => {
+  const a = billKeyOf("", "ACCT-FAM-101", "Testville Family Medicine Associates");
+  const b = billKeyOf("", "ACCT-FAM-102", "Testville Family Medicine Associates");
+  assert.notEqual(a, b);
+});
+
+test("billKeyOf: a label with no digits is still rejected as an id", () => {
+  // "Account Number" alone carries no identifier, so it must fall back to text.
+  const k = billKeyOf("some bill text", "Account Number", "Testville");
+  assert.ok(k.startsWith("b"), "falls back to the text hash, not an id hash");
+});
