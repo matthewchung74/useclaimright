@@ -1005,6 +1005,14 @@ Both bills: flu vaccine 90686, $85.00, 03/10/2026, Testville Family Medicine Ass
 - **Empty patient name:** any pre-2026-08-24 audit in history has no `patientName`. ✓ Those
   still participate in duplicate detection exactly as before (empty names share a key).
 
+**Verified on production 2026-08-29:** Matthew `ACCT-FAM-101` and Sarah `ACCT-FAM-102`, both
+$85.00 / $32.00 / $0.00 / $85.00, attributed to **Matthew T. Testpatient** and **Sarah L.
+Testpatient** from the statements. **No duplicate hero named either of them** — two family
+members seen the same day for the same code stayed two bills.
+
+**A different false positive surfaced on the same screen** (fixed, see below): the only hero
+present named `t5`, a bill audited twice — once in E2 without an EOB, once in M7 with one.
+
 **Cost:** 2 audits, +2 for the edge cases.
 
 **Verified on production 2026-08-25** (useclaimright.web.app, real Gemini calls): both audits
@@ -1445,6 +1453,32 @@ target, with room around them.
 5. ✓ Hover shows the whole card or row responding, not just the inner control.
 
 **Cost:** 0 audits (step 4 deletes one audit — use a disposable one).
+
+## The statement-id label bug (found 2026-08-29, fixed)
+
+Running E2 and then M7 audited `t5-bill.pdf` twice. The dashboard reported **"The same visit is
+on two statements — you likely owe one, not both"** on a bill that exists once.
+
+The two audits stored different `statementId` values for the identical document:
+
+| Run | `statementId` |
+|---|---|
+| E2 (bill only, no EOB) | `Account #: ACCT-SER-005` |
+| M7 (bill + EOB) | `ACCT-SER-005` |
+
+`billKeyOf` normalised only punctuation and case, so `accountacctser005` and `acctser005` hashed
+differently and the two renderings of one statement looked like two. D1's negative control did
+not catch it because `t2` happened to come back bare on both runs — **the model's phrasing is
+the variable, and a fixture cannot pin it.**
+
+`billKeyOf` now strips field-label words (`account`, `acct`, `statement`, `invoice`, `number`, …)
+before hashing, so both renderings agree. Three tests cover it. Verified live: the false May 13
+hero disappeared while the genuine Feb 12 one (`t2` vs `t2-bill-rebill`, actually two statements)
+stayed.
+
+**What this means for the suite:** any assertion that depends on `statementId` matching across
+runs is only as stable as the model's phrasing that day. Re-audit the same document twice as a
+standing check, not just once per fixture.
 
 ## Resetting the daily counters mid-run
 

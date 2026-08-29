@@ -52,10 +52,19 @@ const djb2 = (s) => {
   return (h >>> 0).toString(36);
 };
 
+// Field labels the model sometimes returns attached to the identifier. Seen live:
+// the SAME statement came back as "Account #: ACCT-SER-005" on one run and
+// "ACCT-SER-005" on another, which made one bill audited twice look like two
+// statements for one visit — a false "you likely owe one, not both". Stripping
+// the label words is what makes the two renderings hash alike; it also removes
+// them from inside the id itself, which is harmless because both renderings lose
+// the same words and the provider is hashed alongside.
+const ID_LABELS = /\b(account|acct|statement|stmt|invoice|inv|patient|number|num|no|id)\b/g;
+
 export function billKeyOf(text, statementId, provider) {
   // Punctuation and case vary between renderings ("ACCT-778899" / "acct 778899"),
   // the digits do not.
-  const id = String(statementId || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  const id = String(statementId || "").toLowerCase().replace(ID_LABELS, "").replace(/[^a-z0-9]/g, "");
   // A number with no digits at all is a label the model mistook for an id.
   if (id && /[0-9]/.test(id)) return `s${djb2(norm(provider) + "|" + id)}`;
   if (!text) return "";
