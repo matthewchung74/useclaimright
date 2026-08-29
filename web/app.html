@@ -269,6 +269,47 @@
   #email-card textarea{width:100%;height:320px;border:1px solid var(--line);border-radius:10px;padding:14px;
     font-family:ui-monospace,Menlo,monospace;font-size:12.5px;line-height:1.5}
   @media(max-width:720px){.panes{grid-template-columns:1fr}.dropzones{grid-template-columns:1fr}}
+
+  /* Phone. Everything above assumes the 960px column; these are the four places
+     that assumption breaks on a 375px screen, found on an iPhone SE. */
+  @media(max-width:560px){
+    /* 1. iOS Safari zooms the whole page whenever a focused control is under
+       16px. It throws the layout off-centre mid-typing and pinching back does
+       not restore it — on the sign-in screen it fires on the first tap. 16px
+       here is a platform floor, not a type choice, and it is the one deliberate
+       departure from DESIGN.md's 14px control size.
+
+       Specificity is deliberate: input[type=email] and #saved-eob both set 14px
+       with more weight than a bare `input`, so matching them is required — a
+       plain `input{font-size:16px}` here silently does nothing. */
+    input:not([type=checkbox]):not([type=radio]):not([type=file]),
+    select,#saved-eob,textarea,#email-card textarea,
+    #tracker-form select,#tracker-form input{font-size:16px}
+
+    /* 2. section 24px + card 28px meant 52px of padding per side — 28% of a
+       375px screen — and what got squeezed was the mono dollar figures and
+       evidence quotes, which is the content the report exists to show. */
+    section{padding:0 14px}
+    .card{padding:18px}
+
+    /* 3. The totals stack on a phone, which put "Worth disputing" fourth and
+       below the fold. That figure is the product's entire moment; the other
+       three are working. Hero first, the rest keep their order. */
+    .totals .tot.hi{order:-1}
+
+    /* 4. Tap targets. 44px is Apple's documented minimum and the row deletes
+       were 31x36. Grown with padding so the glyph itself keeps its size, and
+       the standalone links get a tappable band without changing type scale. */
+    .bill-row .rm,.batch-row .rm,.usage-del{min-width:44px;min-height:44px}
+    button,select{min-height:44px}
+    .pl-actions{gap:2px}
+    .pl-actions a,.back-link{display:inline-block;padding:12px 8px}
+    details.explain summary{min-height:44px;display:flex;align-items:center}
+    /* The standalone links only. The reCAPTCHA attribution links are inline in
+       a wrapped paragraph, where a 44px band would overlap its neighbours and
+       break the prose — left alone deliberately. */
+    #toggle-signup,#forgot-password,#skip-onboarding{display:inline-block;padding:14px 6px}
+  }
   @media print{
     header,.no-print,.banner{display:none !important}
     body{background:#fff}

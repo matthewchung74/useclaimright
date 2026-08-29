@@ -1,0 +1,101 @@
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]: ✓
+        - text: UseClaimRight
+      - link "Audit my bill" [ref=e7] [cursor=pointer]:
+        - /url: /app
+  - generic [ref=e8]:
+    - generic [ref=e9]: Free medical bill audit
+    - heading "Find out if your medical bill is wrong — in minutes." [level=1] [ref=e10]
+    - paragraph [ref=e11]: Upload your itemized bill and insurance EOB. Our AI checks every charge against what your insurer actually allowed and shows you exactly what's off — with evidence and dollar amounts, each one quoted from your own documents and checked against them.
+    - link "Audit my bill — free" [ref=e12] [cursor=pointer]:
+      - /url: /app
+    - generic [ref=e13]:
+      - generic [ref=e14]:
+        - generic [ref=e15]: ✓
+        - text: Free while in beta
+      - generic [ref=e16]:
+        - generic [ref=e17]: ✓
+        - text: Every finding quoted from your documents
+      - generic [ref=e18]:
+        - generic [ref=e19]: ✓
+        - text: Delete your data anytime
+  - generic [ref=e20]: One patient cut a $195,000 hospital bill down to $37,000 by challenging the charges. The hard part is the line-by-line cross-check against your EOB — our tool does that part in minutes.
+  - generic [ref=e22]:
+    - heading "How it works" [level=2] [ref=e23]
+    - paragraph [ref=e24]: Three steps, a few minutes, nothing to install.
+    - generic [ref=e25]:
+      - generic [ref=e26]:
+        - generic [ref=e27]: "1"
+        - heading "Upload bill + EOB" [level=3] [ref=e28]
+        - paragraph [ref=e29]: Your itemized bill and the matching Explanation of Benefits. Digital PDFs from your portals work best; photos and scans work too.
+      - generic [ref=e30]:
+        - generic [ref=e31]: "2"
+        - heading "Check we read it right" [level=3] [ref=e32]
+        - paragraph [ref=e33]: You see the exact text pulled out of your documents, next to the documents themselves, before anything is analyzed. Scans and photos are read with OCR, and OCR makes mistakes — this is where you catch them. The text is then sent to Google's Gemini API to be analyzed.
+      - generic [ref=e34]:
+        - generic [ref=e35]: "3"
+        - heading "Read your findings" [level=3] [ref=e36]
+        - paragraph [ref=e37]: "Duplicate charges, billing above the EOB allowed amount, coding errors, cost-share math — each finding with quoted evidence and a dollar amount. Or a clean result: your bill checks out."
+  - generic [ref=e39]:
+    - heading "Why not just use ChatGPT?" [level=2] [ref=e40]
+    - paragraph [ref=e41]: Chatbots are great — but they can't see your bills. Even ChatGPT's new health integrations connect to medical records, not billing systems. And a chatbot will happily quote a line that isn't in your bill — we check every quoted line against the document it came from, and drop the ones that aren't there.
+    - generic [ref=e42]:
+      - generic [ref=e43]:
+        - generic [ref=e45]: ChatGPT
+        - generic [ref=e46]: UseClaimRight
+      - generic [ref=e47]:
+        - generic [ref=e48]: Answers questions about text you paste in
+        - generic [ref=e49]: ✓
+        - generic [ref=e50]: ✓
+      - generic [ref=e51]:
+        - generic [ref=e52]: Connects to your bills (health-record integrations don't include billing)
+        - generic [ref=e53]: —
+        - generic [ref=e54]: ✓
+      - generic [ref=e55]:
+        - generic [ref=e56]: Cross-checks the bill against your EOB, line by line
+        - generic [ref=e57]: —
+        - generic [ref=e58]: ✓
+      - generic [ref=e59]:
+        - generic [ref=e60]: Catches the same charge billed twice across two different statements
+        - generic [ref=e61]: —
+        - generic [ref=e62]: ✓
+      - generic [ref=e63]:
+        - generic [ref=e64]: Backs every finding with a verbatim quote, and verifies the quote is really there
+        - generic [ref=e65]: —
+        - generic [ref=e66]: ✓
+      - generic [ref=e67]:
+        - generic [ref=e68]: Saves your audit history — deletable anytime
+        - generic [ref=e69]: —
+        - generic [ref=e70]: ✓
+  - generic [ref=e71]:
+    - heading "Pricing" [level=2] [ref=e72]
+    - paragraph [ref=e73]: "Simple: it's free."
+    - generic [ref=e75]:
+      - generic [ref=e76]: Beta
+      - heading "Full audit" [level=3] [ref=e77]
+      - generic [ref=e78]: $0
+      - paragraph [ref=e79]: Upload your bill and EOB, get every finding with evidence and dollar amounts. Up to 10 audits a day while we're in beta.
+      - paragraph [ref=e80]: No card. No catch.
+    - link "Start my free audit" [ref=e82] [cursor=pointer]:
+      - /url: /app
+  - generic [ref=e84]:
+    - heading "See what your bill actually says" [level=2] [ref=e85]
+    - paragraph [ref=e86]: Most people never check. The ones who do are often glad they did.
+    - link "Audit my bill — free" [ref=e87] [cursor=pointer]:
+      - /url: /app
+    - generic [ref=e88]: Evidence you can check · We never sell your data · Delete your audits anytime
+  - contentinfo [ref=e89]:
+    - generic [ref=e90]:
+      - generic [ref=e91]:
+        - generic [ref=e92]: ✓
+        - text: UseClaimRight
+      - link "Privacy Policy" [ref=e94] [cursor=pointer]:
+        - /url: privacy.html
+    - paragraph [ref=e95]:
+      - text: UseClaimRight is a self-help tool that analyzes the documents you provide. We are not a law firm, do not provide legal or medical advice, and do not represent you in disputes or appeals. Findings are generated by automated analysis and may contain errors — verify every quoted amount against your original documents before disputing a charge. Results vary and are not guaranteed.Your documents are sent to Google's Gemini API to be analyzed, including the personal details printed on them. Google does not train its models on data sent through that API. See our
+      - link "privacy policy" [ref=e96] [cursor=pointer]:
+        - /url: /privacy
+      - text: .
