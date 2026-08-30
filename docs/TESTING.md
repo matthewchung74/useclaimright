@@ -53,6 +53,30 @@ the Firestore rules tests, and the Always-on checks.
 that is missing the EOB a plan expects — or holding one from a different provider — is the single
 most likely reason a plan "passes" while asserting nothing.
 
+**Zero-audit checks, before anything manual:**
+
+```
+npm --prefix functions test          # 175 pure-function tests
+npm --prefix test/browser test       # 16 doc-drift + layout + extraction checks
+```
+
+`test/browser/` is the tier that used to be manual, and it is where **every stale claim found on
+2026-08-29 lived**. It needs no sign-in and no audits: layout is a function of DOM and CSS, so
+the authenticated screens are driven by unhiding them directly.
+
+- `drift.test.js` ties a claim in this file to a fact in the source. A ✓ line saying "the 📷
+  banner appears" fails once `#ocr-banner` is gone. Records ("Verified on production 2026-08-25:
+  the banner fired") are history and are left alone — only ✓ assertions are held to today's code,
+  which is what lets a fix keep its own account of what it replaced. It found three stale
+  assertions on its first run, one of which had been *noticed* the same day and not fixed.
+- `ui.test.js` drives a real Chromium at 375×812 against `web/` served locally: horizontal
+  overflow, controls under 16px, tap targets, the totals order, and image extraction.
+
+**Add to `CLAIMS` in drift.test.js whenever a plan starts asserting something a grep can
+confirm.** A missing fixture is a hard failure there, never a skip — the suite's own first run
+"passed" two extraction tests in 0.18ms because `gen-by-plan.mjs` had wiped the folder they read
+from, which is the exact failure this tier exists to catch.
+
 **Automated tests first:** `cd functions && npm test`. Rules tests need the emulator + Java: `firebase emulators:exec --only firestore "npm --prefix functions test"`.
 
 **Reading the totals tables:** every plan that spends an audit states its four totals cards in the same table — Billed, EOB allowed, Your responsibility, Worth disputing — with the arithmetic behind "Worth disputing" spelled out in the last column, followed by the findings that produce it. Amounts are model-extracted: treat them as ± a few dollars, but the **relationships must hold exactly** — Worth disputing equals its listed findings summed (nothing else folded in), and EOB allowed is $0.00 whenever there is no EOB.
@@ -75,7 +99,7 @@ most likely reason a plan "passes" while asserting nothing.
 1. A fresh account lands on the **onboarding screen** first: "Set up your plan" card (560px, teal top rule), payoff pitch with mono `$60`/`$175` figures, SBC dropzone with 📄, "What's an SBC?" explainer, and a centered "**Skip for now — audit a bill first**" link. Click **Skip**.
    ✓ The **Bills & coverage** page appears — this is home. The "**Audit a new bill**" card is the first thing on it, above "No bills audited yet…", so the primary action is never hidden behind the empty state. Scroll to "Your coverage": the **dashed one-line reminder** "No plan on file — add your Summary of Benefits · Add now" sits there (not a big card, not a gold banner).
 2. Click **Start an audit →**. ✓ The audit form appears with a "← Back to bills" link above the heading. **Step 1 is "Add your bill"** — the document the user actually has — and **step 2 is "Add the letter from your insurance, if you have it"**, with the "What's an EOB…" explainer under it. *(Reordered 2026-08-16: the EOB used to be step 1, putting eight elements and an acronym in front of the bill.)* Drag `fake-bill.pdf` onto the bill zone, `fake-eob.pdf` onto the insurance-letter zone. ✓ One "✓ file ✕" row under each zone.
-3. Click **Prepare audit →**. ✓ Processing is quick — the PDF's text layer is read directly, no model download.
+3. Click **Prepare audit →**. ✓ Processing is quick — the pages are rendered locally, no model download. *(Was "the PDF's text layer is read directly" until 2026-08-29; PDFs are sent as page images and the browser reads no text layer.)*
 4. Review both tabs. ✓ Left pane shows the rendered pages, right pane the extracted text under "What we'll analyze". Text matches the document; no placeholder chips anywhere (redaction was removed 2026-08-23).
 5. Click **Looks right — analyze**.
    ✓ **The four totals cards** (observed 2026-08-10):
@@ -1191,7 +1215,9 @@ on our own assumptions. These are genuine CMS publications in the ACA-mandated f
 
 **Edge cases**
 - **A SCANNED SBC** — rasterise `cms-2025.pdf` (`pdftoppm -png -r 150`, recombine to a PDF) so
-  it has no text layer. ✓ The 📷 banner fires and the plan extracts normally.
+  it has no text layer. ✓ The review screen shows the rendered pages and the plan extracts
+  normally. *(The 📷 banner it used to mention was removed 2026-08-28 — every document is pages
+  now, so a banner announcing it was permanently on.)*
   ⚠️ **This was broken until 2026-08-27 and nobody had tried it.** `prepareSbc()` built
   `state.bill` from the extraction WITHOUT `images`, so a scan sent empty text and empty
   images and the server answered "The SBC is required, as text or page images." A photographed
@@ -1520,7 +1546,7 @@ hit naturally once per pass, verify the dialog, then reset.
 ## Always-on checks (every pass)
 - **Evidence is real:** spot-check two findings per pass — the quoted line must appear verbatim in the document it cites. A finding whose quote is absent should never render; `verifyEvidence` drops it server-side and logs `unverified evidence dropped`. Check the audit doc's `droppedUnverified` count after each run: a non-zero value is the model inventing evidence, and it is worth reading the log.
 - **Disclosure is present:** the audit form shows the "Where your documents go" banner naming Google's Gemini API, above the dropzones.
-- **Scanned documents:** upload a photo or a scanned PDF (no text layer). ✓ The 📷 banner fires, the right-hand review pane explains the pages are sent as images rather than showing text, and the audit still returns findings. The stored audit's `bill`/`eob` hold the model's transcription, so history, the bill fingerprint and saved-EOB matching all still work.
+- **Scanned documents:** upload a photo or a scanned PDF (no text layer). ✓ The review screen shows the rendered pages — there is no separate scan banner any more, because every document takes that path — and the audit still returns findings. The stored audit's `bill`/`eob` hold the model's transcription, so history, the bill fingerprint and saved-EOB matching all still work.
 - **Limits:** 11th audit → the **daily-cap dialog** (see G1), with the inline "Daily limit of
   10 audits reached." persisting underneath as the trace; 4th plan upload → "Daily limit of 3
   plan uploads reached." *(This line used to describe only the inline error, which predates

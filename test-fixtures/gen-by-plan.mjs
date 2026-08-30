@@ -62,6 +62,16 @@ const PLANS = {
   ],
   // S1's rasterised bill is written by rasterise() below, not copied.
   "S1-scan-read-by-model": [],
+  // IMG1's fixtures are canonical and committed under img1/ rather than built
+  // here: they need macOS `sips` (rotation, HEIC, resampling), which a Linux CI
+  // box does not have. Generated once by gen-img1.sh, then copied like anything
+  // else — so this generator stays portable and the browser suite always finds
+  // them. They used to be made by hand, and re-running this script deleted them.
+  "IMG1-image-edge-cases": [
+    ["img1/01-normal-scan.png"], ["img1/02-rotated-90.png"], ["img1/03-upside-down.png"],
+    ["img1/04-iphone.heic"], ["img1/05-screenshot.png"], ["img1/06-low-res.png"],
+    ["img1/07-full-res-phone.png"], ["img1/08-eob-page-1.png"],
+  ],
 };
 
 // Plans that need no files at all. Listed so an empty folder is a deliberate

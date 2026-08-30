@@ -1,0 +1,240 @@
+// The zero-audit half of the suite: layout, extraction and rendered copy.
+//
+// These are the checks that were manual until 2026-08-29 — and every stale
+// claim found that day lived in this tier. A removed banner, a control that
+// silently went back under 16px, a hero card that drifts below the fold: none
+// of it costs an audit to catch, and none of it was being caught.
+//
+//   npm --prefix test/browser test
+//
+// Runs against web/ served locally, NOT production, so it tests the working
+// tree — a failure here means "you broke it", not "the deploy is behind".
+// Nothing here signs in: every assertion is a function of DOM + CSS, which is
+// what makes the authenticated screens testable without an account.
+
+import { test, before, after } from "node:test";
+import assert from "node:assert/strict";
+import { createServer } from "node:http";
+import { readFile } from "node:fs/promises";
+import { existsSync } from "node:fs";
+import { extname, join, normalize, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
+import { chromium } from "playwright";
+
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
+const WEB = join(ROOT, "web");
+const FIXTURES = join(ROOT, "test-fixtures", "by-plan", "IMG1-image-edge-cases");
+
+const TYPES = {
+  ".html": "text/html", ".js": "text/javascript", ".mjs": "text/javascript",
+  ".css": "text/css", ".json": "application/json", ".png": "image/png",
+  ".jpg": "image/jpeg", ".svg": "image/svg+xml", ".pdf": "application/pdf",
+};
+
+let server, browser, page, origin;
+
+before(async () => {
+  server = createServer(async (req, res) => {
+    // Strip the query string, then normalise — a path that escapes web/ is a
+    // request for something this server has no business serving.
+    const rel = normalize(decodeURIComponent(req.url.split("?")[0])).replace(/^(\.\.[/\\])+/, "");
+    let file = join(WEB, rel);
+    if (rel === "/" || rel === "\\") file = join(WEB, "index.html");
+    if (!file.startsWith(WEB)) { res.writeHead(403).end(); return; }
+    // /app is served as app.html, matching the hosting rewrite.
+    if (!existsSync(file) && existsSync(file + ".html")) file += ".html";
+    try {
+      const body = await readFile(file);
+      res.writeHead(200, { "content-type": TYPES[extname(file)] || "application/octet-stream" });
+      res.end(body);
+    } catch {
+      res.writeHead(404).end();
+    }
+  });
+  await new Promise((r) => server.listen(0, "127.0.0.1", r));
+  origin = `http://127.0.0.1:${server.address().port}`;
+  browser = await chromium.launch();
+  // iPhone SE / iPhone 12 mini width — the narrowest phone worth supporting.
+  page = await browser.newPage({ viewport: { width: 375, height: 812 } });
+  await page.goto(`${origin}/app`, { waitUntil: "domcontentloaded" });
+});
+
+after(async () => {
+  await browser?.close();
+  await new Promise((r) => server.close(r));
+});
+
+// Shows one screen and hides the rest. app.js may not have booted (it needs
+// Firebase over the network), so this drives the DOM directly — the layout
+// under test is a function of markup and CSS, not of sign-in.
+const showSection = (id) =>
+  page.evaluate((want) => {
+    document.body.className = "authed";
+    document.querySelectorAll("section[id]").forEach((s) => { s.hidden = s.id !== want; });
+    return want;
+  }, id);
+
+const sectionIds = () => page.evaluate(() =>
+  [...document.querySelectorAll("section[id]")].map((s) => s.id));
+
+// ---------------------------------------------------------------------------
+// PHONE1 — the app is designed against a 960px column
+// ---------------------------------------------------------------------------
+
+test("phone: no screen scrolls sideways", async () => {
+  const offenders = [];
+  for (const id of await sectionIds()) {
+    await showSection(id);
+    const bad = await page.evaluate(() => {
+      const vw = document.documentElement.clientWidth;
+      return [...document.querySelectorAll("*")]
+        .filter((el) => {
+          const r = el.getBoundingClientRect();
+          return r.width && r.height && (r.right > vw + 1 || r.left < -1);
+        })
+        .map((el) => el.tagName.toLowerCase() + (el.id ? "#" + el.id : ""))
+        .slice(0, 5);
+    });
+    if (bad.length) offenders.push(`${id}: ${bad.join(", ")}`);
+  }
+  assert.deepEqual(offenders, [], `elements past the viewport at 375px:\n${offenders.join("\n")}`);
+});
+
+test("phone: no form control is under 16px", async () => {
+  // iOS Safari zooms the page on focus below 16px and does not zoom back. This
+  // is the check that keeps the sign-in screen usable on an iPhone.
+  const small = [];
+  for (const id of await sectionIds()) {
+    await showSection(id);
+    // The tracker form is hidden until an EOB remark offers it; open it so its
+    // four controls are measured rather than skipped.
+    await page.evaluate(() => {
+      const w = document.getElementById("tracker-form-wrap");
+      if (w) { w.hidden = false; w.open = true; }
+    });
+    const found = await page.evaluate((sec) =>
+      [...document.getElementById(sec).querySelectorAll("input,select,textarea")]
+        .filter((el) => getComputedStyle(el).display !== "none")
+        .filter((el) => el.type !== "checkbox" && el.type !== "radio")
+        .filter((el) => parseFloat(getComputedStyle(el).fontSize) < 16)
+        .map((el) => `${sec}: #${el.id || el.name || el.type}`), id);
+    small.push(...found);
+  }
+  assert.deepEqual(small, [], `controls under 16px — iOS will zoom on focus:\n${small.join("\n")}`);
+});
+
+test("phone: tap targets reach 44px", async () => {
+  // The documented exception: reCAPTCHA's attribution links are inline in a
+  // wrapped 12px paragraph, where a 44px band would overlap its neighbours.
+  const ALLOWED = ["Privacy Policy", "Terms of Service", "Full privacy policy"];
+  const short = [];
+  for (const id of await sectionIds()) {
+    await showSection(id);
+    const found = await page.evaluate((sec) =>
+      [...document.getElementById(sec).querySelectorAll("button,a,select,summary")]
+        .map((el) => ({ r: el.getBoundingClientRect(), t: (el.textContent || "").trim() }))
+        .filter((x) => x.r.width && x.r.height && x.r.height < 44)
+        .map((x) => `${sec}: "${x.t.slice(0, 30)}" ${Math.round(x.r.height)}px`), id);
+    short.push(...found.filter((f) => !ALLOWED.some((a) => f.includes(a))));
+  }
+  assert.deepEqual(short, [], `tap targets under 44px:\n${short.join("\n")}`);
+});
+
+test("phone: 'Worth disputing' is the first totals card", async () => {
+  // The cards stack in one column below 560px. This figure is the product's
+  // whole moment; fourth puts it off the bottom of an iPhone SE.
+  await showSection("report");
+  const first = await page.evaluate(() => {
+    const g = document.getElementById("report-totals");
+    g.innerHTML = `<div class="tot"><span>Billed</span><b>$2,115.00</b></div>
+      <div class="tot"><span>EOB allowed</span><b>$841.75</b></div>
+      <div class="tot"><span>Your responsibility</span><b>$186.35</b></div>
+      <div class="tot hi"><span>Worth disputing</span><b>$822.15</b></div>`;
+    return [...g.children]
+      .map((c) => ({ l: c.querySelector("span").textContent, t: c.getBoundingClientRect().top }))
+      .sort((a, b) => a.t - b.t)[0].l;
+  });
+  assert.equal(first, "Worth disputing");
+});
+
+// ---------------------------------------------------------------------------
+// IMG1 — every real document is an image now, so this path is the product
+// ---------------------------------------------------------------------------
+
+const probe = (name) =>
+  page.evaluate(async (n) => {
+    const m = await import("/js/extract.js");
+    const f = document.getElementById("__probe").files[0];
+    if (!f || f.name !== n) return { ok: false, err: "fixture not staged" };
+    try {
+      const r = await m.extractText(f);
+      return { ok: true, method: r.method, images: r.images.length, textLen: (r.text || "").length };
+    } catch (e) {
+      return { ok: false, err: String(e.message || e) };
+    }
+  }, name);
+
+// A missing fixture must FAIL, not skip. The first run of this suite "passed"
+// two extraction tests in 0.18ms because gen-by-plan.mjs had wiped the IMG1
+// folder — a green tick for a check that never executed, which is the precise
+// failure this whole suite exists to catch.
+const fixture = (name) => {
+  const f = join(FIXTURES, name);
+  assert.ok(existsSync(f),
+    `fixture missing: ${name}\nrun: sh test-fixtures/gen-img1.sh && node test-fixtures/gen-by-plan.mjs`);
+  return f;
+};
+
+const stage = async (file) => {
+  await page.evaluate(() => {
+    if (!document.getElementById("__probe")) {
+      const i = document.createElement("input");
+      i.type = "file"; i.id = "__probe"; i.style.display = "none";
+      document.body.appendChild(i);
+    }
+  });
+  await page.setInputFiles("#__probe", file);
+};
+
+test("extraction: a PNG scan becomes one page image with no text", async () => {
+  await stage(fixture("01-normal-scan.png"));
+  const r = await probe("01-normal-scan.png");
+  assert.ok(r.ok, r.err);
+  assert.equal(r.method, "image");
+  assert.equal(r.images, 1);
+  assert.equal(r.textLen, 0, "an image carries no text; the model reads it");
+});
+
+test("extraction: HEIC is refused with instructions, not a riddle", async () => {
+  // Apple's camera default since iOS 11, and Chrome reports it as
+  // application/octet-stream — so it misses the image/* branch and used to hit
+  // "Unsupported file type… Use PDF, photo, HTML, or text", telling someone who
+  // just uploaded a photo to upload a photo.
+  await stage(fixture("04-iphone.heic"));
+  const r = await probe("04-iphone.heic");
+  assert.equal(r.ok, false, "HEIC cannot be decoded by Chrome and must be refused");
+  assert.match(r.err, /HEIC/i);
+  assert.match(r.err, /Most Compatible|JPEG/, "the message must say what to do instead");
+  assert.doesNotMatch(r.err, /Unsupported file type/, "the generic message is the bug");
+});
+
+// ---------------------------------------------------------------------------
+// Rendered copy — the class of claim that rotted silently in TESTING.md
+// ---------------------------------------------------------------------------
+
+test("review screen describes pages, not extracted text", async () => {
+  await showSection("review");
+  const intro = await page.evaluate(() =>
+    document.getElementById("review").innerText.replace(/\s+/g, " "));
+  assert.match(intro, /pages go to the model/i);
+  assert.doesNotMatch(intro, /What we'll analyze/i,
+    "the extracted-text pane was removed when PDFs became page renders");
+});
+
+test("the removed banners stay removed", async () => {
+  // Both were permanently-on or structurally-dead by the time they went. If one
+  // comes back, TESTING.md's claims about it need to come back too.
+  const present = await page.evaluate(() =>
+    ["ocr-banner", "pair-banner"].filter((id) => document.getElementById(id)));
+  assert.deepEqual(present, [], `re-added banners: ${present.join(", ")} — update TESTING.md too`);
+});
