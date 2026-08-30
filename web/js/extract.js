@@ -55,8 +55,27 @@ async function extractFromPdf(file) {
   return { text: "", images: previews, method: "image", confidence: null, previews };
 }
 
+// Apple's camera default since iOS 11, and the likeliest thing someone
+// photographing a bill will hand us. Browsers disagree about it in a way that
+// matters: Chrome reports no MIME type at all (application/octet-stream), while
+// others report image/heic and then fail to decode it. Both routes have to end
+// at the same sentence, or the second one surfaces "The source image could not
+// be decoded" — which tells a person nothing they can act on.
+const HEIC_RE = /\.hei[cf]$/i;
+const HEIC_MESSAGE =
+  "iPhone photos in HEIC format can't be read by the browser. On your iPhone: " +
+  "Settings → Camera → Formats → Most Compatible, then retake it. Or open the photo " +
+  "on a Mac and File → Export as JPEG.";
+
 async function extractFromImage(file) {
-  const bitmap = await createImageBitmap(file);
+  let bitmap;
+  try {
+    bitmap = await createImageBitmap(file);
+  } catch (e) {
+    // Safari decodes HEIC and never lands here; the browsers that don't, do.
+    if (HEIC_RE.test(file.name)) throw new Error(HEIC_MESSAGE);
+    throw e;
+  }
   const canvas = document.createElement("canvas");
   canvas.width = bitmap.width;
   canvas.height = bitmap.height;
@@ -86,18 +105,7 @@ export async function extractText(file) {
   if (file.type === "text/plain" || name.endsWith(".txt")) {
     return { text: await file.text(), images: [], method: "text", confidence: 100, previews: [] };
   }
-  // Apple's default camera format since iOS 11, and the single likeliest thing
-  // someone photographing a bill will hand us. Chrome reports it as
-  // application/octet-stream, so it misses the image/* branch above and used to
-  // land on the generic message below — which tells a person who just uploaded
-  // a photo to upload a photo. Chrome cannot decode HEIC at all, so the honest
-  // answer is what to do instead, not a silent failure further down.
-  if (/\.hei[cf]$/.test(name)) {
-    throw new Error(
-      "iPhone photos in HEIC format can't be read by the browser. On your iPhone: " +
-      "Settings → Camera → Formats → Most Compatible, then retake it. Or open the photo " +
-      "on a Mac and File → Export as JPEG."
-    );
-  }
+  // The Chrome route: no MIME type at all, so it never reached the image branch.
+  if (HEIC_RE.test(name)) throw new Error(HEIC_MESSAGE);
   throw new Error(`Unsupported file type: ${file.type || file.name}. Use PDF, photo, HTML, or text.`);
 }
