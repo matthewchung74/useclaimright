@@ -24,6 +24,53 @@ drop into before that.
 - **Day 3 (auth, family, scans, real documents):** A1 (0 audits) → FAM1 (2 audits) → FAM2 (0, reads FAM1's) → FAM3 (0) → S1 (1 audit) → P1 (3 plan uploads) → G1 (0). Total **3 audits + 3 plan uploads**, so it fits comfortably and can be folded into Day 2 if Day 2 ran light.
 - Or use **☰ → Reset account** between passes: it clears data and returns you to onboarding, but **daily counters intentionally survive**, so it does not buy more audits.
 
+## Run log — what has actually been executed
+
+One row per plan, and the only place to look for "have I done this?". **Update the date when you
+run one.** A plan with no date has never been executed against the current build, whatever the
+prose under it says — the per-plan notes that used to serve this purpose were scattered through
+the file and easy to miss.
+
+| Plan | Last run | By | Result |
+|---|---|---|---|
+| E1 | 2026-08-29 | agent | $2,115.00 / $841.75 / $186.35 / **$822.15** · `charity_care_eligible` did not fire (advisory, excluded from the total) |
+| E1b | 2026-08-28 | matt | — |
+| M1 | 2026-08-29 | agent | Acme Silver PPO on file, trackers auto-created 0/20 and 0/6 |
+| M2 | 2026-08-29 | agent | $210.00 / $95.00 / $95.00 / **$150.00** · SBC quote present, tracker 1 of 20 |
+| M3 | 2026-08-29 | agent | $175.00 / $120.00 / $120.00 / **$55.00** · no false positives (the control) |
+| M4 | 2026-08-29 | agent | 2 audits, **$110.00** · per-audit `serviceDates`, consolidated EOB saved once |
+| M5 | 2026-08-29 | agent | $175.00 / $0.00 / $175.00 / **$175.00** · tracker 4 of 6, no false mismatch warning |
+| M6 | — | — | not run against this build |
+| M7 | 2026-08-29 | agent | 3 audits · one-click tracker from an EOB remark, deductible $720.00 of $1,500.00 |
+| D1 | 2026-08-29 | agent | 2 audits · duplicate hero on the re-bill, **and** no hero on the same statement twice |
+| E2 | 2026-08-29 | agent | $175.00 / $0.00 / $0.00 / $0.00 · zero findings, no tab row |
+| E3 | — | — | not run against this build |
+| E4 | — | — | not run against this build |
+| E5 | — | — | not run against this build |
+| E6 | 2026-08-29 | agent | step 5: $2,115.00 / $0.00 / $845.00 / **$2,115.00**, warning on the post-run report |
+| E7 | — | — | destructive; run last |
+| X1 | — | — | one confirmation dialog seen incidentally during M7 |
+| R2 | — | — | not run against this build |
+| F1 | — | — | not run against this build |
+| A1 | — | — | needs a throwaway account |
+| FAM1 | 2026-08-29 | agent | 2 audits · Matthew and Sarah stayed two bills, no duplicate hero |
+| FAM2 | — | — | reads FAM1's audits — ready to run |
+| FAM3 | — | — | not run against this build |
+| S1 | 2026-08-29 | agent | $2,115.00 / $841.75 / $186.35 / **$836.00** from a 110dpi PNG — identical to E1's digital PDF |
+| IMG1 | 2026-08-29 | agent | 8 fixtures · HEIC refusal fixed, now covered by `test/browser` |
+| P1 | — | — | not run against this build |
+| G1 | — | — | not run against this build |
+| PAY1 | 2026-08-26 | agent | sandbox cycle verified; payments are still **on** |
+| REV1 | — | — | not run against this build |
+| PHONE1 | 2026-08-29 | agent | 375px · 0 overflow, 0 controls under 16px, 44→2 short tap targets |
+| TAP1 | — | — | not run against this build |
+
+**The daily cap** was exercised on 2026-08-29: the 11th attempt showed the dialog and fired both
+`limit_reached` and `error_shown`.
+
+Two bugs were found by running this suite rather than by reading the code — the `statementId`
+label false-duplicate and the empty saved EOB. Both are written up below.
+
 ## What you can reorder, and what you can't
 
 Most plans are self-contained. The ones that aren't consume state an earlier plan produced, and
@@ -65,7 +112,7 @@ npm --prefix test/browser test       # 16 doc-drift + layout + extraction checks
 the authenticated screens are driven by unhiding them directly.
 
 - `drift.test.js` ties a claim in this file to a fact in the source. A ✓ line saying "the 📷
-  banner appears" fails once `#ocr-banner` is gone. Records ("Verified on production 2026-08-25:
+  banner appears" fails once the `ocr-banner` element is gone. Records ("Verified on production 2026-08-25:
   the banner fired") are history and are left alone — only ✓ assertions are held to today's code,
   which is what lets a fix keep its own account of what it replaced. It found three stale
   assertions on its first run, one of which had been *noticed* the same day and not fixed.
@@ -136,7 +183,6 @@ from, which is the exact failure this tier exists to catch.
 
 **Cost:** 1 audit.
 
-matt checked 8/28
 
 **Verified on production 2026-08-25 — figures below PREDATE the cost-share fix.** They read
 $804.15 because the planted $18 error was not yet reported as its own finding; the table above
@@ -206,7 +252,6 @@ beats the teal `.menu-item:hover { background: var(--accent) }` at (0,2,0). So R
 hovers red, not teal, as the plan requires.
 **Cost:** 0 audits.
 
-matt checked 8/28
 
 ---
 
@@ -233,7 +278,6 @@ Extracted Acme Silver PPO, 2026-01-01 to 2026-12-31, deductible $1,500/$3,000, O
 $6,000/$12,000, limits "Outpatient mental health services 6/yr" and "Rehabilitation services
 20/yr", with both trackers auto-created and tagged `source: sbc`.
 
-matt checked 8/28
 
 
 ## M2 — Audit with a planted plan violation
@@ -264,7 +308,6 @@ $95.00, worth disputing **$150.00** — `billed_vs_allowed_mismatch` $115.00 hig
 "Rehabilitation services (physical, occupational therapy) $60". The arithmetic holds exactly:
 115 + 35 = 150.
 
-matt checked 8/28
 
 ## M3 — Consistent claim: no false positives + combined deductible sourcing
 **Use case:** plan terms that agree with the EOB stay silent; deductible card merges SBC target with EOB progress.
@@ -294,7 +337,6 @@ direction to get right. Accumulators picked up `deductibleToDate` 120 against
 `deductibleLimit` 1500. The documented regression (a false `deductible_misapplied` at $95)
 did not fire. `droppedUnverified` 0.
 
-matt checked 8/28
 
 ---
 ## M4 — Batch with a consolidated EOB, plan still applied
@@ -328,7 +370,6 @@ disputing" with $55.00 on each row; both audits carried `planApplied: true`; no
 held only its own bill's date (`["2026-03-11"]` and `["2026-02-12"]`), not all three from the
 consolidated EOB.
 
-matt checked 8/28
 
 **Cost:** 2 audits.
 
