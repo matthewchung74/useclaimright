@@ -1050,6 +1050,12 @@ Both bills: flu vaccine 90686, $85.00, 03/10/2026, Testville Family Medicine Ass
 3. **Click the logo** to return to the bills list.
    ✓ **NO duplicate hero. No `FOUND BY COMPARING YOUR BILLS TO EACH OTHER` ribbon.**
    ✓ The provider group reads "**2 bills · $170.00**", both rows "Billed above EOB allowed amount".
+3b. ✓ **The dashboard names who each bill is for.** Under Testville Family Medicine the two rows
+   read **Matthew** and **Sarah** beside the date. *(Added 2026-08-31: `patientName` was extracted
+   and stored but never rendered, so two family members seen the same day for the same code
+   showed as identical rows. Shown only when the history holds more than one person — a name on
+   every row of a single-person account is noise. First name only, falling back to the full name
+   if two members share one; an audit predating `patientName` shows "—".)*
 4. Open each audit and confirm the patient it was attributed to.
    ✓ One is **Matthew T. Testpatient**, the other **Sarah L. Testpatient** — read from the
    *patient* field. If both say Matthew, the model took the **guarantor** and the fix is

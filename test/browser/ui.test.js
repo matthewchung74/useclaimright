@@ -238,3 +238,41 @@ test("the removed banners stay removed", async () => {
     ["ocr-banner", "pair-banner"].filter((id) => document.getElementById(id)));
   assert.deepEqual(present, [], `re-added banners: ${present.join(", ")} — update TESTING.md too`);
 });
+
+test("phone: a family bill row fits, and the finding keeps full width", async () => {
+  // The dashboard groups by provider and shows date, finding and amount — which
+  // is everything except WHOSE bill it is, once a household shares an account.
+  // Adding the name to a four-column row at 360px squeezed the finding into
+  // 61px and wrapped the row to 180px tall, so the row became two lines.
+  await showSection("bills");
+  const m = await page.evaluate(() => {
+    const row = (who) => `<div class="bill-row tap">
+        <span class="when">Mar 10, 2026</span>${who ? `<span class="who">${who}</span>` : ""}
+        <button class="what">Duplicate charge · Billed above EOB allowed amount</button>
+        <span class="money-pill">$85.00</span>
+        <button class="rm" title="Delete this audit">✕</button></div>`;
+    const read = (html) => {
+      // #bill-groups is the DASHBOARD's list. #bill-list is the staged-files
+      // list on the upload form, and injecting there measures an element inside
+      // a hidden section — which is how the first pass at this check produced
+      // confident numbers for the wrong thing.
+      document.getElementById("bill-groups").innerHTML =
+        `<details class="prov-group" open><summary>Testville Family Medicine</summary>${html}</details>`;
+      const vw = document.documentElement.clientWidth;
+      const r = document.querySelector(".bill-row");
+      const what = r.querySelector(".what");
+      return {
+        overflow: [...r.children].filter((el) => el.getBoundingClientRect().right > vw + 1).length,
+        height: Math.round(r.getBoundingClientRect().height),
+        summaryWidth: Math.round(what.getBoundingClientRect().width),
+      };
+    };
+    return { named: read(row("Matthew")), unnamed: read(row(null)) };
+  });
+  assert.equal(m.named.overflow, 0, "a named row must not push anything past the viewport");
+  assert.equal(m.unnamed.overflow, 0);
+  assert.equal(m.named.height, m.unnamed.height,
+    "the name must cost no vertical space — it shares line one with the date");
+  assert.ok(m.named.summaryWidth > 200,
+    `the finding summary must keep the second line to itself, got ${m.named.summaryWidth}px`);
+});

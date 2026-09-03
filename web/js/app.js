@@ -1254,6 +1254,31 @@ async function loadHistory() {
   renderUsage();
 }
 
+// Whose bill is this? The dashboard groups by provider and shows date, finding
+// and amount — everything EXCEPT the answer, once a household shares an account.
+// Two family members seen the same day for the same code render as identical
+// rows, and patientName was already in the dashboard model, read only by the
+// duplicate check.
+//
+// Shown only when the history actually holds more than one person: a name on
+// every row of a single-person account is noise. Same rule as the saved-EOB
+// pre-selection — disambiguate only when there is something to disambiguate.
+const householdNames = () =>
+  new Set(allAudits.map((a) => (a.patientName || "").trim()).filter(Boolean));
+
+// "Jane Q. Testpatient" -> "Jane". A household tells its members apart by first
+// name and the row has no width for more. Falls back to the full name when two
+// members share a first name, the one case where more is clearer. Audits from
+// before patientName was extracted have none; among named rows an unnamed one
+// shows "—" rather than looking like it belongs to whoever is above it.
+function shortPatient(name, all) {
+  const full = (name || "").trim();
+  if (!full) return "";
+  const first = full.split(/\s+/)[0];
+  const clash = [...all].filter((n) => n.split(/\s+/)[0] === first).length > 1;
+  return clash ? full : first;
+}
+
 // "Duplicate charge · Copay doesn't match your plan" — what was found, in the
 // user's words, capped so a row stays one line.
 function summarizeFindings(findings) {
@@ -1307,6 +1332,8 @@ const shortDate = (iso) => {
 };
 
 function renderDashboard() {
+  const names = householdNames();
+  const who = names.size > 1; // more than one person on the account
   const win = planYearWindow(allTrackers[0]?.planYearStartMonth || planYearStartMonthFrom(activePlan?.structured?.planYearStart), todayISO());
   const totals = runningTotals(allAudits, win);
   $("dash-subtitle").innerHTML = allAudits.length
@@ -1387,6 +1414,7 @@ function renderDashboard() {
           <span class="money-pill">${fmt(g.atStake)}</span></summary>
         ${g.bills.map((b) => `<div class="bill-row tap">
           <span class="when">${escapeHtml(shortDate(b.serviceDates[0] || b.createdAtDate))}</span>
+          ${who ? `<span class="who">${escapeHtml(shortPatient(b.patientName, names) || "—")}</span>` : ""}
           <button class="what" data-audit="${escapeHtml(b.id)}">${escapeHtml(b.summary)}</button>
           <span class="money-pill">${fmt(b.atStake)}</span>
           <button class="rm" data-del="${escapeHtml(b.id)}" title="Delete this audit">✕</button>
