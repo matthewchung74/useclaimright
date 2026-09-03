@@ -58,6 +58,9 @@ the file and easy to miss.
 | FAM3 | 2026-08-31 | agent | ✓ `matthew` and `family` stems disagree, still paired correctly (0 audits) |
 | FAM4 | 2026-08-31 | agent | found a false positive ($85.00 on a correct charge, no warning) → **fixed and re-verified same day** |
 | FAM5 | 2026-08-31 | agent | ✓ per-member counting verified live (0 audits) |
+| S2 | 2026-08-31 | agent | ✓ both documents as images — figures identical to the text PDFs |
+| S3 | 2026-08-31 | agent | printed fields identical from a scan; **found** Replace discarding confirmed tracker codes → fixed |
+| S4 | — | — | multi-page scan fixtures built, not yet run |
 | S1 | 2026-08-29 | agent | $2,115.00 / $841.75 / $186.35 / **$836.00** from a 110dpi PNG — identical to E1's digital PDF |
 | IMG1 | 2026-08-29 | agent | 8 fixtures · HEIC refusal fixed, now covered by `test/browser` |
 | P1 | — | — | not run against this build |
@@ -1229,6 +1232,84 @@ in the SBC extraction records which, so this assumes per member — the directio
 mode is missing a limit rather than inventing one.
 
 **Cost:** 0 audits.
+
+## S2 — A scanned EOB, and both documents as images (1 audit)
+**Use case:** S1 rasterises the *bill*. Every real document reaches the model as pages now, so an
+EOB photographed or scanned — the letter that came in the post — is the ordinary case, and
+"neither document is text" had never been run at all.
+**Data:** `by-plan/S1-scan-read-by-model/scanned-bill-1.png` + `by-plan/S2-scanned-eob/eob-scan.png`.
+
+**Verified on production 2026-08-31.** Figures identical to the same documents as digital PDFs:
+
+| | E1 (text PDFs) | S1 (image bill, text EOB) | **S2 (both images)** |
+|---|---|---|---|
+| Billed | $2,115.00 | $2,115.00 | **$2,115.00** |
+| EOB allowed | $841.75 | $841.75 | **$841.75** |
+| Your responsibility | $186.35 | $186.35 | **$186.35** |
+| Worth disputing | $822.15 *(no plan)* | $836.00 | **$836.00** |
+
+Five findings, `droppedUnverified` 0, and the model transcribed both documents (1,002 and 1,021
+characters). `eobPatients` came back correctly from a scan — `["Jane Q. Testpatient"]` — so the
+FAM4 guard works on images too. **No fix needed.**
+
+**Cost:** 1 audit.
+
+## S3 — A scanned SBC (1 plan upload)
+**Use case:** plan extraction is a different prompt and a different schema from the audit, and no
+scan had ever been through it. This is also where a real bug once lived: `prepareSbc` dropped
+`images`, so a scanned SBC reached the server with neither text nor pages.
+**Data:** `by-plan/S3-scanned-sbc/sbc-scan.png` — **`fake-sbc.pdf` rasterised**, deliberately the
+same SBC already on file as text, so the extracted plan can be compared field by field. A
+different SBC would hide the comparison.
+
+**Verified on production 2026-08-31.** Everything *printed on the page* matched the text
+extraction exactly: plan name, plan year start and end, deductible ($1,500 / $3,000), out-of-pocket
+maximum ($6,000 / $12,000), and all six cost-share rows.
+
+One field differed, and it is the one that is **not printed**:
+
+| | Rehabilitation `codesHint` |
+|---|---|
+| text PDF | `97110, 97161, 97165` |
+| scan | `97110, 97140` |
+
+All are real physical-therapy codes. The SBC row says only "Rehabilitation services (physical,
+occupational therapy)" — the model infers the codes, which is why the card says **check the
+codes**. So the variance is expected, and it tells you precisely what to trust from a scanned
+plan: **every printed figure, and none of the inferred codes.**
+
+### The bug this turned up
+
+Replacing the plan **silently rewrote the tracker's codes**, from `97110, 97161, 97165` to
+`97110, 97140`. A visit coded 97161 that counted yesterday stopped counting, with nothing on
+screen to explain why.
+
+Worse, `mergeSbcTrackers` overwrote codes on *any* SBC-derived tracker **regardless of
+`confirmed`** — so a member who did what the card asks and confirmed their codes lost that answer
+the next time they uploaded a plan. The app solicited an answer and then discarded it.
+
+Fixed: label and limit still update from a newer SBC, because both are printed on it and
+authoritative. Codes update only while the tracker is unconfirmed. Two tests cover both
+directions.
+
+**Cost:** 1 plan upload.
+
+## S4 — A genuinely multi-page scan (1 plan upload)
+**Use case:** every scan tested so far is one page. A real scanned plan document is five, and
+page order, page count and per-page rendering have never been exercised together.
+**Data:** `by-plan/S4-multipage-scan/` — `real-sbc/cms-2025.pdf` rasterised to five PNGs at 110dpi.
+
+1. Upload all five to the SBC dropzone.
+   ✓ The review screen offers **five** page pills and each renders.
+   ✓ Extraction reads the plan across pages — the deductible and out-of-pocket figures live on
+   page 1, the visit limits deeper in.
+2. ✓ Compare against P1's text run of the same document.
+
+⚠️ **This replaces the plan on file** with a CMS sample plan, which changes the deductible targets
+and can re-derive SBC trackers. Run it when you are willing to re-upload your own SBC afterwards,
+or on a scratch account.
+
+**Cost:** 1 plan upload.
 
 ## FAM4 — The wrong family member's EOB
 **Use case:** a household has three EOBs in the downloads folder. They are the same payer, the

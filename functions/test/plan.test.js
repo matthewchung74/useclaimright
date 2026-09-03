@@ -276,3 +276,26 @@ test("with no EOB figure, individual is the default", () => {
   assert.equal(t.limit, 500);
   assert.equal(t.scope, "individual");
 });
+
+test("mergeSbcTrackers: a confirmed tracker keeps the codes the member chose", () => {
+  // The card asks members to check SBC-inferred codes. Re-uploading a plan must
+  // not discard that answer. Found live: the same SBC as text and as a scan
+  // inferred different rehab codes, so Replace silently changed which visits
+  // counted.
+  const existing = [{ id: "t1", source: "sbc", confirmed: true, codes: ["97110", "97161", "97165"] }];
+  const limits = [{ label: "Rehabilitation services", codesHint: ["97110", "97140"], visitsPerYear: 20 }];
+  const { update, create } = mergeSbcTrackers(existing, limits, 1);
+  assert.equal(create.length, 0);
+  assert.equal(update.length, 1);
+  assert.deepEqual(update[0].changes, { label: "Rehabilitation services", limit: 20 },
+    "label and limit are printed on the SBC and update; codes are not and must not");
+  assert.ok(!("codes" in update[0].changes), "the member's confirmed codes survive");
+});
+
+test("mergeSbcTrackers: an unconfirmed tracker still takes the newer codes", () => {
+  const existing = [{ id: "t1", source: "sbc", codes: ["97110", "97161"] }];
+  const limits = [{ label: "Rehabilitation services", codesHint: ["97110", "97140"], visitsPerYear: 20 }];
+  const { update } = mergeSbcTrackers(existing, limits, 1);
+  assert.deepEqual(update[0].changes.codes, ["97110", "97140"],
+    "nothing was confirmed, so the freshest reading wins");
+});
