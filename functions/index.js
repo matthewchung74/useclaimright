@@ -500,7 +500,7 @@ export const extractPlan = onCall(
   async (request) => {
     if (!request.auth) throw new HttpsError("unauthenticated", "Sign in to add your plan.");
     const uid = request.auth.uid;
-    const { sbc, sourceName, force } = request.data || {};
+    const { sbc, sourceName, sourceHash, force } = request.data || {};
     const sbcDoc = {
       text: typeof sbc?.text === "string" ? sbc.text : "",
       images: Array.isArray(sbc?.images) ? sbc.images : [],
@@ -573,6 +573,11 @@ export const extractPlan = onCall(
     await ref.set({
       structured, digest, text: sbcDoc.text || structured?.sourceText || "",
       sourceName: typeof sourceName === "string" ? sourceName.slice(0, 200) : "",
+      // Content fingerprint of the uploaded file, so the client can recognise a
+      // re-upload of the SAME document before spending an extraction on it. The
+      // text comparison it backs up cannot see a scan, which has no text until
+      // the model reads it — and by then the upload is already spent.
+      sourceHash: typeof sourceHash === "string" ? sourceHash.slice(0, 64) : "",
       model: MODEL_ID, tokens: planUsage, createdAt: FieldValue.serverTimestamp(),
     });
     return { status: "stored", structured, digest };

@@ -1473,6 +1473,18 @@ async function loadTrackers() {
 // `redactedBill`/`redactedEob` described a step that no longer happens. Stored
 // documents written before that change still carry the old names, so read both.
 // Delete these once nothing pre-rename remains.
+// Content fingerprint of an uploaded file. SHA-256 over the raw bytes, so it
+// recognises the identical file whether or not any text can be read out of it —
+// which is the whole point for a scan.
+async function fileHash(file) {
+  try {
+    const buf = await crypto.subtle.digest("SHA-256", await file.arrayBuffer());
+    return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join("");
+  } catch {
+    return ""; // no hash is "cannot tell", never a false match
+  }
+}
+
 const savedEobText = (e) => e?.text ?? e?.redactedText ?? "";
 const planText = (p) => p?.text ?? p?.redactedText ?? "";
 const auditText = (a, which) =>
@@ -1700,9 +1712,21 @@ async function prepareSbc(file) {
     // always carried images; this path quietly did not.
     state.bill = { text: ex.text, images: ex.images, previews: ex.previews, method: ex.method, confidence: ex.confidence };
     state.sbcName = file.name;
-    // Free duplicate check: same text means the same document.
-    // Duplicate check needs text on both sides; a scanned SBC has none until
-    // the model reads it, so it simply is not checked here.
+    // Two ways to recognise the same document, because neither covers everything.
+    //
+    // The BYTES catch a scan. The text comparison below needs text on both
+    // sides, and a scanned SBC has none until the model reads it — so before
+    // this, re-uploading the same photographed plan re-extracted every time and
+    // spent one of three daily plan uploads doing it. Bytes are what the browser
+    // always has, whatever the document is.
+    //
+    // The TEXT still earns its place: the same plan re-exported or re-scanned
+    // has different bytes and identical text.
+    state.sbcHash = await fileHash(file);
+    if (activePlan?.sourceHash && state.sbcHash && activePlan.sourceHash === state.sbcHash) {
+      show(state.sbcOrigin);
+      return setError(sbcErrTarget(), "This plan is already on file.");
+    }
     if (activePlan && state.bill.text && planText(activePlan) === state.bill.text) {
       show(state.sbcOrigin);
       return setError(sbcErrTarget(), "This plan is already on file.");
@@ -1723,12 +1747,13 @@ async function prepareSbc(file) {
 async function runSbcExtraction(force = false) {
   const sbc = asDoc(state.bill);
   const sourceName = state.sbcName || "";
+  const sourceHash = state.sbcHash || "";
   state.bill.previews = null;
   $("page-view").textContent = "";
   show("processing");
   setStatus("Reading your plan's terms…");
   try {
-    const { data } = await extractPlanFn({ sbc, sourceName, force });
+    const { data } = await extractPlanFn({ sbc, sourceName, sourceHash, force });
     if (data.status === "confirm_older") {
       // The question is not "is this a duplicate" but "this one is OLDER — sure?",
       // so the title says that and the button carries the verb.
