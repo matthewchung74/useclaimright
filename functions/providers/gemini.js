@@ -75,6 +75,19 @@ totals.eobAllowed and totals.patientResponsibility to 0.`;
 // stop under a model that decides to think at length.
 const MAX_OUTPUT_TOKENS = 8192;
 
+// A plan's output is structurally bigger than an audit's, and grows with the
+// document rather than with what was found. planSchema requires `verbatim` — each
+// cost-share row copied word for word — and a real five-page CMS SBC has
+// thirteen of them plus four benefit limits. Read as TEXT the model copies those
+// rows and fits; read as a SCAN it must transcribe them, and a five-page scan
+// overran 8192 and failed with "produced more output than we can handle" — so a
+// photographed plan, which is every plan someone scans, could not be extracted
+// at all. Verified 2026-08-31 against a 110dpi render of cms-2025.pdf.
+//
+// This is a ceiling, not a budget: it is only ever reached by a document that
+// genuinely has that much printed on it.
+const MAX_PLAN_OUTPUT_TOKENS = 24576;
+
 // A response cut off mid-JSON is not retryable. It fails schema validation, the
 // retry sends the SAME oversized request, and a ceiling meant to cap cost
 // doubles it instead. Detect the truncation and stop.
@@ -207,7 +220,7 @@ export async function runPlanExtract(sbc, opts) {
       responseMimeType: "application/json",
       responseJsonSchema: planSchema,
       temperature: 0,
-      maxOutputTokens: MAX_OUTPUT_TOKENS,
+      maxOutputTokens: MAX_PLAN_OUTPUT_TOKENS,
     },
   });
   assertComplete(response);

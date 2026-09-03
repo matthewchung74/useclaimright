@@ -299,3 +299,38 @@ test("mergeSbcTrackers: an unconfirmed tracker still takes the newer codes", () 
   assert.deepEqual(update[0].changes.codes, ["97110", "97140"],
     "nothing was confirmed, so the freshest reading wins");
 });
+
+// --- FAM2's arithmetic, without FAM2's preconditions ---
+// FAM2 needs a real SBC on file AND the family EOB to be the most recent
+// accumulator source. On an account with later EOBs the snapshot comes from
+// those instead, so the browser step cannot be observed. The substance is this
+// function, and it was never covered.
+const FAM2_PLAN = { deductible: { individual: 500, family: 1000 }, oopMax: { individual: 2500, family: 5000 } };
+
+test("deductibleTarget: an EOB quoting the FAMILY figure is measured against the family", () => {
+  // The planted defect: $640 applied against a $1,000 family deductible, measured
+  // against the $500 individual, renders 128% of a deductible they are 64% through.
+  const t = deductibleTarget(FAM2_PLAN, { deductibleToDate: 640, deductibleLimit: 1000 });
+  assert.equal(t.limit, 1000);
+  assert.equal(t.scope, "family");
+  assert.equal(t.conflict, false, "the family figure IS the plan, not a disagreement with it");
+});
+
+test("deductibleTarget: an EOB quoting the INDIVIDUAL figure stays individual", () => {
+  const t = deductibleTarget(FAM2_PLAN, { deductibleToDate: 300, deductibleLimit: 500 });
+  assert.equal(t.limit, 500);
+  assert.equal(t.scope, "individual");
+  assert.equal(t.conflict, false);
+});
+
+test("deductibleTarget: an EOB that matches neither is a real conflict", () => {
+  const t = deductibleTarget(FAM2_PLAN, { deductibleLimit: 750 });
+  assert.equal(t.limit, 500, "the SBC is still the target");
+  assert.equal(t.conflict, true, "but the disagreement is surfaced");
+});
+
+test("oopTarget: resolves family the same way", () => {
+  const t = oopTarget(FAM2_PLAN, { oopLimit: 5000 });
+  assert.equal(t.limit, 5000);
+  assert.equal(t.scope, "family");
+});
