@@ -53,9 +53,11 @@ the file and easy to miss.
 | R2 | — | — | not run against this build |
 | F1 | — | — | not run against this build |
 | A1 | — | — | needs a throwaway account |
-| FAM1 | 2026-08-29 | agent | 2 audits · Matthew and Sarah stayed two bills, no duplicate hero |
-| FAM2 | — | — | reads FAM1's audits — ready to run |
+| FAM1 | 2026-08-29 | agent | 2 audits · Matthew and Sarah stayed two bills, no duplicate hero. Re-confirmed 2026-08-31: the dashboard now names them |
+| FAM2 | — | — | **blocked**: needs a real SBC on file (family/individual split) and the family EOB as the most recent. The plan on file is `fake-sbc` and the deductible card is driven by the t-series EOBs, so the family-vs-individual arithmetic cannot be observed as written. |
 | FAM3 | — | — | not run against this build |
+| FAM3 | 2026-08-31 | agent | ✓ `matthew` and `family` stems disagree, still paired correctly (0 audits) |
+| FAM4 | 2026-08-31 | agent | ⚠️ **found a false positive**: $85.00 "worth disputing" on a correct charge, no warning |
 | S1 | 2026-08-29 | agent | $2,115.00 / $841.75 / $186.35 / **$836.00** from a 110dpi PNG — identical to E1's digital PDF |
 | IMG1 | 2026-08-29 | agent | 8 fixtures · HEIC refusal fixed, now covered by `test/browser` |
 | P1 | — | — | not run against this build |
@@ -1153,6 +1155,67 @@ review screen with no error.
 - **Matching stems unaffected:** `t3-bill.pdf` + `t3-eob.pdf` ✓ still pair by stem.
 
 **Cost:** 0 audits.
+
+## FAM4 — The wrong family member's EOB
+**Use case:** a household has three EOBs in the downloads folder. They are the same payer, the
+same clinic, the same date and the same layout; the only thing that separates them is the patient
+name on the claim. Grabbing the wrong one is the likeliest mistake a family makes.
+**Data:** `by-plan/FAM4-wrong-family-members-eob/` — `matthew-bill.pdf` (90686 flu shot, 2026-03-10,
+$85.00) paired with **`sarah-eob.pdf`** (Sarah's own statement for *her* flu shot, same code, same day).
+
+**Why this is the hard case.** Every other family plan pairs a bill with the *consolidated*
+`family-eob.pdf`, which legitimately covers everyone — so they test that we do **not** false-positive
+across members. Nothing tested the other direction. `documentsRelated` compares **service dates and
+procedure codes only**, and this pair shares both exactly, so the mismatch guard sees "related" and
+stays silent. Saved EOBs do not store `patientName` either, so there is nothing to compare even if
+the guard wanted to.
+
+1. Audit `matthew-bill.pdf` + `sarah-eob.pdf`.
+   ✓ The audit completes. Record the four totals cards.
+   ✓ **The question this plan exists to answer:** does anything tell the member the EOB belongs to
+   someone else? Check, in order:
+   - the mismatched-pair warning on the report (expected **not** to fire — dates and codes match)
+   - the finding list, for anything naming the patient
+   - the stored audit's `patientName` (from the *bill*, so "Matthew T. Testpatient")
+2. ✓ Whatever the model says, the **guard** is what is under test. Record which of the three
+   noticed, if any.
+
+**Verified on production 2026-08-31 — and the result is worse than "nothing fires".**
+
+| Card | Got |
+|---|---|
+| Billed | $85.00 |
+| EOB allowed | **$0.00** |
+| Your responsibility | **$0.00** |
+| Worth disputing | **$85.00** |
+
+One finding, `not_in_eob` $85.00 at **high** confidence, and the mismatch warning **suppressed**:
+
+```
+documentsRelated -> { related: true, confident: true,
+                      sharedDates: ["2026-03-10"], sharedCodes: [] }
+```
+
+The shared service date alone was enough to call the pair related. So the app does not merely
+stay quiet — **it tells the member to dispute $85.00 they owe nothing on**, because the charge is
+covered on a different statement. Same harm direction as the `statementId` false-duplicate: the
+product's worst failure is telling someone not to pay a bill that is correct.
+
+`patientName` on the audit was read correctly as **Matthew T. Testpatient**. The information
+needed to catch this was present and unused.
+
+**⚠️ The obvious fix does not work.** Sarah's EOB names *both* people — Sarah on the claim line,
+Matthew in the subscriber block, because he is the subscriber for the household. So "is the bill's
+patient named anywhere in the EOB?" passes on a wrong pair and would guard nothing. The comparison
+has to be against the **claim-level** patient, not the document text.
+
+**That is the finding, not a failure of the test** — it turns an invisible gap into a reproducible
+one. The fix has two halves, neither built yet:
+store `patientName` on saved EOBs, and compare people in `documentsRelated` alongside dates and
+codes (carefully: "TESTPATIENT, MATTHEW" and "Matthew T. Testpatient" are the same person, and a
+false "wrong patient" warning on a correct pair is worse than silence).
+
+**Cost:** 1 audit.
 
 ## S1 — A scan is read by the model, not OCR'd locally
 **Use case:** tesseract was removed 2026-08-23. Pages with no text layer go to the model as
