@@ -1388,6 +1388,7 @@ function renderDashboard() {
         <span class="muted">worth disputing</span></div>
       ${just.map((b) => `<div class="bill-row tap${b.atStake ? "" : " quiet"}">
         <span class="when">${escapeHtml(shortDate(b.serviceDates[0] || b.createdAtDate))}</span>
+        ${who ? `<span class="who">${escapeHtml(shortPatient(b.patientName, names) || "—")}</span>` : ""}
         <button class="what" data-audit="${escapeHtml(b.id)}">${escapeHtml(b.summary || "Nothing to dispute")}</button>
         ${b.atStake ? `<span class="money-pill">${fmt(b.atStake)}</span>` : ""}
       </div>`).join("")}
