@@ -73,7 +73,10 @@ ${rows}<tr class="tot"><td colspan="4">TOTAL CHARGES</td><td class="r">${usd(tot
 }
 
 // Consolidated EOB, CMS sample-EOB column vocabulary.
-function consolidatedEob(file, claims) {
+// `covers` is the only line that separates a household statement from one
+// member's own: same payer, same layout, same subscriber block. That is exactly
+// why picking the wrong one is easy — see FAM4.
+function consolidatedEob(file, claims, covers = "This statement covers claims for all family members enrolled under this subscriber.") {
   const rows = claims.map((c, i) => {
     const person = FAMILY[c.who];
     const head = `<tr class="pt"><td colspan="12">Patient: ${person.name} · ID ${person.id} · Claim ${c.claim} · Provider: ${CLINIC}</td></tr>`;
@@ -91,7 +94,7 @@ function consolidatedEob(file, claims) {
 <div class="box"><b>Subscriber:</b> ${FAMILY.matthew.name} · Subscriber Number: ${FAMILY.matthew.id}<br>
 <b>Group:</b> ${PLAN.group} · <b>Plan:</b> ${PLAN.name}<br>
 <b>Address:</b> 12 Sample Street, Testville, CA 90000<br>
-<span class="muted">This statement covers claims for all family members enrolled under this subscriber.</span></div>
+<span class="muted">${covers}</span></div>
 <table>
 <tr><th class="r">Line No.</th><th>Date of Service</th><th>Service Description</th><th>Claim Status</th>
 <th class="r">Provider Charges</th><th class="r">Allowed Charges</th><th class="r">Co Pay</th><th class="r">Deductible</th>
@@ -126,4 +129,23 @@ consolidatedEob("family-eob.html", [
     { date: DAY, desc: "Office visit, established patient", charge: 210.00, allowed: 118.00, copay: 30.00, ded: 0, coins: 0, paid: 88.00, owe: 30.00, remark: "PDC" }] },
 ]);
 
-console.log("wrote family/: matthew-bill, sarah-bill, emma-bill, family-eob (.html)");
+// --- FAM4: one member's own EOB. Same payer, same clinic, same day, same code
+// as the others — the only thing separating Sarah's statement from Matthew's is
+// the patient name on the claim. Pairing a bill with the wrong one is the most
+// likely mistake a household makes, and nothing in the app currently notices:
+// documentsRelated compares dates and codes, which these share exactly. ---
+const soloNote = (who) =>
+  `This statement covers claims for ${FAMILY[who].name} only.`;
+
+consolidatedEob("sarah-eob.html", [
+  { who: "sarah", claim: "CLM-2026-4402", lines: [
+    { date: DAY, desc: "Influenza vaccine", charge: 85.00, allowed: 32.00, copay: 0, ded: 0, coins: 0, paid: 32.00, owe: 0, remark: "PDC" }] },
+], soloNote("sarah"));
+
+consolidatedEob("matthew-eob.html", [
+  { who: "matthew", claim: "CLM-2026-4401", lines: [
+    { date: DAY, desc: "Influenza vaccine", charge: 85.00, allowed: 32.00, copay: 0, ded: 0, coins: 0, paid: 32.00, owe: 0, remark: "PDC" }] },
+], soloNote("matthew"));
+
+console.log("wrote family/: matthew-bill, sarah-bill, emma-bill, family-eob, matthew-eob, sarah-eob (.html)");
+console.log("PDFs: node test/browser/topdf.mjs test-fixtures/family/*.html");

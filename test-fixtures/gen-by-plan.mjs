@@ -54,6 +54,12 @@ const PLANS = {
   "FAM1-two-family-members": [
     ["family/matthew-bill.pdf"], ["family/sarah-bill.pdf"], ["family/family-eob.pdf"],
   ],
+  // Matthew's bill against SARAH's EOB. Same clinic, same day, same 90686 — so
+  // documentsRelated, which compares dates and codes, calls them related and
+  // stays quiet. The patient name is the only thing that separates them.
+  "FAM4-wrong-family-members-eob": [
+    ["family/matthew-bill.pdf"], ["family/sarah-eob.pdf"],
+  ],
   "FAM3-consolidated-eob-different-name": [
     ["family/matthew-bill.pdf"], ["family/family-eob.pdf"],
   ],
