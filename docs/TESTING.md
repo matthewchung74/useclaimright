@@ -55,10 +55,9 @@ the file and easy to miss.
 | A1 | — | — | needs a throwaway account |
 | FAM1 | 2026-08-29 | agent | 2 audits · Matthew and Sarah stayed two bills, no duplicate hero. Re-confirmed 2026-08-31: the dashboard now names them |
 | FAM2 | — | — | **blocked**: needs a real SBC on file (family/individual split) and the family EOB as the most recent. The plan on file is `fake-sbc` and the deductible card is driven by the t-series EOBs, so the family-vs-individual arithmetic cannot be observed as written. |
-| FAM3 | — | — | not run against this build |
 | FAM3 | 2026-08-31 | agent | ✓ `matthew` and `family` stems disagree, still paired correctly (0 audits) |
-| FAM5 | 2026-08-31 | agent | ✓ per-member counting verified live (0 audits) |
 | FAM4 | 2026-08-31 | agent | found a false positive ($85.00 on a correct charge, no warning) → **fixed and re-verified same day** |
+| FAM5 | 2026-08-31 | agent | ✓ per-member counting verified live (0 audits) |
 | S1 | 2026-08-29 | agent | $2,115.00 / $841.75 / $186.35 / **$836.00** from a 110dpi PNG — identical to E1's digital PDF |
 | IMG1 | 2026-08-29 | agent | 8 fixtures · HEIC refusal fixed, now covered by `test/browser` |
 | P1 | — | — | not run against this build |
@@ -73,6 +72,42 @@ the file and easy to miss.
 
 Two bugs were found by running this suite rather than by reading the code — the `statementId`
 label false-duplicate and the empty saved EOB. Both are written up below.
+
+## Known gaps — cases with no plan at all
+
+Distinct from the run log above, which tracks plans that exist but have not been run. These have
+**nothing written for them**, so they are invisible unless listed. Two entries here became FAM4
+and FAM5 on 2026-08-31, and both found real bugs on their first run — which is the argument for
+keeping this list honest rather than short.
+
+**Family**
+
+| Gap | Why it might matter |
+|---|---|
+| Wrong member's EOB **from the saved library** | FAM4 covers the *upload* path. The saved-EOB path is different code — it uses stored text and stored `patients`, and only EOBs saved after 2026-08-31 carry the latter |
+| **Same person, two valid EOBs** | Matthew + `family-eob` and Matthew + `matthew-eob` must agree. Nothing checks that a correct pair stays correct across statement formats |
+| **A child's bill under a parent's name** | Emma is a dependent; a provider may print the guarantor rather than the patient. `personOf` would then merge two people |
+| Deductible attribution per member | Related to FAM2, still blocked |
+
+**Images and scans** — every real document is an image now, so these are the main path
+
+| Gap | Why it might matter |
+|---|---|
+| **Rasterised EOB** | S1 rasterises the *bill* only. An image EOB, and both documents as images, are untested |
+| **Genuinely multi-page scan** | `08-eob-page-*.png` exists as a fixture but no plan uploads it; every scan tested so far is one page |
+| **More than 20 pages** | S1's edge case says it rejects before billing a model call. Never run |
+| **Rasterised SBC** | P1 names it explicitly. Never run, and plan extraction is a different prompt and schema |
+| **Rasterised family EOB** | Both axes at once — a photo of the letter that came in the post, covering three people |
+| **EXIF-rotated JPEG** | IMG1 rotates *pixels*; a real phone photo is stored upright with an orientation tag instead |
+
+**Neither family nor image**
+
+| Gap | Why it might matter |
+|---|---|
+| **Two audits at once** | Nothing tests two tabs, or a second audit started while one is running, against the daily counter |
+| **A partly-readable document** | One clear page and one unreadable page in the same PDF |
+| **An EOB with no findings at all** | Covered incidentally by E2's clean bill, never as its own case |
+| **Very long histories** | The dashboard, trackers and cross-bill check are all O(audits); nothing has been run past ~20 |
 
 ## What you can reorder, and what you can't
 

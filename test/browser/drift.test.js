@@ -123,6 +123,30 @@ test("TESTING.md: every element id it names exists in app.html", () => {
 });
 
 // ---------------------------------------------------------------------------
+// The run log answers "have I done this?" — so it must not answer twice. A
+// stale "not run" row survived beside a fresh result on 2026-08-31 because the
+// new row was inserted rather than replacing the old one, and the table then
+// said both things about FAM3.
+// ---------------------------------------------------------------------------
+test("TESTING.md: the run log lists each plan exactly once", () => {
+  const log = live.slice(live.indexOf("## Run log"), live.indexOf("## What you can reorder"));
+  const seen = new Map();
+  for (const m of log.matchAll(/^\| ([A-Z][A-Z0-9]*\d[a-z]?) \|/gm)) {
+    seen.set(m[1], (seen.get(m[1]) || 0) + 1);
+  }
+  const dupes = [...seen].filter(([, n]) => n > 1).map(([p, n]) => `${p} x${n}`);
+  assert.deepEqual(dupes, [], `run log contradicts itself: ${dupes.join(", ")}`);
+});
+
+test("TESTING.md: every plan has a run-log row", () => {
+  const headings = [...TESTING.matchAll(/^## ([A-Z][A-Z0-9]*\d[a-z]?) —/gm)].map((m) => m[1]);
+  const log = live.slice(live.indexOf("## Run log"), live.indexOf("## What you can reorder"));
+  const rows = new Set([...log.matchAll(/^\| ([A-Z][A-Z0-9]*\d[a-z]?) \|/gm)].map((m) => m[1]));
+  const missing = headings.filter((h) => !rows.has(h));
+  assert.deepEqual(missing, [], `plans with no run-log row, so their status is invisible: ${missing.join(", ")}`);
+});
+
+// ---------------------------------------------------------------------------
 // The dependency table earns its keep only if the plans it names are real.
 // ---------------------------------------------------------------------------
 test("TESTING.md: the reorder table only names plans that exist", () => {
