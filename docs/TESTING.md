@@ -40,7 +40,7 @@ the file and easy to miss.
 | M3 | 2026-08-29 | agent | $175.00 / $120.00 / $120.00 / **$55.00** · no false positives (the control) |
 | M4 | 2026-08-29 | agent | 2 audits, **$110.00** · per-audit `serviceDates`, consolidated EOB saved once |
 | M5 | 2026-08-29 | agent | $175.00 / $0.00 / $175.00 / **$175.00** · tracker 4 of 6, no false mismatch warning |
-| M6 | — | — | not run against this build |
+| M6 | 2026-08-31 | agent | **found**: duplicate check was blind to scans, re-extracting and spending an upload each time → fixed, re-verified |
 | M7 | 2026-08-29 | agent | 3 audits · one-click tracker from an EOB remark, deductible $720.00 of $1,500.00 |
 | D1 | 2026-08-29 | agent | 2 audits · duplicate hero on the re-bill, **and** no hero on the same statement twice |
 | E2 | 2026-08-29 | agent | $175.00 / $0.00 / $0.00 / $0.00 · zero findings, no tab row |
@@ -480,8 +480,13 @@ billed against $0.00 allowed in both — so this comparison is the only thing se
 **Use case:** re-uploading the same SBC never re-extracts or duplicates.
 **Data:** the same `fake-sbc.pdf`, via the plan line's **Replace**.
 
-1. Replace → pick `fake-sbc.pdf` → confirm the review.
+1. Replace → pick the SAME document already on file → confirm the review.
    ✓ "**This plan is already on file.**" — immediate, no "Reading your plan's terms…" step, no plan-upload consumed; plan line unchanged.
+   ✓ **Run this with a scanned plan too**, not only a text PDF. Until 2026-08-31 the check
+   compared extracted *text*, which a scan does not have until the model has already read it —
+   so a photographed plan re-extracted every time and spent one of three daily uploads doing it.
+   The check now compares a SHA-256 of the file bytes first, which works whatever the document is,
+   and falls back to the text comparison for a plan re-exported to different bytes.
 
 **Cost:** 0.
 
@@ -921,9 +926,11 @@ and therefore outside the Firestore snapshot.
 2. ✓ The feedback bubble is visible here, as it is on the audit form and reports.
 3. Open any report. ✓ The fourth totals card reads exactly "**Worth disputing**" — not "Worth disputing — money you may not owe; hold off paying this part".
 4. ✓ Both exits work: **the logo** returns to the list; "New audit" goes to the form, from which the logo also returns. *(Until 2026-08-31 each screen also carried its own "← Back to bills"; the logo replaced all three.)*
-   ✓ **A report has a back link ABOVE the fold**, matching the audit form — not only at the
-     bottom of the action row. A report runs well over a screen, and a single exit at the end
-     meant scrolling back through the whole thing to leave.
+   ✓ **The exit is above the fold** — the logo, in the header, on every screen. *(Until 2026-08-31
+     this read "a report has a back link ABOVE the fold". The concern was real: a report runs well
+     over a screen, and an exit only at the end meant scrolling back through the whole thing to
+     leave. The header is always above the fold, so the logo satisfies it and the three per-screen
+     links were removed.)*
    ✓ **The logo returns to the bills list while signed in** and does not leave for the marketing
      page. It is the only control visible from every screen, and it is the first thing people
      click to get home. Signed out it still goes to `/`, which is correct when there is no home

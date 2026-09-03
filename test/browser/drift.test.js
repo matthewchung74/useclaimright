@@ -83,7 +83,9 @@ const CLAIMS = [
   },
   {
     what: "the per-screen back links",
-    docSays: "← Back to bills",
+    // Two spellings, because R2 said "a back link ABOVE the fold" and survived
+    // the first sweep, which only looked for the arrow form.
+    docSays: "back link",
     holds: () => APP_HTML.includes('class="back-link"'),
     why: "all three were removed; the logo is the only way back to the list",
   },
