@@ -82,6 +82,12 @@ const CLAIMS = [
     why: "the matcher needed bill text the browser no longer has",
   },
   {
+    what: "the per-screen back links",
+    docSays: "← Back to bills",
+    holds: () => APP_HTML.includes('class="back-link"'),
+    why: "all three were removed; the logo is the only way back to the list",
+  },
+  {
     what: "the custom-limit form as a visible fallback",
     docSays: "Add a custom limit",
     holds: () => APP_HTML.includes("Add a custom limit"),

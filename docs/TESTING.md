@@ -129,7 +129,7 @@ from, which is the exact failure this tier exists to catch.
 **Reading the totals tables:** every plan that spends an audit states its four totals cards in the same table — Billed, EOB allowed, Your responsibility, Worth disputing — with the arithmetic behind "Worth disputing" spelled out in the last column, followed by the findings that produce it. Amounts are model-extracted: treat them as ± a few dollars, but the **relationships must hold exactly** — Worth disputing equals its listed findings summed (nothing else folded in), and EOB allowed is $0.00 whenever there is no EOB.
 
 **Moving between plans:**
-- **Bills & coverage is home** — every sign-in lands there, and so does every batch. The audit form is reached from its "**Audit a new bill**" card; "← Back to bills" on the form and on any report goes back.
+- **Bills & coverage is home** — every sign-in lands there, and so does every batch. The audit form is reached from its "**Audit a new bill**" card; **the logo, top left, goes back** from anywhere. *(The three "← Back to bills" links were removed 2026-08-31: the logo already did the same job from every screen.)*
 - From a **report** → **New audit** goes straight to the audit form and clears staged files, the saved-EOB selection, and any error (it's a full reset of the upload form, not of your data).
 - From a **review** screen you don't want to analyze → **Start over** (costs no audit — use this whenever a plan says to back out).
 - Already on the audit form → just scroll; nothing needs resetting.
@@ -145,7 +145,7 @@ from, which is the exact failure this tier exists to catch.
 
 1. A fresh account lands on the **onboarding screen** first: "Set up your plan" card (560px, teal top rule), payoff pitch with mono `$60`/`$175` figures, SBC dropzone with 📄, "What's an SBC?" explainer, and a centered "**Skip for now — audit a bill first**" link. Click **Skip**.
    ✓ The **Bills & coverage** page appears — this is home. The "**Audit a new bill**" card is the first thing on it, above "No bills audited yet…", so the primary action is never hidden behind the empty state. Scroll to "Your coverage": the **dashed one-line reminder** "No plan on file — add your Summary of Benefits · Add now" sits there (not a big card, not a gold banner).
-2. Click **Start an audit →**. ✓ The audit form appears with a "← Back to bills" link above the heading. **Step 1 is "Add your bill"** — the document the user actually has — and **step 2 is "Add the letter from your insurance, if you have it"**, with the "What's an EOB…" explainer under it. *(Reordered 2026-08-16: the EOB used to be step 1, putting eight elements and an acronym in front of the bill.)* Drag `fake-bill.pdf` onto the bill zone, `fake-eob.pdf` onto the insurance-letter zone. ✓ One "✓ file ✕" row under each zone.
+2. Click **Start an audit →**. ✓ The audit form appears; **the logo is the way back**. **Step 1 is "Add your bill"** — the document the user actually has — and **step 2 is "Add the letter from your insurance, if you have it"**, with the "What's an EOB…" explainer under it. *(Reordered 2026-08-16: the EOB used to be step 1, putting eight elements and an acronym in front of the bill.)* Drag `fake-bill.pdf` onto the bill zone, `fake-eob.pdf` onto the insurance-letter zone. ✓ One "✓ file ✕" row under each zone.
 3. Click **Prepare audit →**. ✓ Processing is quick — the pages are rendered locally, no model download. *(Was "the PDF's text layer is read directly" until 2026-08-29; PDFs are sent as page images and the browser reads no text layer.)*
 4. Review both tabs. ✓ Left pane shows the rendered pages, right pane the extracted text under "What we'll analyze". Text matches the document; no placeholder chips anywhere (redaction was removed 2026-08-23).
 5. Click **Looks right — analyze**.
@@ -198,7 +198,7 @@ reminder under Your coverage.
 
 ## E1b — Intake and account-menu details (no audits)
 **Use case:** the small copy and affordance fixes a full audit pass wouldn't catch.
-**Getting here:** on E1's report, click **← Back to bills**, then **Audit a new bill**. (**New audit** on the report goes to the same form directly; either route clears E1's files.)
+**Getting here:** on E1's report, click **the logo**, then **Audit a new bill**. (**New audit** on the report goes to the same form directly; either route clears E1's files.)
 
 1. On the audit page: ✓ both dropzones read "**Drop one or more files**, or click to choose"; the SBC dropzone reads "Drop it here" — one plan only.
    ✓ **All three step headings — 1, 2 and 3 — are visible on arrival**, but step 2's INPUTS
@@ -265,7 +265,7 @@ hovers red, not teal, as the plan requires.
 2. Review screen (single document; the tab is labeled "**Plan (SBC)**", not "Bill"). ✓ Member name/ID chipped. Click **Looks right — analyze**.
 3. Back on the bills page, under **Your coverage**:
    ✓ The SBC card is replaced by ONE line: `Plan: Acme Silver PPO · 2026-01-01 → 2026-12-31 · View · Replace · Remove`.
-   ✓ Coverage usage: two trackers tagged "**from your SBC — check the codes**" (6/yr mental health, 20/yr rehab).
+   ✓ Coverage usage: two trackers tagged "**from your plan (SBC) — check the codes**" (6/yr mental health, 20/yr rehab).
    ✓ Deductible card: "$0.00 of $1,500.00 · Target from your plan (SBC)."
    ✓ **View** toggles the stored SBC text; opening a tracker's details clears its tag.
    ✓ The review screen in step 2 shows the SBC itself — never a previously uploaded bill. (The tab label used to read "Bill" here, which made it look like an old document was being reused.)
@@ -349,7 +349,7 @@ did not fire. `droppedUnverified` 0.
 2. Start. ✓ Per-document extraction progress, then ONE review screen with 3 tabs + "Reviewing <name> — document N of 3".
 3. Confirm once. ✓ "Analyzing audit 1 of 2… 2 of 2" with no pauses, then the batch **lands on the Bills & coverage page — not on one audit's report**. (Before this change it showed whichever audit the queue ordered last, with no signal the other existed.)
    ✓ A **highlighter-ribboned "JUST AUDITED" block** sits above "Your bills": "JUST AUDITED · **2 bills** · **$110.00** worth disputing", then one row per audit — date · plain-English finding · amount. Each t-audit is $55 (bill demands $175, EOB responsibility $120), so the block's total is the real batch total; no screen shows $55 as if it were the answer for the whole batch.
-   ✓ Clicking either row opens **that** audit's own report, and "← Back to bills" returns with the block still pinned. Both reports carry the t-series shape:
+   ✓ Clicking either row opens **that** audit's own report, and **the logo** returns with the block still pinned. Both reports carry the t-series shape:
 
    | Card | Expected (each audit) | Why |
    |---|---|---|
@@ -481,7 +481,7 @@ regression the 5-word allowance exists for:
 ONE click created the tracker with **no form and no dialog** — Firestore shows
 `label: "Psychotherapy, 60 minutes"`, `limit: 6`, `codes: ["90837"]`, `source: "remark"`. It
 rendered immediately as "8 / 6 · Over the limit" against 8 contributing audits, and — unlike
-the SBC-sourced tracker beside it — carries no "from your SBC — check the codes" caveat,
+the SBC-sourced tracker beside it — carries no "from your plan (SBC) — check the codes" caveat,
 because the codes came from the remark itself. The manual fallback is labelled "Add a custom
 limit". Note `planYearStart`/`planYearEnd` are `null` on **both** trackers: the plan year shown
 ("2026-01-01 → 2026-12-31") is rendered from the SBC, not stored per tracker. Pre-existing
@@ -493,7 +493,7 @@ behaviour, not the remark path.
 **Use case:** the cumulative view — what's worth disputing across all bills, what coverage is left, and the one finding no single audit can produce (the same visit billed on two statements).
 **Data:** `series/t2-bill.pdf` + `t2-eob.pdf`, then `series/t2-bill-rebill.pdf` + `t2-eob.pdf` (a second statement for the same 2026-02-12 visit — same provider, same 90837, different statement date and account number), with `fake-sbc.pdf` on file.
 
-1. Audit the t2 pair, then audit the re-bill pair. Each single audit ends on its own report — click **← Back to bills** to reach the dashboard. (The dashboard is also where you land on every sign-in: it is the home screen, and the audit form is reached from its "Audit a new bill" card.)
+1. Audit the t2 pair, then audit the re-bill pair. Each single audit ends on its own report — click **the logo** to reach the dashboard. (The dashboard is also where you land on every sign-in: it is the home screen, and the audit form is reached from its "Audit a new bill" card.)
    ✓ **The four totals cards** — both reports carry the t-series shape (verified 2026-08-10):
 
    | Card | Expected (each audit) | Why |
@@ -574,7 +574,7 @@ $0.00, `worthDisputing` $0.00, zero findings, no EOB stored against the audit, a
 2. Confirm. ✓ The dashed "No plan on file — add your Summary of Benefits · Add now" reminder
    returns under **Your coverage**.
    ✓ **Changed 2026-08-28: trackers the SBC created are removed with it.** They used to
-   survive, still labelled "from your SBC" with no SBC on file — limits the member never asked
+   survive, still labelled "from your plan (SBC)" with no SBC on file — limits the member never asked
    for, kept by a dialog that promised only "trackers you've created stay". Manual and remark
    trackers still stay; re-uploading an SBC recreates its limits, and counts derive from audits,
    so nothing is lost.
@@ -879,7 +879,7 @@ and therefore outside the Firestore snapshot.
 1. Sign out and back in (with a plan on file). ✓ You land on **Bills & coverage**, never on the audit form, and the list is already populated — no flash of "No bills audited yet" while the query runs.
 2. ✓ The feedback bubble is visible here, as it is on the audit form and reports.
 3. Open any report. ✓ The fourth totals card reads exactly "**Worth disputing**" — not "Worth disputing — money you may not owe; hold off paying this part".
-4. ✓ Both exits work: "← Back to bills" returns to the list; "New audit" goes to the form, whose "← Back to bills" also returns.
+4. ✓ Both exits work: **the logo** returns to the list; "New audit" goes to the form, from which the logo also returns. *(Until 2026-08-31 each screen also carried its own "← Back to bills"; the logo replaced all three.)*
    ✓ **A report has a back link ABOVE the fold**, matching the audit form — not only at the
      bottom of the action row. A report runs well over a screen, and a single exit at the end
      meant scrolling back through the whole thing to leave.
@@ -901,7 +901,7 @@ and therefore outside the Firestore snapshot.
 2. The feedback bubble (`#fb-bubble`) is visible on the bills list, the audit form and reports.
 3. The fourth totals card reads exactly "**Worth disputing**" — "$2,115.00 / $841.75 / $186.35 /
    $804.15" with no trailing explainer.
-4. Both exits work, and the audit form's own "← Back to bills" returns to the list.
+4. Both exits work, and the logo returns to the list from the audit form.
 5. "EOB on file: TESTVILLE BEHAVIORAL HEALTH ASSOCIATES · 2026-02-12" shows on the list card, and
    the form opens with the previous run's files cleared.
 6. The pairing summary told the truth throughout: with a saved EOB selected, "**3 audits**: 0
@@ -1047,7 +1047,7 @@ Both bills: flu vaccine 90686, $85.00, 03/10/2026, Testville Family Medicine Ass
    ✓ Report renders. The bill demands $85.00 where the EOB allows $32.00 and says you owe
    $0.00, so **Worth disputing ≈ $85.00**, one `billed_vs_allowed_mismatch`, high confidence.
 2. **New audit.** Audit `sarah-bill.pdf` + `family-eob.pdf`. ✓ Same shape, ≈ $85.00.
-3. **← Back to bills.**
+3. **Click the logo** to return to the bills list.
    ✓ **NO duplicate hero. No `FOUND BY COMPARING YOUR BILLS TO EACH OTHER` ribbon.**
    ✓ The provider group reads "**2 bills · $170.00**", both rows "Billed above EOB allowed amount".
 4. Open each audit and confirm the patient it was attributed to.
@@ -1277,7 +1277,7 @@ on our own assumptions. These are genuine CMS publications in the ACA-mandated f
 **Verified on production 2026-08-25** with `cms-2019.pdf`: extracted cleanly, plan on file as
 "Insurance Company 1: Plan Option 1", 2022-01-01 to 2022-12-31, deductible $500 / $1,000.
 Trackers were auto-created from its limits ("Children's eye exam 0/1", "Home health care
-0/60", both tagged *from your SBC — check the codes*). Step 3 confirmed: the out-of-period
+0/60", both tagged *from your plan (SBC) — check the codes*). Step 3 confirmed: the out-of-period
 banner fired — "Your plan year ended 2022-12-31 — upload your new SBC." `cms-2025.pdf` and `cms-older.pdf` were
 subsequently run on production against Vertex on 2026-08-26 — 2025-01-01 → 2025-12-31 and
 2017-01-01 → 2017-12-31 respectively, both $500 / $1,000. All three CMS files are covered.

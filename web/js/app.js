@@ -916,10 +916,6 @@ $("cta-card").onkeydown = (e) => {
 };
 $("ld-close").onclick = () => $("limit-dialog").close();
 $("ld-bills").onclick = () => { $("limit-dialog").close(); show("bills"); };
-for (const el of document.querySelectorAll(".back-link")) {
-  el.onclick = (e) => { e.preventDefault(); show("bills"); };
-}
-
 // The logo is the thing people click first to get home, and while signed in it
 // was an href="/" that left the app for the marketing page. The header is the
 // only control visible from every screen, so this is the one exit that is
@@ -1755,7 +1751,7 @@ function renderUsage() {
     const pct = Math.min(100, t.limit > 0 ? (count / t.limit) * 100 : 0);
     card.innerHTML = `
       <div class="usage-head">
-        <b>${escapeHtml(t.label)}</b>${t.source === "sbc" && !t.confirmed ? ' <span class="count" title="Codes were suggested from your SBC — open the tracker and confirm them">from your SBC — check the codes</span>' : ""}
+        <b>${escapeHtml(t.label)}</b>${t.source === "sbc" && !t.confirmed ? ' <span class="count" title="Codes were suggested from your plan (SBC) — open the tracker and confirm them">from your plan (SBC) — check the codes</span>' : ""}
         <span style="display:flex;gap:10px;align-items:center">
           <span class="usage-count">${count} / ${t.limit}</span>
           <button class="usage-del" title="Stop tracking">✕</button>
