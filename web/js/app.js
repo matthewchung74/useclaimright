@@ -1680,21 +1680,30 @@ function renderPlanCard() {
 // The SBC dropzone is static markup in the onboarding section — wire it once.
 {
   const input = $("sbc-file");
-  input.onchange = () => { if (input.files[0]) prepareSbc(input.files[0]); input.value = ""; };
+  input.onchange = () => { if (input.files.length) prepareSbc([...input.files]); input.value = ""; };
   const dz = $("dz-sbc");
   dz.addEventListener("dragover", (e) => { e.preventDefault(); dz.classList.add("drag"); });
   dz.addEventListener("dragleave", () => dz.classList.remove("drag"));
   dz.addEventListener("drop", (e) => {
     e.preventDefault(); dz.classList.remove("drag");
-    if (e.dataTransfer.files[0]) prepareSbc(e.dataTransfer.files[0]);
+    if (e.dataTransfer.files.length) prepareSbc([...e.dataTransfer.files]);
   });
 }
 
 const sbcErrTarget = () => (state?.sbcOrigin === "onboarding" ? "onboarding-error" : "bills-error");
 
-async function prepareSbc(file) {
+// Takes one file or several. A scanner and a phone both produce ONE IMAGE PER
+// PAGE, and every real SBC runs to five pages — so a single-file dropzone meant a
+// scanned plan could not be uploaded at all. The bill and EOB zones have always
+// accepted several; this one silently took files[0] and dropped the rest. Pages
+// sort by filename, which is the order scanners number them in.
+async function prepareSbc(input) {
+  const files = (Array.isArray(input) ? input : [input])
+    .slice()
+    .sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+  const file = files[0];
   const origin = !$("onboarding").hidden ? "onboarding" : "bills";
-  if (file.size > 20e6) {
+  if (files.some((f) => f.size > 20e6)) {
     return setError(origin === "onboarding" ? "onboarding-error" : "bills-error", "Files must be under 20MB.");
   }
   resetStatePreservingFiles();
@@ -1704,14 +1713,24 @@ async function prepareSbc(file) {
   show("processing");
   try {
     setStatus("Reading your Summary of Benefits…");
-    const ex = await extractText(file);
+    // Each file contributes its pages, in filename order, to ONE document — five
+    // photographed pages are one Summary of Benefits, not five plans.
+    const parts = [];
+    for (const f of files) parts.push(await extractText(f));
+    const ex = {
+      text: parts.map((p) => p.text).filter(Boolean).join("\n\n"),
+      images: parts.flatMap((p) => p.images || []),
+      previews: parts.flatMap((p) => p.previews || []),
+      method: parts.some((p) => p.method === "image") ? "image" : parts[0].method,
+      confidence: parts[0].confidence,
+    };
     // images, not just previews: for a SCANNED SBC the text is "" and the pages
     // ARE the document. Dropping them here sent an empty payload, and the server
     // answered "The SBC is required, as text or page images." — so a photographed
     // or scanned plan document could never be uploaded at all. The audit path
     // always carried images; this path quietly did not.
     state.bill = { text: ex.text, images: ex.images, previews: ex.previews, method: ex.method, confidence: ex.confidence };
-    state.sbcName = file.name;
+    state.sbcName = files.length > 1 ? `${file.name} +${files.length - 1} more` : file.name;
     // Two ways to recognise the same document, because neither covers everything.
     //
     // The BYTES catch a scan. The text comparison below needs text on both
@@ -1722,7 +1741,9 @@ async function prepareSbc(file) {
     //
     // The TEXT still earns its place: the same plan re-exported or re-scanned
     // has different bytes and identical text.
-    state.sbcHash = await fileHash(file);
+    // Hash every page in order, so a five-page scan counts as the same document
+    // only when all five pages are.
+    state.sbcHash = (await Promise.all(files.map(fileHash))).join("");
     if (activePlan?.sourceHash && state.sbcHash && activePlan.sourceHash === state.sbcHash) {
       show(state.sbcOrigin);
       return setError(sbcErrTarget(), "This plan is already on file.");

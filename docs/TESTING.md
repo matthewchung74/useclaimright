@@ -44,31 +44,31 @@ the file and easy to miss.
 | M7 | 2026-08-29 | agent | 3 audits · one-click tracker from an EOB remark, deductible $720.00 of $1,500.00 |
 | D1 | 2026-08-29 | agent | 2 audits · duplicate hero on the re-bill, **and** no hero on the same statement twice |
 | E2 | 2026-08-29 | agent | $175.00 / $0.00 / $0.00 / $0.00 · zero findings, no tab row |
-| E3 | — | — | not run against this build |
-| E4 | — | — | not run against this build |
-| E5 | — | — | not run against this build |
+| E3 | 2026-08-31 | agent | ✓ dialog counts the limits (5), SBC trackers removed with the plan, manual and remark ones kept, deductible falls back to the EOB |
+| E4 | 2026-08-31 | agent | ✓ "This doesn't look like a Summary of Benefits.", plan on file untouched |
+| E5 | 2026-08-31 | agent | ✓ plan restored, trackers re-derived with no duplicates |
 | E6 | 2026-08-29 | agent | step 5: $2,115.00 / $0.00 / $845.00 / **$2,115.00**, warning on the post-run report |
-| E7 | — | — | destructive; run last |
-| X1 | — | — | one confirmation dialog seen incidentally during M7 |
-| R2 | — | — | not run against this build |
-| F1 | — | — | not run against this build |
-| A1 | — | — | needs a throwaway account |
+| E7 | — | — | destructive (erases the account). Needs a deliberate decision — the dialog itself is covered by X1 |
+| X1 | 2026-08-31 | agent | ✓ all six dialogs, each naming its target, plus backdrop-dismiss deleting nothing |
+| R2 | 2026-08-31 | agent | ✓ routing, exits and labels. Step 1's true sign-out not run — re-auth needs a password |
+| F1 | 2026-08-31 | agent | ✓ bubble, categories, send, "Thanks — we read every note.", card self-closes. Field-level check needs the Firebase console |
+| A1 | — | — | **cannot be run by the agent** — creating an account and entering a password. Needs you |
 | FAM1 | 2026-08-29 | agent | 2 audits · Matthew and Sarah stayed two bills, no duplicate hero. Re-confirmed 2026-08-31: the dashboard now names them |
-| FAM2 | — | — | **blocked**: needs a real SBC on file (family/individual split) and the family EOB as the most recent. The plan on file is `fake-sbc` and the deductible card is driven by the t-series EOBs, so the family-vs-individual arithmetic cannot be observed as written. |
+| FAM2 | partial | agent | arithmetic covered by 4 new unit tests (family vs individual vs conflict). Browser step still blocked: needs the family EOB to be the newest accumulator |
 | FAM3 | 2026-08-31 | agent | ✓ `matthew` and `family` stems disagree, still paired correctly (0 audits) |
 | FAM4 | 2026-08-31 | agent | found a false positive ($85.00 on a correct charge, no warning) → **fixed and re-verified same day** |
 | FAM5 | 2026-08-31 | agent | ✓ per-member counting verified live (0 audits) |
 | S2 | 2026-08-31 | agent | ✓ both documents as images — figures identical to the text PDFs |
 | S3 | 2026-08-31 | agent | printed fields identical from a scan; **found** Replace discarding confirmed tracker codes → fixed |
-| S4 | — | — | multi-page scan fixtures built, not yet run |
+| S4 | 2026-08-31 | agent | **found two bugs** — SBC zone took one file; 5-page scan overran the output cap → both fixed, extracts 15 cost shares vs the PDF's 13 |
 | S1 | 2026-08-29 | agent | $2,115.00 / $841.75 / $186.35 / **$836.00** from a 110dpi PNG — identical to E1's digital PDF |
 | IMG1 | 2026-08-29 | agent | 8 fixtures · HEIC refusal fixed, now covered by `test/browser` |
-| P1 | — | — | not run against this build |
-| G1 | — | — | not run against this build |
+| P1 | partial | agent | ✓ `cms-2025.pdf` — 5 pages, home health 60/yr, 13 cost shares. `cms-2019` and `cms-older` not run |
+| G1 | partial | agent | logic covered by 7 unit tests incl. the kill switch and reserve-before-call. Live flip needs the Firebase console — `meta/guard` denies client writes |
 | PAY1 | 2026-08-26 | agent | sandbox cycle verified; payments are still **on** |
-| REV1 | — | — | not run against this build |
+| REV1 | 2026-08-31 | agent | ✓ no pills for 1 page, five for five, none for HTML |
 | PHONE1 | 2026-08-29 | agent | 375px · 0 overflow, 0 controls under 16px, 44→2 short tap targets |
-| TAP1 | — | — | not run against this build |
+| TAP1 | 2026-08-31 | agent | ✓ card and rows tappable whole, ✕ deletes without opening the audit |
 
 **The daily cap** was exercised on 2026-08-29: the 11th attempt showed the dialog and fired both
 `limit_reached` and `error_shown`.
@@ -1315,6 +1315,33 @@ page order, page count and per-page rendering have never been exercised together
 ⚠️ **This replaces the plan on file** with a CMS sample plan, which changes the deductible targets
 and can re-derive SBC trackers. Run it when you are willing to re-upload your own SBC afterwards,
 or on a scratch account.
+
+**Verified on production 2026-08-31, after fixing two bugs it exposed.**
+
+**1. The SBC dropzone took one file.** `<input id="sbc-file">` had no `multiple`, and
+`prepareSbc(input.files[0])` discarded the rest. A scanner and a phone both produce **one image
+per page**, and every real SBC runs to five — so a scanned plan could not be uploaded at all,
+while the bill and EOB zones had accepted several all along. The zone now takes a set, sorts by
+filename (numeric-aware, the order scanners number pages in) and concatenates their pages into
+one document. The duplicate fingerprint hashes every page in order, so five pages are the same
+plan only when all five are.
+
+**2. A five-page scan overran the model's output ceiling** — `resource-exhausted`, "This document
+produced more output than we can handle." `planSchema` requires `verbatim` for every cost-share
+row, so a plan's output grows with the *document*, not with what was found; read as text the model
+copies those rows and fits, read as a scan it must transcribe them. Plan extraction now has its
+own ceiling (`MAX_PLAN_OUTPUT_TOKENS`) separate from the audit path's.
+
+Then it passed, and the scan read **more** than the text PDF of the same document:
+
+| | cms-2025 as text | cms-2025 as a 5-page scan |
+|---|---|---|
+| Plan name, period, deductible, OOP | identical | **identical** |
+| Benefit limits | 4 | **5** (also caught "Habilitation services") |
+| Cost-share rows | 13 | **15** |
+
+Which is the same result the Vertex measurement found in August: pages carry structure that a
+text layer flattens.
 
 **Cost:** 1 plan upload.
 
