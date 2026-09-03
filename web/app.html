@@ -92,6 +92,9 @@
   .progress .bar{height:100%;background:var(--brand);border-radius:6px;transition:width .3s}
   .usage-card.near .bar{background:var(--gold)}
   .usage-card.at .bar,.usage-card.over .bar{background:var(--bad)}
+  /* Per-person breakdown, shown only when a household shares the account. */
+  .per-person{display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:8px;font-size:13px;align-items:baseline}
+  .per-person .muted{flex-basis:100%;font-size:12px}
   .usage-note{font-size:13px;font-weight:700}
   .usage-card.near .usage-note{color:#8a6112}
   .usage-card.at .usage-note,.usage-card.over .usage-note{color:var(--bad)}
