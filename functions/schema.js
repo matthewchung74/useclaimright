@@ -231,6 +231,17 @@ export const findingsSchema = {
     // duplicate check reports the second as a double-bill.
     patientName: { type: "string" },
 
+    // Every patient the EOB's CLAIMS are for. A household statement lists three;
+    // one member's own statement lists one. This exists because the document
+    // text cannot answer "is this EOB for the person on the bill?" — a payer
+    // names the SUBSCRIBER on every family member's statement, so Sarah's EOB
+    // contains "Matthew" in the subscriber block. Verified 2026-08-31: pairing
+    // Matthew's bill with Sarah's EOB produced a false $85.00 "worth disputing"
+    // and no warning, because the pair shares a service date. Claim-level names
+    // are the only reliable signal, and only the model can tell the difference
+    // between a claim line and a subscriber block.
+    eobPatients: { type: "array", items: { type: "string" } },
+
     // The identifier printed on the STATEMENT — account number, statement
     // number, invoice number, whichever the bill shows. This is the only thing
     // that differs between two different statements for the same visit, so it

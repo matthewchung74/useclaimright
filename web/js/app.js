@@ -20,7 +20,7 @@ import { extractText } from "./extract.js";
 import { pairFiles, classifyFile, uniqueDocs } from "./batch.js";
 import { planYearStartMonthFrom, mergeSbcTrackers, deductibleTarget, oopTarget } from "./plan.js";
 import { crossBillDuplicates, runningTotals, groupAuditsByProvider, splitJustAudited, billKeyOf } from "./crossbill.js";
-import { documentsRelated } from "./eobmatch.js";
+import { documentsRelated, wrongPatient } from "./eobmatch.js";
 
 const $ = (id) => document.getElementById(id);
 let currentSection = "signin";
@@ -886,7 +886,10 @@ $("confirm-review").onclick = async () => {
       // The client no longer holds any document text — pages are all it ever
       // had. Judge the pair on what the model transcribed, exactly as
       // openAudit() does, so this warning survives having no local text layer.
-      pairUnrelated: unrelatedPair(auditText(data, "bill"), auditText(data, "eob")) });
+      pairUnrelated: unrelatedPair(auditText(data, "bill"), auditText(data, "eob")),
+      // Dates and codes cannot see this one: two members of a household at one
+      // clinic on one day share both. Only the claim-level patient differs.
+      wrongPerson: wrongPatient(data.patientName, data.eobPatients) });
     show("report");
     track("audit_completed", { ...auditShape(data), mode: "single" });
     if (state.eob && !state.eob.saved && $("save-eob").checked) {
@@ -997,7 +1000,7 @@ $("fb-send").onclick = async () => {
 
 const PLAN_TYPES = new Set(["copay_mismatch", "coinsurance_mismatch", "deductible_misapplied", "not_covered_per_plan"]);
 
-function renderReport(data, { ocrLow, model, planApplied, planReason, pairUnrelated } = {}) {
+function renderReport(data, { ocrLow, model, planApplied, planReason, pairUnrelated, wrongPerson } = {}) {
   const { findings = [], totals = {}, occurrenceTable = [] } = data;
   lastReport = { findings, totals, occurrenceTable };
   $("email-card").hidden = true;
@@ -1013,12 +1016,21 @@ function renderReport(data, { ocrLow, model, planApplied, planReason, pairUnrela
   // two documents share any dates or codes — so it is carried through here.
   const anyMissing = findings.some((f) => f.type === "not_in_eob");
   const allMissing = findings.length >= 2 && findings.every((f) => f.type === "not_in_eob");
-  const showPairWarn = pairUnrelated || (anyMissing && allMissing);
+  // A wrong-person pair is its own warning and outranks the generic one: it has
+  // a specific, checkable cause, and "they share no dates or codes" would be
+  // false here — a household's documents share both.
+  const showPairWarn = wrongPerson || pairUnrelated || (anyMissing && allMissing);
   $("report-pair-warning").hidden = !showPairWarn;
   if (showPairWarn) {
     // Say which evidence fired: "every line missing" is untrue when the trigger
     // was two documents that simply don't correspond.
-    const why = pairUnrelated
+    const why = wrongPerson
+      ? `<b>This EOB is for someone else.</b> The bill is for
+         <b>${escapeHtml(data.patientName || "this patient")}</b>, but this statement covers
+         ${(data.eobPatients || []).map((n) => `<b>${escapeHtml(n)}</b>`).join(", ") || "someone else"}.
+         Charges here will look "missing from the EOB" simply because they sit on a different
+         statement.`
+      : pairUnrelated
       ? `<b>This EOB may not cover this bill.</b> They share no service dates and no procedure codes.
          ${findings.length
            ? `Charges here may be marked "missing from the EOB" only because your insurer never processed this bill.`
@@ -1310,6 +1322,7 @@ async function openAudit(id) {
     ocrLow: (data.ocrConfidence ?? 100) < OCR_CONFIDENCE_THRESHOLD,
     planApplied: data.planApplied, planReason: data.planReason,
     pairUnrelated: unrelatedPair(auditText(data, 'bill'), auditText(data, 'eob')),
+    wrongPerson: wrongPatient(data.patientName, data.eobPatients),
   });
   renderReportUsage(data);
   show("report");
@@ -1561,6 +1574,11 @@ async function maybeSaveEob(text, data) {
     provider: data.provider || "",
     serviceDates: data.serviceDates || [],
     codes: (data.occurrenceTable || []).map((r) => r.code),
+    // Who the EOB's claims are for. Stored so a saved statement can be checked
+    // against the person on a future bill — see wrongPatient(). Only EOBs saved
+    // after 2026-08-31 have it; older ones give an empty list, which the guard
+    // reads as "cannot tell" rather than "no match".
+    patients: data.eobPatients || [],
   });
   // No refresh here: the loadHistory() that follows every audit reloads the library.
   track("eob_saved");

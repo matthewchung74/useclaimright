@@ -100,6 +100,13 @@ For each one supplied as images, also return what you read: the bill's full text
 and the EOB's in eobText, verbatim, including headers and line items. Every evidence quote you
 give must appear either in the text supplied to you or in the text you return.`;
 
+const PATIENT_NOTE = `Return patientName as the person the BILL is for, and eobPatients as the
+list of people the EOB's CLAIMS are for — one name per claim, however many there are. Read
+eobPatients from the claim lines only, NOT from the subscriber or policyholder block: a family
+statement names the subscriber once at the top and a different patient on each claim, and those
+are not the same question. If the EOB is for one person, eobPatients has one entry. If no EOB was
+supplied, return an empty array.`;
+
 // Each document arrives as text or as page images, and the two combine freely —
 // a photographed bill against a downloaded EOB is an ordinary upload.
 //
@@ -164,6 +171,7 @@ export async function runAudit(bill, eob, opts, planDigest = null) {
   let instructions = AUDIT_INSTRUCTIONS + (planDigest ? planTermsBlock(planDigest) : "");
   if (!eob.text?.trim() && !eobImages.length) instructions += `\n\n${BILL_ONLY_NOTE}`;
   if (asImages) instructions += `\n\n${IMAGE_NOTE}`;
+  instructions += `\n\n${PATIENT_NOTE}`;
 
   const parts = buildAuditParts(bill, eob, instructions);
 

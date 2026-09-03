@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { matchSavedEob, documentsRelated, codesIn } from "../../web/js/eobmatch.js";
+import { matchSavedEob, documentsRelated, codesIn, samePerson, wrongPatient } from "../../web/js/eobmatch.js";
 
 // --- documentsRelated: catches a bill paired with someone else's EOB ---
 
@@ -107,4 +107,43 @@ test("ZIP+4 and a comma after the state are both stripped", () => {
 test("a five-digit code not following a state abbreviation is kept", () => {
   // Codes appear in tables next to descriptions, never after a state.
   assert.ok([...codesIn("Line 1  80053  Comprehensive metabolic panel  $145.50")].includes("80053"));
+});
+
+// --- wrongPatient: the FAM4 guard ---
+// Verified on production 2026-08-31: Matthew's bill against Sarah's EOB reported
+// $85.00 "worth disputing" on a charge covered by a different statement, with no
+// warning, because documentsRelated compares dates and codes and the pair shares
+// a date. Only the claim-level patient separates them.
+
+test("wrongPatient: a different family member's EOB is caught", () => {
+  assert.equal(wrongPatient("Matthew T. Testpatient", ["Sarah L. Testpatient"]), true);
+});
+
+test("wrongPatient: the household statement covering everyone is not flagged", () => {
+  assert.equal(wrongPatient("Matthew T. Testpatient",
+    ["Matthew T. Testpatient", "Sarah L. Testpatient", "Emma R. Testpatient"]), false);
+});
+
+test("wrongPatient: the subscriber block must not rescue a wrong pair", () => {
+  // Sarah's real EOB names Matthew in the subscriber block, so a document-text
+  // check passes here. eobPatients is claim-level, so this stays caught.
+  assert.equal(wrongPatient("Matthew T. Testpatient", ["Sarah L. Testpatient"]), true);
+});
+
+test("wrongPatient: never guesses when it cannot tell", () => {
+  assert.equal(wrongPatient("", ["Sarah L. Testpatient"]), false, "unknown bill patient");
+  assert.equal(wrongPatient("Matthew T. Testpatient", []), false, "EOB with no claim names");
+  assert.equal(wrongPatient("Matthew T. Testpatient", [""]), false, "blank entries are not names");
+});
+
+test("samePerson: survives how differently documents write a name", () => {
+  assert.ok(samePerson("Matthew T. Testpatient", "TESTPATIENT, MATTHEW T"));
+  assert.ok(samePerson("Matthew T. Testpatient", "Matthew Testpatient"));
+  assert.ok(samePerson("jane q. testpatient", "Jane Q. Testpatient"));
+});
+
+test("samePerson: does not merge two members of one household", () => {
+  assert.equal(samePerson("Matthew T. Testpatient", "Sarah L. Testpatient"), false);
+  // Same surname, different first name — the household case that matters most.
+  assert.equal(samePerson("Emma R. Testpatient", "Matthew T. Testpatient"), false);
 });
