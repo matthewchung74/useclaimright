@@ -30,7 +30,20 @@ export function mergeSbcTrackers(existing, limits, planYearStartMonth) {
     for (const c of codeSet) pendingCodes.add(c);
     const sbcHit = existing.find((t) => t.source === "sbc" && overlap(t));
     if (sbcHit) {
-      update.push({ id: sbcHit.id, changes: { label: lim.label, codes, limit: lim.visitsPerYear } });
+      // Label and limit are PRINTED on the SBC, so a newer one is authoritative.
+      // The codes are not printed — the model infers them from the row label,
+      // which is exactly why the card asks the member to check them.
+      //
+      // Once they have, that answer is theirs and re-uploading must not discard
+      // it. Found live 2026-08-31: the same SBC read as a scan inferred
+      // 97110/97140 where the text version inferred 97110/97161/97165, so
+      // Replace silently changed which visits counted — a 97161 visit that
+      // counted yesterday stopped counting, with no notice and nothing on screen
+      // to explain why.
+      const changes = sbcHit.confirmed
+        ? { label: lim.label, limit: lim.visitsPerYear }
+        : { label: lim.label, codes, limit: lim.visitsPerYear };
+      update.push({ id: sbcHit.id, changes });
     } else {
       create.push({ label: lim.label, codes, limit: lim.visitsPerYear, planYearStartMonth, source: "sbc" });
     }

@@ -66,6 +66,19 @@ const PLANS = {
   "P1-real-sbcs": [
     ["real-sbc/cms-2025.pdf"], ["real-sbc/cms-2019.pdf"], ["real-sbc/cms-older.pdf"],
   ],
+  // Scans of documents that were only ever tested as text. Every real document
+  // reaches the model as page images now, so these are the main path, not an
+  // edge: S1 only ever rasterised the BILL.
+  "S2-scanned-eob": [["scans/eob-scan-1.png", "eob-scan.png"]],
+  // fake-sbc rasterised. Deliberately the same SBC that is already on file as
+  // text, so the extracted plan can be compared field by field — a scan that
+  // produces a DIFFERENT plan is the failure, and a new plan would hide it.
+  "S3-scanned-sbc": [["scans/sbc-scan-1.png", "sbc-scan.png"]],
+  // Five pages, a real CMS document. The first genuinely multi-page scan.
+  "S4-multipage-scan": [
+    ["scans/sbc5-scan-1.png"], ["scans/sbc5-scan-2.png"], ["scans/sbc5-scan-3.png"],
+    ["scans/sbc5-scan-4.png"], ["scans/sbc5-scan-5.png"],
+  ],
   // S1's rasterised bill is written by rasterise() below, not copied.
   "S1-scan-read-by-model": [],
   // IMG1's fixtures are canonical and committed under img1/ rather than built
