@@ -158,3 +158,65 @@ test("an already-tracked code is not re-suggested", () => {
     [{ codes: ["90837"], limit: 6 }]);
   assert.deepEqual(s, []);
 });
+
+// --- Per-person counting ---
+// A plan's "6 visits per year" is almost always per member. Pooling a household
+// told a family of two with three visits each that they had hit a 6-visit limit
+// and further care was their responsibility.
+
+const visit = (id, who, date) => ({
+  id, patientName: who, serviceDates: [date], provider: "Testville Family Medicine",
+  occurrenceTable: [{ code: "90837", count: 1, dates: [date], description: "Psychotherapy" }],
+});
+const YEAR = { start: "2026-01-01", end: "2026-12-31" };
+const TRACKER = { codes: ["90837"], limit: 6, planYearStartMonth: 1 };
+
+test("visitsUsed: a household is counted per member, not pooled", () => {
+  const r = visitsUsed([
+    visit("a", "Matthew T. Testpatient", "2026-01-10"),
+    visit("b", "Matthew T. Testpatient", "2026-02-10"),
+    visit("c", "Matthew T. Testpatient", "2026-03-10"),
+    visit("d", "Sarah L. Testpatient", "2026-01-11"),
+    visit("e", "Sarah L. Testpatient", "2026-02-11"),
+    visit("f", "Sarah L. Testpatient", "2026-03-11"),
+  ], TRACKER, YEAR);
+  assert.equal(r.count, 6, "the household total is still available");
+  assert.equal(r.highest, 3, "but nobody is past their own limit");
+  assert.equal(r.byPerson.length, 2);
+  assert.equal(warningLevel(r.count, 6), "at", "pooled would have said limit reached");
+  assert.equal(warningLevel(r.highest, 6), "ok", "per member, they are half way");
+});
+
+test("visitsUsed: one person is unchanged — total and highest agree", () => {
+  const r = visitsUsed([
+    visit("a", "Jane Q. Testpatient", "2026-01-10"),
+    visit("b", "Jane Q. Testpatient", "2026-02-10"),
+  ], TRACKER, YEAR);
+  assert.equal(r.count, 2);
+  assert.equal(r.highest, 2, "a single-person account must behave exactly as before");
+  assert.equal(r.byPerson.length, 1);
+});
+
+test("visitsUsed: a name written two ways is one person", () => {
+  const r = visitsUsed([
+    visit("a", "Matthew T. Testpatient", "2026-01-10"),
+    visit("b", "matthew testpatient", "2026-02-10"),
+  ], TRACKER, YEAR);
+  assert.equal(r.byPerson.length, 1, "middle initial and case must not split a person in two");
+  assert.equal(r.highest, 2);
+});
+
+test("visitsUsed: audits with no patient land in one unattributed bucket", () => {
+  // Audits predating patientName. Dropping them would under-count; guessing an
+  // owner would be worse. They are counted, and shown as unattributed.
+  const r = visitsUsed([
+    visit("a", "", "2026-01-10"),
+    visit("b", "", "2026-02-10"),
+    visit("c", "Sarah L. Testpatient", "2026-03-11"),
+  ], TRACKER, YEAR);
+  assert.equal(r.count, 3);
+  assert.equal(r.byPerson.length, 2);
+  const unattributed = r.byPerson.find((p) => p.person === "");
+  assert.equal(unattributed.count, 2);
+  assert.equal(unattributed.name, "", "no name is not a name");
+});

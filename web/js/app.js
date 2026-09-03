@@ -1784,28 +1784,38 @@ const LEVEL_NOTES = {
 // level — the usage cards and the report line must never disagree.
 function trackerStatus(t) {
   const w = planYearWindow(t.planYearStartMonth || 1, todayISO());
-  const { count, contributions } = visitsUsed(allAudits, t, w);
-  return { w, count, contributions, level: warningLevel(count, t.limit) };
+  const { count, contributions, byPerson, highest } = visitsUsed(allAudits, t, w);
+  // A visit limit is per member, so the level follows whoever is nearest their
+  // own limit rather than the household's total. With one person on the account
+  // `highest` equals `count` and nothing about this changes.
+  const shared = byPerson.length > 1;
+  const shown = shared ? highest : count;
+  return { w, count, contributions, byPerson, shared, shown,
+           level: warningLevel(shown, t.limit) };
 }
 
 function renderUsage() {
   const list = $("usage-list");
   list.innerHTML = "";
   for (const t of allTrackers) {
-    const { w, count, contributions, level } = trackerStatus(t);
+    const { w, count, contributions, byPerson, shared, shown, level } = trackerStatus(t);
     const card = document.createElement("div");
     card.className = `usage-card ${level}`;
-    const pct = Math.min(100, t.limit > 0 ? (count / t.limit) * 100 : 0);
+    const pct = Math.min(100, t.limit > 0 ? (shown / t.limit) * 100 : 0);
     card.innerHTML = `
       <div class="usage-head">
         <b>${escapeHtml(t.label)}</b>${t.source === "sbc" && !t.confirmed ? ' <span class="count" title="Codes were suggested from your plan (SBC) — open the tracker and confirm them">from your plan (SBC) — check the codes</span>' : ""}
         <span style="display:flex;gap:10px;align-items:center">
-          <span class="usage-count">${count} / ${t.limit}</span>
+          <span class="usage-count">${shown} / ${t.limit}</span>
           <button class="usage-del" title="Stop tracking">✕</button>
         </span>
       </div>
       <div class="progress"><div class="bar" style="width:${pct}%"></div></div>
       ${LEVEL_NOTES[level] ? `<div class="usage-note">${LEVEL_NOTES[level]}</div>` : ""}
+      ${shared ? `<div class="per-person">${byPerson.map((p) => `
+        <span><b>${escapeHtml(p.name || "Unattributed")}</b> ${p.count} of ${t.limit}</span>`).join("")}
+        <span class="muted">Counted per person — a plan's visit limit usually applies to each
+        member, not the household. ${count} across everyone.</span></div>` : ""}
       <details><summary class="muted">${contributions.length} contributing audit(s) · plan year ${w.start} → ${w.end}</summary>
         ${contributions.map((c) => `<div class="contrib">${c.dates.map(escapeHtml).join(", ")} · ${escapeHtml(c.code)}${c.provider ? " · " + escapeHtml(c.provider) : ""}${c.count > 1 ? ` · ×${c.count}` : ""}${c.approximate ? " · ~approximate" : ""}</div>`).join("") || '<div class="contrib">None yet in this plan year.</div>'}
       </details>`;

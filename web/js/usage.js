@@ -18,6 +18,22 @@ export function planYearWindow(startMonth, todayISO) {
 
 const inWindow = (d, w) => typeof d === "string" && d >= w.start && d <= w.end;
 
+// Who a visit belongs to. First and last word, lowercased — the same rule
+// crossbill.js uses to decide whether two bills are for one person. The two must
+// agree, or the dashboard will say a household has one person while the tracker
+// says two.
+//
+// A plan's "6 outpatient mental health visits per year" is almost always PER
+// MEMBER. Pooling a household into one bucket told a family of two with three
+// visits each that they had reached a 6-visit limit and further care was their
+// responsibility. Telling someone they are out of covered visits when they are
+// half way through costs care, not money — the worst thing this tracker can do.
+const personOf = (name) => {
+  const w = String(name || "").toLowerCase().replace(/[.,]/g, " ").split(/\s+/).filter(Boolean);
+  if (!w.length) return "";
+  return w.length === 1 ? w[0] : `${w[0]} ${w[w.length - 1]}`;
+};
+
 export function visitsUsed(audits, tracker, window) {
   const codes = new Set((tracker.codes || []).map((c) => String(c).trim().toUpperCase()));
   const contributions = [];
@@ -52,11 +68,32 @@ export function visitsUsed(audits, tracker, window) {
         dates: inWin,
         count: n,
         approximate,
+        person: personOf(a.patientName),
+        personName: (a.patientName || "").trim(),
       });
     }
   }
   const count = contributions.reduce((s, c) => s + c.count, 0);
-  return { count, contributions };
+
+  // Split by person. Audits predating patientName, and any the model could not
+  // read a name from, land in one unattributed bucket keyed "" — dropping them
+  // would silently under-count, and guessing an owner would be worse.
+  const buckets = new Map();
+  for (const c of contributions) {
+    const b = buckets.get(c.person) || { person: c.person, name: c.personName, count: 0, contributions: [] };
+    b.count += c.count;
+    if (!b.name && c.personName) b.name = c.personName;
+    b.contributions.push(c);
+    buckets.set(c.person, b);
+  }
+  const byPerson = [...buckets.values()].sort((x, y) => y.count - x.count);
+
+  // What the limit is measured against. With one bucket this equals the total,
+  // so a single-person account behaves exactly as before. With several it is the
+  // person nearest their own limit — nobody reaches a per-member limit because
+  // someone else in the house also had visits.
+  const highest = byPerson.length ? byPerson[0].count : 0;
+  return { count, contributions, byPerson, highest };
 }
 
 function auditDate(a) {

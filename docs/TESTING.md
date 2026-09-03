@@ -57,6 +57,7 @@ the file and easy to miss.
 | FAM2 | — | — | **blocked**: needs a real SBC on file (family/individual split) and the family EOB as the most recent. The plan on file is `fake-sbc` and the deductible card is driven by the t-series EOBs, so the family-vs-individual arithmetic cannot be observed as written. |
 | FAM3 | — | — | not run against this build |
 | FAM3 | 2026-08-31 | agent | ✓ `matthew` and `family` stems disagree, still paired correctly (0 audits) |
+| FAM5 | 2026-08-31 | agent | ✓ per-member counting verified live (0 audits) |
 | FAM4 | 2026-08-31 | agent | found a false positive ($85.00 on a correct charge, no warning) → **fixed and re-verified same day** |
 | S1 | 2026-08-29 | agent | $2,115.00 / $841.75 / $186.35 / **$836.00** from a 110dpi PNG — identical to E1's digital PDF |
 | IMG1 | 2026-08-29 | agent | 8 fixtures · HEIC refusal fixed, now covered by `test/browser` |
@@ -1153,6 +1154,44 @@ review screen with no error.
   and the error asks for the missing one — with two candidates there is nothing to infer, and
   guessing would pair the wrong documents.
 - **Matching stems unaffected:** `t3-bill.pdf` + `t3-eob.pdf` ✓ still pair by stem.
+
+**Cost:** 0 audits.
+
+## FAM5 — Plan limits are counted per member (0 audits)
+**Use case:** a plan's "6 outpatient mental health visits per year" is almost always **per
+covered member**. Pooling a household into one bucket tells a family of two with three visits
+each that they have reached a 6-visit limit and that further care is their responsibility.
+That is the worst thing this tracker can say: it costs care, not money.
+**Data:** none — reads audits already in history. Needs bills for **two people** sharing a code
+(FAM1's `matthew-bill` and `sarah-bill` both carry 90686).
+
+1. With two people's audits on file, create a tracker over the shared code.
+   ✓ The badge shows the **highest single member's** count, not the household total.
+   ✓ A per-person line appears: `Matthew T. Testpatient 3 of 2 · Sarah L. Testpatient 1 of 2`,
+   with the household figure kept as context — "N across everyone".
+   ✓ The amber/red level follows the per-member figure.
+2. ✓ **A one-person account is unchanged.** With a single patient in history there is no
+   per-person block at all and the badge is the plain total — `highest` and `count` are the same
+   number, and the nine pre-existing `visitsUsed` tests still pass untouched.
+
+**Verified on production 2026-08-31.** A tracker over 90686 with a limit of 2, against a history
+holding Matthew (3) and Sarah (1):
+
+> **Codes 90686 — 3 / 2** · Over the limit
+> **Matthew T. Testpatient** 3 of 2  **Sarah L. Testpatient** 1 of 2
+> Counted per person — a plan's visit limit usually applies to each member, not the household.
+> 4 across everyone.
+
+Pooled, that badge read **4 / 2**. Matthew is genuinely over; Sarah is not, and previously the
+card said she was. The Psychotherapy tracker on the same screen has ten visits all belonging to
+one person, and correctly shows **no** per-person block.
+
+**Unattributed audits.** Anything predating `patientName`, or where the model could not read one,
+lands in a single bucket labelled **Unattributed** rather than being dropped or guessed at.
+
+**Open question, deliberately not decided here:** a few limits genuinely are per family. Nothing
+in the SBC extraction records which, so this assumes per member — the direction whose failure
+mode is missing a limit rather than inventing one.
 
 **Cost:** 0 audits.
 
