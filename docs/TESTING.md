@@ -57,7 +57,7 @@ the file and easy to miss.
 | FAM2 | — | — | **blocked**: needs a real SBC on file (family/individual split) and the family EOB as the most recent. The plan on file is `fake-sbc` and the deductible card is driven by the t-series EOBs, so the family-vs-individual arithmetic cannot be observed as written. |
 | FAM3 | — | — | not run against this build |
 | FAM3 | 2026-08-31 | agent | ✓ `matthew` and `family` stems disagree, still paired correctly (0 audits) |
-| FAM4 | 2026-08-31 | agent | ⚠️ **found a false positive**: $85.00 "worth disputing" on a correct charge, no warning |
+| FAM4 | 2026-08-31 | agent | found a false positive ($85.00 on a correct charge, no warning) → **fixed and re-verified same day** |
 | S1 | 2026-08-29 | agent | $2,115.00 / $841.75 / $186.35 / **$836.00** from a 110dpi PNG — identical to E1's digital PDF |
 | IMG1 | 2026-08-29 | agent | 8 fixtures · HEIC refusal fixed, now covered by `test/browser` |
 | P1 | — | — | not run against this build |
@@ -1210,7 +1210,31 @@ patient named anywhere in the EOB?" passes on a wrong pair and would guard nothi
 has to be against the **claim-level** patient, not the document text.
 
 **That is the finding, not a failure of the test** — it turns an invisible gap into a reproducible
-one. The fix has two halves, neither built yet:
+one.
+
+### Fixed and re-verified on production 2026-08-31
+
+The model now returns **`eobPatients`** — the people the EOB's *claims* are for, read from the
+claim lines and explicitly **not** from the subscriber block. `wrongPatient()` compares the bill's
+patient against that list, matching on surname plus first name so "TESTPATIENT, MATTHEW T" and
+"Matthew Testpatient" are one person, and returns false whenever it cannot tell. Saved EOBs now
+store `patients` too, and `eobPatients` is written to the audit so a **re-opened** report warns
+identically to a fresh one.
+
+Re-run of the same pair:
+
+> ⚠️ **This EOB is for someone else.** The bill is for **Matthew T. Testpatient**, but this
+> statement covers **Sarah L. Testpatient**. Charges here will look "missing from the EOB" simply
+> because they sit on a different statement.
+
+The prompt change improved the model's own reasoning as a side effect — the finding now reads
+"absent from the EOB, **which only contains claims for a different patient**", which it did not
+say before being asked for claim-level names.
+
+✓ The warning outranks the generic mismatched-pair copy, which would have been **false** here:
+a household's documents *do* share dates and codes.
+✓ **FAM1 must still pass** — the consolidated `family-eob.pdf` lists all three members, so
+`wrongPatient` returns false and no warning appears on a correct pair. The fix has two halves, neither built yet:
 store `patientName` on saved EOBs, and compare people in `documentsRelated` alongside dates and
 codes (carefully: "TESTPATIENT, MATTHEW" and "Matthew T. Testpatient" are the same person, and a
 false "wrong patient" warning on a correct pair is worse than silence).

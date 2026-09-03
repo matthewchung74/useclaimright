@@ -464,6 +464,11 @@ export const analyze = onCall(
       serviceDates: result.serviceDates,
       provider: result.provider,
       patientName: result.patientName || "",
+      // Stored, not just returned. The wrong-person warning is computed from
+      // these, and a re-opened report reads the stored document — the same
+      // asymmetry that once left the mismatched-pair warning working on the
+      // fresh report and silent on the same audit reopened.
+      eobPatients: result.eobPatients || [],
       statementId: result.statementId || "",
       payerRemarks: result.payerRemarks,
       accumulators: result.accumulators,

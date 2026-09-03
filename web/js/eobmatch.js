@@ -40,6 +40,41 @@ export function codesIn(text) {
   return out;
 }
 
+// Is this EOB for the person on the bill?
+//
+// Names are written differently on every document — "Matthew T. Testpatient",
+// "TESTPATIENT, MATTHEW T", "Matthew Testpatient" — so this compares the parts
+// that survive: the surname, and the first name. Middle initials are dropped
+// because they appear and vanish between a bill and its own EOB, and a middle
+// initial has never been what distinguishes two members of a household.
+const nameKey = (raw) => {
+  const cleaned = String(raw || "")
+    .toLowerCase()
+    .replace(/[^a-z, ]/g, " ")
+    // "Testpatient, Matthew" and "Matthew Testpatient" are the same person.
+    .replace(/^([a-z]+)\s*,\s*(.+)$/, "$2 $1")
+    .split(/\s+/)
+    .filter((w) => w.length > 1); // drops middle initials and stray letters
+  if (cleaned.length < 2) return cleaned.join(" ");
+  return `${cleaned[cleaned.length - 1]}|${cleaned[0]}`; // surname|first
+};
+
+export function samePerson(a, b) {
+  const ka = nameKey(a), kb = nameKey(b);
+  return !!ka && ka === kb;
+}
+
+// True when the bill's patient is definitely NOT among the people the EOB's
+// claims are for. Returns false whenever it cannot tell — an unknown patient or
+// an EOB with no claim names must never raise a false alarm, because "you have
+// the wrong person's EOB" is a serious thing to say to someone who does not.
+export function wrongPatient(billPatient, eobPatients) {
+  const bill = String(billPatient || "").trim();
+  const list = (eobPatients || []).map((n) => String(n || "").trim()).filter(Boolean);
+  if (!bill || !list.length) return false;
+  return !list.some((n) => samePerson(bill, n));
+}
+
 export function documentsRelated(billText, eobText) {
   const bd = datesIn(billText), ed = datesIn(eobText);
   const bc = codesIn(billText), ec = codesIn(eobText);
