@@ -151,6 +151,11 @@
   .tap:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
   .bill-row{display:flex;align-items:center;gap:12px;padding:11px 16px;border-top:1px solid var(--line);font-size:14px}
   .bill-row .when{font-family:ui-monospace,Menlo,monospace;font-size:13px;color:var(--ink-soft);flex:0 0 110px}
+  /* Whose bill. Only rendered when the account holds more than one person, so
+     it never takes width it hasn't earned. Ellipsised rather than wrapped: the
+     row is one line by design and a long surname must not push the amount out. */
+  .bill-row .who{flex:0 0 auto;max-width:88px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+    font-weight:650;color:var(--ink)}
   .bill-row .what{flex:1;text-align:left;background:none;border:none;color:var(--ink);font:inherit;padding:0;pointer-events:none}
   .bill-row.tap:hover .what{color:var(--brand-dark)}
   /* 11x16 was the delete target. Padding gives it a real one without changing
@@ -302,6 +307,16 @@
     button,select{min-height:44px}
     .pl-actions{gap:2px}
     .pl-actions a{display:inline-block;padding:12px 8px}
+    /* Date + name + finding + amount is four columns in 360px, and the finding
+       is the one that must stay readable. Measured at 375px: squeezing it into
+       the leftover 61px wrapped the row to 180px tall. So the row becomes two
+       lines — who and when and how much on the first, what was found on the
+       second, full width. `order` moves the summary last without touching the
+       DOM, which keeps the delete button's tab position where it was. */
+    .bill-row{flex-wrap:wrap;row-gap:4px}
+    .bill-row .when{flex:0 0 auto}
+    .bill-row .who{max-width:none}
+    .bill-row .what{order:1;flex:1 0 100%}
     details.explain summary{min-height:44px;display:flex;align-items:center}
     /* The standalone links only. The reCAPTCHA attribution links are inline in
        a wrapped paragraph, where a 44px band would overlap its neighbours and
