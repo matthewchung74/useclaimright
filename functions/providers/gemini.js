@@ -73,20 +73,21 @@ totals.eobAllowed and totals.patientResponsibility to 0.`;
 // Output is billed at five times input, and nothing bounded it. A transcription
 // plus findings runs ~2k tokens; this is generous room above that, and a hard
 // stop under a model that decides to think at length.
-const MAX_OUTPUT_TOKENS = 8192;
-
-// A plan's output is structurally bigger than an audit's, and grows with the
-// document rather than with what was found. planSchema requires `verbatim` — each
-// cost-share row copied word for word — and a real five-page CMS SBC has
-// thirteen of them plus four benefit limits. Read as TEXT the model copies those
-// rows and fits; read as a SCAN it must transcribe them, and a five-page scan
-// overran 8192 and failed with "produced more output than we can handle" — so a
-// photographed plan, which is every plan someone scans, could not be extracted
-// at all. Verified 2026-08-31 against a 110dpi render of cms-2025.pdf.
+// Output is billed at five times input, so it needs a ceiling — but a flat one is
+// the wrong shape, because what the model must WRITE scales with how many pages
+// it had to READ. A document sent as images must be transcribed back; one sent as
+// text need not be.
 //
-// This is a ceiling, not a budget: it is only ever reached by a document that
-// genuinely has that much printed on it.
-const MAX_PLAN_OUTPUT_TOKENS = 24576;
+// A five-page scanned SBC overran a flat 8192 and failed with "produced more
+// output than we can handle", so a photographed plan — every plan anyone scans —
+// could not be extracted at all. The audit path has the same shape and allows up
+// to MAX_PAGES (20) images under that same flat ceiling, so it was one long
+// document away from the identical failure.
+//
+// A ceiling, not a budget: only a document that genuinely has that much printed
+// on it ever reaches it. Verified 2026-08-31 against a 110dpi render of
+// cms-2025.pdf, whose five pages yielded 15 verbatim cost-share rows.
+const outputCeiling = (pageCount) => Math.min(65536, 8192 + 3072 * (pageCount || 0));
 
 // A response cut off mid-JSON is not retryable. It fails schema validation, the
 // retry sends the SAME oversized request, and a ceiling meant to cap cost
@@ -193,7 +194,7 @@ export async function runAudit(bill, eob, opts, planDigest = null) {
     contents: [{ role: "user", parts }],
     config: {
       temperature: 0,
-      maxOutputTokens: MAX_OUTPUT_TOKENS,
+      maxOutputTokens: outputCeiling(billImages.length + eobImages.length),
       responseMimeType: "application/json",
       responseJsonSchema: findingsSchema,
     },
@@ -220,7 +221,7 @@ export async function runPlanExtract(sbc, opts) {
       responseMimeType: "application/json",
       responseJsonSchema: planSchema,
       temperature: 0,
-      maxOutputTokens: MAX_PLAN_OUTPUT_TOKENS,
+      maxOutputTokens: outputCeiling(images.length),
     },
   });
   assertComplete(response);

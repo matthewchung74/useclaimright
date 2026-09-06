@@ -17,7 +17,7 @@
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -28,7 +28,6 @@ const TESTING = read("docs/TESTING.md");
 const APP_HTML = read("web/app.html");
 const APP_JS = read("web/js/app.js");
 const EXTRACT_JS = read("web/js/extract.js");
-const SOURCE = APP_HTML + APP_JS + EXTRACT_JS;
 
 // Two kinds of text mention a feature, and only one is a claim about today:
 //
@@ -51,6 +50,15 @@ const assertionLines = live
 const assertions = assertionLines.join("\n");
 
 const mentions = (phrase) => assertions.includes(phrase);
+
+// One definition of each, because two tests below disagreed about what a plan id
+// looks like — a doc-drift suite quietly disagreeing with itself is the failure
+// it exists to prevent.
+const PLAN_ID_HEADING = /^## ([A-Z][A-Z0-9]*\d[a-z]?) —/gm;
+const PLAN_ID_ROW = /^\| ([A-Z][A-Z0-9]*\d[a-z]?) \|/gm;
+const RUN_LOG = live.slice(live.indexOf("## Run log"), live.indexOf("## What you can reorder"));
+const planHeadings = () => [...TESTING.matchAll(PLAN_ID_HEADING)].map((m) => m[1]);
+const runLogPlans = () => [...RUN_LOG.matchAll(PLAN_ID_ROW)].map((m) => m[1]);
 
 // ---------------------------------------------------------------------------
 // Claims that were stale on 2026-08-29, each tied to the fact it depends on.
@@ -78,7 +86,7 @@ const CLAIMS = [
   {
     what: "the saved-EOB content matcher",
     docSays: "matched by provider and service date",
-    holds: () => APP_JS.includes("matchSavedEob"),
+    holds: () => false, // deleted with its caller; the doc must not claim it
     why: "the matcher needed bill text the browser no longer has",
   },
   {
@@ -131,20 +139,15 @@ test("TESTING.md: every element id it names exists in app.html", () => {
 // said both things about FAM3.
 // ---------------------------------------------------------------------------
 test("TESTING.md: the run log lists each plan exactly once", () => {
-  const log = live.slice(live.indexOf("## Run log"), live.indexOf("## What you can reorder"));
   const seen = new Map();
-  for (const m of log.matchAll(/^\| ([A-Z][A-Z0-9]*\d[a-z]?) \|/gm)) {
-    seen.set(m[1], (seen.get(m[1]) || 0) + 1);
-  }
+  for (const p of runLogPlans()) seen.set(p, (seen.get(p) || 0) + 1);
   const dupes = [...seen].filter(([, n]) => n > 1).map(([p, n]) => `${p} x${n}`);
   assert.deepEqual(dupes, [], `run log contradicts itself: ${dupes.join(", ")}`);
 });
 
 test("TESTING.md: every plan has a run-log row", () => {
-  const headings = [...TESTING.matchAll(/^## ([A-Z][A-Z0-9]*\d[a-z]?) —/gm)].map((m) => m[1]);
-  const log = live.slice(live.indexOf("## Run log"), live.indexOf("## What you can reorder"));
-  const rows = new Set([...log.matchAll(/^\| ([A-Z][A-Z0-9]*\d[a-z]?) \|/gm)].map((m) => m[1]));
-  const missing = headings.filter((h) => !rows.has(h));
+  const rows = new Set(runLogPlans());
+  const missing = planHeadings().filter((h) => !rows.has(h));
   assert.deepEqual(missing, [], `plans with no run-log row, so their status is invisible: ${missing.join(", ")}`);
 });
 
@@ -152,9 +155,7 @@ test("TESTING.md: every plan has a run-log row", () => {
 // The dependency table earns its keep only if the plans it names are real.
 // ---------------------------------------------------------------------------
 test("TESTING.md: the reorder table only names plans that exist", () => {
-  const headings = new Set(
-    [...TESTING.matchAll(/^## ([A-Z][A-Z0-9]*\d|[A-Z]+\d[a-z]?) —/gm)].map((m) => m[1])
-  );
+  const headings = new Set(planHeadings());
   const table = live.slice(
     live.indexOf("## What you can reorder"),
     live.indexOf("**Automated tests first:**")
@@ -177,4 +178,26 @@ test("by-plan fixtures exist for every plan folder the docs reference", async ()
     return files.length === 0;
   });
   assert.deepEqual(empty, [], `by-plan folders with nothing in them: ${empty.join(", ")}`);
+});
+
+// A substring check on markup, so it belongs here rather than in the browser
+// tier — it was paying for Chromium, a local server and a page load to grep
+// two ids out of app.html.
+test("the removed banners stay removed", () => {
+  const back = ["ocr-banner", "pair-banner"].filter((id) => APP_HTML.includes(`id="${id}"`));
+  assert.deepEqual(back, [], `re-added banners: ${back.join(", ")} — update TESTING.md too`);
+});
+
+// The generator is a fourth copy of the plan list, and drift.test.js was
+// checking the other three against each other but not against it. FAM5 and
+// PHONE1 already had no folder and nothing failed.
+test("every plan has a by-plan fixture folder", () => {
+  const dirs = new Set(
+    readdirSync(join(ROOT, "test-fixtures", "by-plan"), { withFileTypes: true })
+      .filter((e) => e.isDirectory())
+      .map((e) => e.name.split("-")[0])
+  );
+  const missing = planHeadings().filter((p) => !dirs.has(p));
+  assert.deepEqual(missing, [],
+    `plans with no by-plan/ folder — their Data: line points nowhere: ${missing.join(", ")}`);
 });

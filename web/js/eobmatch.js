@@ -1,3 +1,6 @@
+import { samePerson } from "./person.js";
+export { samePerson };
+
 // Pure saved-EOB matching. No DOM, no globals — unit-testable in Node.
 // Given the library entries (with metadata saved at audit time) and the raw
 // extracted text of a new bill, find the saved EOB most likely to cover it:
@@ -40,30 +43,6 @@ export function codesIn(text) {
   return out;
 }
 
-// Is this EOB for the person on the bill?
-//
-// Names are written differently on every document — "Matthew T. Testpatient",
-// "TESTPATIENT, MATTHEW T", "Matthew Testpatient" — so this compares the parts
-// that survive: the surname, and the first name. Middle initials are dropped
-// because they appear and vanish between a bill and its own EOB, and a middle
-// initial has never been what distinguishes two members of a household.
-const nameKey = (raw) => {
-  const cleaned = String(raw || "")
-    .toLowerCase()
-    .replace(/[^a-z, ]/g, " ")
-    // "Testpatient, Matthew" and "Matthew Testpatient" are the same person.
-    .replace(/^([a-z]+)\s*,\s*(.+)$/, "$2 $1")
-    .split(/\s+/)
-    .filter((w) => w.length > 1); // drops middle initials and stray letters
-  if (cleaned.length < 2) return cleaned.join(" ");
-  return `${cleaned[cleaned.length - 1]}|${cleaned[0]}`; // surname|first
-};
-
-export function samePerson(a, b) {
-  const ka = nameKey(a), kb = nameKey(b);
-  return !!ka && ka === kb;
-}
-
 // True when the bill's patient is definitely NOT among the people the EOB's
 // claims are for. Returns false whenever it cannot tell — an unknown patient or
 // an EOB with no claim names must never raise a false alarm, because "you have
@@ -91,26 +70,3 @@ export function documentsRelated(billText, eobText) {
     : { related: true, confident: false, sharedDates: [], sharedCodes: [] };
 }
 
-// Returns {eob, reason, score} or null. Scores: provider+date 3, provider 2,
-// date 1. Ties break toward the earlier entry (callers pass most-recent-first).
-export function matchSavedEob(savedEobs, billText) {
-  const text = norm(billText);
-  if (!text) return null;
-  let best = null;
-  for (const e of savedEobs || []) {
-    const provider = norm(e.provider);
-    const dates = (e.serviceDates || []).filter(Boolean);
-    if (!provider && !dates.length) continue; // legacy entry, no metadata
-    const providerHit = provider.length > 0 && text.includes(provider);
-    const dateHit = dates.some((d) => text.includes(d));
-    const score = (providerHit ? 2 : 0) + (dateHit ? 1 : 0);
-    if (score === 0) continue;
-    if (!best || score > best.score) {
-      const reason = providerHit && dateHit
-        ? "matched by provider and service date"
-        : providerHit ? "matched by provider" : "matched by service date";
-      best = { eob: e, reason, score };
-    }
-  }
-  return best;
-}

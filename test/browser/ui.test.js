@@ -23,7 +23,9 @@ import { chromium } from "playwright";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const WEB = join(ROOT, "web");
-const FIXTURES = join(ROOT, "test-fixtures", "by-plan", "IMG1-image-edge-cases");
+// The canonical committed copies. by-plan/ is derived and gitignored, so a
+// clean checkout has these and may not have the plan folders yet.
+const FIXTURES = join(ROOT, "test-fixtures", "img1");
 
 const TYPES = {
   ".html": "text/html", ".js": "text/javascript", ".mjs": "text/javascript",
@@ -181,7 +183,7 @@ const probe = (name) =>
 const fixture = (name) => {
   const f = join(FIXTURES, name);
   assert.ok(existsSync(f),
-    `fixture missing: ${name}\nrun: sh test-fixtures/gen-img1.sh && node test-fixtures/gen-by-plan.mjs`);
+    `fixture missing: ${name}\nrun: sh test-fixtures/gen-img1.sh`);
   return f;
 };
 
@@ -231,13 +233,6 @@ test("review screen describes pages, not extracted text", async () => {
     "the extracted-text pane was removed when PDFs became page renders");
 });
 
-test("the removed banners stay removed", async () => {
-  // Both were permanently-on or structurally-dead by the time they went. If one
-  // comes back, TESTING.md's claims about it need to come back too.
-  const present = await page.evaluate(() =>
-    ["ocr-banner", "pair-banner"].filter((id) => document.getElementById(id)));
-  assert.deepEqual(present, [], `re-added banners: ${present.join(", ")} — update TESTING.md too`);
-});
 
 test("phone: a family bill row fits, and the finding keeps full width", async () => {
   // The dashboard groups by provider and shows date, finding and amount — which

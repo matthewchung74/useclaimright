@@ -3,6 +3,8 @@
 // loadHistory(): {id, billKey, provider, serviceDates[], occurrenceTable[],
 // atStake, findingTypes[], summary, createdAtDate}.
 
+import { personKey } from "./person.js";
+
 const norm = (s) => String(s || "").trim().toLowerCase().replace(/\s+/g, " ");
 
 // First and last name only: "Matthew T. Testpatient", "MATTHEW TESTPATIENT" and
@@ -10,11 +12,7 @@ const norm = (s) => String(s || "").trim().toLowerCase().replace(/\s+/g, " ");
 // punctuation are exactly where the same name stops matching itself. An empty
 // name yields "", so accounts with one patient (and audits from before this was
 // captured) all share a key and keep behaving as they always did.
-const personKey = (s) => {
-  const w = norm(s).replace(/[.,]/g, " ").split(" ").filter(Boolean);
-  if (!w.length) return "";
-  return w.length === 1 ? w[0] : `${w[0]} ${w[w.length - 1]}`;
-};
+
 const inWindow = (d, w) => !w || (typeof d === "string" && d >= w.start && d <= w.end);
 const lowercaseCount = (s) => (String(s).match(/[a-z]/g) || []).length;
 const auditDate = (a) => (a.serviceDates || []).filter(Boolean)[0] || a.createdAtDate || "";

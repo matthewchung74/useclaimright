@@ -189,7 +189,7 @@ export function verifyEvidence(result, sources) {
           dropped.push({ type: f.type, field, quote: f.evidence[field] });
           return false;
         }
-        unverifiable.push({ type: f.type, field });
+        unverifiable.push(field);
         continue;
       }
       if (!quoteIsSupported(quote, docs[field])) {
