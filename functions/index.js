@@ -419,7 +419,7 @@ export const analyze = onCall(
       // document whose text it never returned, so nothing could be checked. If
       // this is common, make billText/eobText required rather than optional.
       console.warn("evidence could not be verified: no text for a supplied document",
-        { uid, count: verified.unverifiable.length, fields: verified.unverifiable.map((u) => u.field) });
+        { uid, count: verified.unverifiable.length, fields: verified.unverifiable });
     }
     if (verified.dropped.length) {
       // Loud, because the drop is silent to the user: this is the only place a

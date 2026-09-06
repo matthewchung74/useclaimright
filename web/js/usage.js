@@ -1,10 +1,15 @@
 // Pure aggregation functions for the usage & benefits tracker.
-// No imports, no globals — unit-testable in Node, used by app.js in the browser.
+// No globals and no DOM — unit-testable in Node, used by app.js in the browser.
+// The one import is person.js, which is pure for the same reasons: four features
+// have to agree about who a document is about, and a copied rule is an invariant
+// nothing enforces.
 // Audits are passed in normalized form:
 //   { id, serviceDates: string[], occurrenceTable: [{code, count, dates?, description}],
 //     accumulators?: {...}|null, payerRemarks?: string[], provider?: string,
 //     createdAtDate: "YYYY-MM-DD" }
 // All dates are ISO YYYY-MM-DD strings — lexical comparison is date comparison.
+
+import { personKey } from "./person.js";
 
 export function planYearWindow(startMonth, todayISO) {
   const m = Math.min(12, Math.max(1, startMonth || 1));
@@ -18,21 +23,11 @@ export function planYearWindow(startMonth, todayISO) {
 
 const inWindow = (d, w) => typeof d === "string" && d >= w.start && d <= w.end;
 
-// Who a visit belongs to. First and last word, lowercased — the same rule
-// crossbill.js uses to decide whether two bills are for one person. The two must
-// agree, or the dashboard will say a household has one person while the tracker
-// says two.
-//
 // A plan's "6 outpatient mental health visits per year" is almost always PER
 // MEMBER. Pooling a household into one bucket told a family of two with three
-// visits each that they had reached a 6-visit limit and further care was their
-// responsibility. Telling someone they are out of covered visits when they are
-// half way through costs care, not money — the worst thing this tracker can do.
-const personOf = (name) => {
-  const w = String(name || "").toLowerCase().replace(/[.,]/g, " ").split(/\s+/).filter(Boolean);
-  if (!w.length) return "";
-  return w.length === 1 ? w[0] : `${w[0]} ${w[w.length - 1]}`;
-};
+// visits each that they had reached a 6-visit limit and that further care was
+// their responsibility. Telling someone they are out of covered visits when they
+// are half way through costs care, not money — the worst this tracker can do.
 
 export function visitsUsed(audits, tracker, window) {
   const codes = new Set((tracker.codes || []).map((c) => String(c).trim().toUpperCase()));
@@ -68,7 +63,7 @@ export function visitsUsed(audits, tracker, window) {
         dates: inWin,
         count: n,
         approximate,
-        person: personOf(a.patientName),
+        person: personKey(a.patientName),
         personName: (a.patientName || "").trim(),
       });
     }

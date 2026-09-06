@@ -14,3 +14,7 @@ measure-live.mjs
 graphify-out/
 measure-sbc.mjs
 test/browser/node_modules/
+
+# Derived from the canonical fixtures — rebuild with:
+#   node test-fixtures/gen-by-plan.mjs
+test-fixtures/by-plan/

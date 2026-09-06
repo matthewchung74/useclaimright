@@ -17,7 +17,7 @@
 //      reads pages rather than the browser OCRing them.
 // Both are generated here so the plan is reproducible instead of remembered.
 
-import { copyFileSync, mkdirSync, rmSync, existsSync, readdirSync } from "node:fs";
+import { copyFileSync, mkdirSync, rmSync, existsSync, readdirSync, writeFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -109,6 +109,8 @@ const NO_FILES = {
   "PAY1-appeal-letter": "any existing audit WITH findings",
   "REV1-review-screen": "reuse any plan's bill",
   "TAP1-tap-targets": "no uploads",
+  "FAM5-per-member-limits": "reads FAM1's audits — two people sharing a code",
+  "PHONE1-phone-layout": "no uploads; drive the app at 375px",
 };
 
 rmSync(OUT, { recursive: true, force: true });
@@ -145,7 +147,7 @@ const pages = rasterise();
 for (const [plan, why] of Object.entries(NO_FILES)) {
   mkdirSync(join(OUT, plan), { recursive: true });
   // A .gitkeep would be silent about WHY the folder is empty.
-  execFileSync("/bin/sh", ["-c", `printf '%s\\n' ${JSON.stringify(why)} > ${JSON.stringify(join(OUT, plan, "NO-FILES.txt"))}`]);
+  writeFileSync(join(OUT, plan, "NO-FILES.txt"), `${why}\n`);
 }
 
 console.log(`by-plan/: ${Object.keys(PLANS).length} plans with files, ${copied} copied, ` +

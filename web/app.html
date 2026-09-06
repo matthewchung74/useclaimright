@@ -306,7 +306,8 @@
     /* 4. Tap targets. 44px is Apple's documented minimum and the row deletes
        were 31x36. Grown with padding so the glyph itself keeps its size, and
        the standalone links get a tappable band without changing type scale. */
-    .bill-row .rm,.batch-row .rm,.usage-del{min-width:44px;min-height:44px}
+    /* All three are <button>, so the rule below supplies min-height. */
+    .bill-row .rm,.batch-row .rm,.usage-del{min-width:44px}
     button,select{min-height:44px}
     .pl-actions{gap:2px}
     .pl-actions a{display:inline-block;padding:12px 8px}

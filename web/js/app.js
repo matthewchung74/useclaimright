@@ -21,6 +21,7 @@ import { pairFiles, classifyFile, uniqueDocs } from "./batch.js";
 import { planYearStartMonthFrom, mergeSbcTrackers, deductibleTarget, oopTarget } from "./plan.js";
 import { crossBillDuplicates, runningTotals, groupAuditsByProvider, splitJustAudited, billKeyOf } from "./crossbill.js";
 import { documentsRelated, wrongPatient } from "./eobmatch.js";
+import { personKey } from "./person.js";
 
 const $ = (id) => document.getElementById(id);
 let currentSection = "signin";
@@ -1275,20 +1276,33 @@ async function loadHistory() {
 // Shown only when the history actually holds more than one person: a name on
 // every row of a single-person account is noise. Same rule as the saved-EOB
 // pre-selection — disambiguate only when there is something to disambiguate.
-const householdNames = () =>
-  new Set(allAudits.map((a) => (a.patientName || "").trim()).filter(Boolean));
+// Keyed, not raw: the model returns "Matthew T. Testpatient" on one audit and
+// "matthew testpatient" on the next, and comparing the strings made those two
+// people — switching this column on for a single-person account and rendering
+// the same person twice. The key is the one the tracker and the duplicate check
+// already use, so all three agree on how many people are on the account.
+// Map key -> a display name, so the column has something to print.
+const householdNames = () => {
+  const m = new Map();
+  for (const a of allAudits) {
+    const k = personKey(a.patientName);
+    if (k && !m.has(k)) m.set(k, (a.patientName || "").trim());
+  }
+  return m;
+};
 
 // "Jane Q. Testpatient" -> "Jane". A household tells its members apart by first
 // name and the row has no width for more. Falls back to the full name when two
-// members share a first name, the one case where more is clearer. Audits from
-// before patientName was extracted have none; among named rows an unnamed one
-// shows "—" rather than looking like it belongs to whoever is above it.
-function shortPatient(name, all) {
+// members share one, the only case where more is clearer. Audits predating
+// patientName have none; among named rows an unnamed one shows "—" rather than
+// looking like it belongs to whoever is above it.
+function shortPatient(name, household) {
   const full = (name || "").trim();
   if (!full) return "";
-  const first = full.split(/\s+/)[0];
-  const clash = [...all].filter((n) => n.split(/\s+/)[0] === first).length > 1;
-  return clash ? full : first;
+  const first = full.split(/\s+/)[0].toLowerCase();
+  const clash = [...household.values()]
+    .filter((n) => n.split(/\s+/)[0].toLowerCase() === first).length > 1;
+  return clash ? full : full.split(/\s+/)[0];
 }
 
 // "Duplicate charge · Copay doesn't match your plan" — what was found, in the
@@ -1345,8 +1359,12 @@ const shortDate = (iso) => {
 };
 
 function renderDashboard() {
-  const names = householdNames();
-  const who = names.size > 1; // more than one person on the account
+  const household = householdNames();
+  // The name earns a column only when there is someone to tell apart, and the
+  // same cell is wanted by two row templates ninety lines apart.
+  const whoCell = household.size > 1
+    ? (b) => `<span class="who">${escapeHtml(shortPatient(b.patientName, household) || "—")}</span>`
+    : () => "";
   const win = planYearWindow(allTrackers[0]?.planYearStartMonth || planYearStartMonthFrom(activePlan?.structured?.planYearStart), todayISO());
   const totals = runningTotals(allAudits, win);
   $("dash-subtitle").innerHTML = allAudits.length
@@ -1401,7 +1419,7 @@ function renderDashboard() {
         <span class="muted">worth disputing</span></div>
       ${just.map((b) => `<div class="bill-row tap${b.atStake ? "" : " quiet"}">
         <span class="when">${escapeHtml(shortDate(b.serviceDates[0] || b.createdAtDate))}</span>
-        ${who ? `<span class="who">${escapeHtml(shortPatient(b.patientName, names) || "—")}</span>` : ""}
+        ${whoCell(b)}
         <button class="what" data-audit="${escapeHtml(b.id)}">${escapeHtml(b.summary || "Nothing to dispute")}</button>
         ${b.atStake ? `<span class="money-pill">${fmt(b.atStake)}</span>` : ""}
       </div>`).join("")}
@@ -1428,7 +1446,7 @@ function renderDashboard() {
           <span class="money-pill">${fmt(g.atStake)}</span></summary>
         ${g.bills.map((b) => `<div class="bill-row tap">
           <span class="when">${escapeHtml(shortDate(b.serviceDates[0] || b.createdAtDate))}</span>
-          ${who ? `<span class="who">${escapeHtml(shortPatient(b.patientName, names) || "—")}</span>` : ""}
+          ${whoCell(b)}
           <button class="what" data-audit="${escapeHtml(b.id)}">${escapeHtml(b.summary)}</button>
           <span class="money-pill">${fmt(b.atStake)}</span>
           <button class="rm" data-del="${escapeHtml(b.id)}" title="Delete this audit">✕</button>
@@ -1473,12 +1491,18 @@ async function loadTrackers() {
 // `redactedBill`/`redactedEob` described a step that no longer happens. Stored
 // documents written before that change still carry the old names, so read both.
 // Delete these once nothing pre-rename remains.
-// Content fingerprint of an uploaded file. SHA-256 over the raw bytes, so it
-// recognises the identical file whether or not any text can be read out of it —
-// which is the whole point for a scan.
-async function fileHash(file) {
+// Content fingerprint of an upload. SHA-256 over the raw bytes of every page in
+// order, so it recognises the identical document whether or not any text can be
+// read out of it — which is the whole point for a scan — and always returns 64
+// characters, which is what the server stores.
+async function filesHash(files) {
   try {
-    const buf = await crypto.subtle.digest("SHA-256", await file.arrayBuffer());
+    const parts = await Promise.all(files.map((f) => f.arrayBuffer()));
+    const total = parts.reduce((n, b) => n + b.byteLength, 0);
+    const joined = new Uint8Array(total);
+    let at = 0;
+    for (const b of parts) { joined.set(new Uint8Array(b), at); at += b.byteLength; }
+    const buf = await crypto.subtle.digest("SHA-256", joined);
     return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join("");
   } catch {
     return ""; // no hash is "cannot tell", never a false match
@@ -1698,8 +1722,8 @@ const sbcErrTarget = () => (state?.sbcOrigin === "onboarding" ? "onboarding-erro
 // accepted several; this one silently took files[0] and dropped the rest. Pages
 // sort by filename, which is the order scanners number them in.
 async function prepareSbc(input) {
-  const files = (Array.isArray(input) ? input : [input])
-    .slice()
+  // [...input] copies a live FileList and leaves the caller's array alone.
+  const files = [...input]
     .sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
   const file = files[0];
   const origin = !$("onboarding").hidden ? "onboarding" : "bills";
@@ -1713,41 +1737,41 @@ async function prepareSbc(input) {
   show("processing");
   try {
     setStatus("Reading your Summary of Benefits…");
+    state.sbcName = files.length > 1 ? `${file.name} +${files.length - 1} more` : file.name;
+
+    // Bytes FIRST, before any rendering. This check exists to avoid spending an
+    // extraction, and doing it afterwards spent one anyway: on a re-uploaded
+    // five-page scan that was five image decodes, five canvas draws and five
+    // JPEG encodes on the main thread, all thrown away behind a spinner.
+    //
+    // One digest over all pages in order, not a join of per-page digests: the
+    // server stores 64 characters, so a joined string was truncated to page one
+    // and a five-page scan was recognised by its first page alone.
+    state.sbcHash = await filesHash(files);
+    if (activePlan?.sourceHash && state.sbcHash && activePlan.sourceHash === state.sbcHash) {
+      show(state.sbcOrigin);
+      return setError(sbcErrTarget(), "This plan is already on file.");
+    }
+
     // Each file contributes its pages, in filename order, to ONE document — five
     // photographed pages are one Summary of Benefits, not five plans.
+    //
+    // images, not just previews: for a SCANNED SBC the text is "" and the pages
+    // ARE the document. Dropping them sent an empty payload and the server
+    // answered "The SBC is required, as text or page images."
     const parts = [];
     for (const f of files) parts.push(await extractText(f));
-    const ex = {
+    state.bill = {
       text: parts.map((p) => p.text).filter(Boolean).join("\n\n"),
       images: parts.flatMap((p) => p.images || []),
       previews: parts.flatMap((p) => p.previews || []),
       method: parts.some((p) => p.method === "image") ? "image" : parts[0].method,
       confidence: parts[0].confidence,
     };
-    // images, not just previews: for a SCANNED SBC the text is "" and the pages
-    // ARE the document. Dropping them here sent an empty payload, and the server
-    // answered "The SBC is required, as text or page images." — so a photographed
-    // or scanned plan document could never be uploaded at all. The audit path
-    // always carried images; this path quietly did not.
-    state.bill = { text: ex.text, images: ex.images, previews: ex.previews, method: ex.method, confidence: ex.confidence };
-    state.sbcName = files.length > 1 ? `${file.name} +${files.length - 1} more` : file.name;
-    // Two ways to recognise the same document, because neither covers everything.
-    //
-    // The BYTES catch a scan. The text comparison below needs text on both
-    // sides, and a scanned SBC has none until the model reads it — so before
-    // this, re-uploading the same photographed plan re-extracted every time and
-    // spent one of three daily plan uploads doing it. Bytes are what the browser
-    // always has, whatever the document is.
-    //
-    // The TEXT still earns its place: the same plan re-exported or re-scanned
-    // has different bytes and identical text.
-    // Hash every page in order, so a five-page scan counts as the same document
-    // only when all five pages are.
-    state.sbcHash = (await Promise.all(files.map(fileHash))).join("");
-    if (activePlan?.sourceHash && state.sbcHash && activePlan.sourceHash === state.sbcHash) {
-      show(state.sbcOrigin);
-      return setError(sbcErrTarget(), "This plan is already on file.");
-    }
+
+    // The text comparison catches what the bytes cannot: the same plan
+    // re-exported has different bytes and identical text. It needs the
+    // extraction above, so it can only run here.
     if (activePlan && state.bill.text && planText(activePlan) === state.bill.text) {
       show(state.sbcOrigin);
       return setError(sbcErrTarget(), "This plan is already on file.");
@@ -1831,28 +1855,27 @@ const LEVEL_NOTES = {
 function trackerStatus(t) {
   const w = planYearWindow(t.planYearStartMonth || 1, todayISO());
   const { count, contributions, byPerson, highest } = visitsUsed(allAudits, t, w);
-  // A visit limit is per member, so the level follows whoever is nearest their
-  // own limit rather than the household's total. With one person on the account
-  // `highest` equals `count` and nothing about this changes.
-  const shared = byPerson.length > 1;
-  const shown = shared ? highest : count;
-  return { w, count, contributions, byPerson, shared, shown,
-           level: warningLevel(shown, t.limit) };
+  // A visit limit is per member, so everything shown follows whoever is nearest
+  // their OWN limit — `highest` — never the household's total. With one person
+  // on the account the two are the same number, which is why a single-person
+  // account is unaffected. `count` stays for the "N across everyone" line.
+  return { w, count, contributions, byPerson, highest, level: warningLevel(highest, t.limit) };
 }
 
 function renderUsage() {
   const list = $("usage-list");
   list.innerHTML = "";
   for (const t of allTrackers) {
-    const { w, count, contributions, byPerson, shared, shown, level } = trackerStatus(t);
+    const { w, count, contributions, byPerson, highest, level } = trackerStatus(t);
+    const shared = byPerson.length > 1;
     const card = document.createElement("div");
     card.className = `usage-card ${level}`;
-    const pct = Math.min(100, t.limit > 0 ? (shown / t.limit) * 100 : 0);
+    const pct = Math.min(100, t.limit > 0 ? (highest / t.limit) * 100 : 0);
     card.innerHTML = `
       <div class="usage-head">
         <b>${escapeHtml(t.label)}</b>${t.source === "sbc" && !t.confirmed ? ' <span class="count" title="Codes were suggested from your plan (SBC) — open the tracker and confirm them">from your plan (SBC) — check the codes</span>' : ""}
         <span style="display:flex;gap:10px;align-items:center">
-          <span class="usage-count">${shown} / ${t.limit}</span>
+          <span class="usage-count">${highest} / ${t.limit}</span>
           <button class="usage-del" title="Stop tracking">✕</button>
         </span>
       </div>
