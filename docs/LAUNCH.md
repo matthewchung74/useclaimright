@@ -87,6 +87,22 @@ product; "audit" reads as accounting software.)*
 
 ---
 
+## The flow GIF
+
+`web/img/flow.gif` — 900×597, 10.4s, 477KB, embedded in `#how` on the landing page.
+
+**Recorded 2026-09-07 against the production build at commit `91f7dfa`**, driving a real audit
+on `fake-bill.pdf` + `fake-eob.pdf`. Not a mock-up: the run reproduced $2,115.00 / $841.75 /
+$186.35 / **$822.15**, the same figures E1 and S2 produced, which is now the third independent
+confirmation of them. The only editing is trimming dead air — 11.8s of real time to 10.4s — and
+a scale down from 1350px. No overlays, no watermark, no invented frames.
+
+**This is the most drift-prone artifact in the repo**, which is why it is recorded here rather
+than only in the commit. Nothing fails when the UI moves on; a GIF is a frozen claim about a
+moving product, and this project's recurring bug is exactly that. Re-record it when the upload
+form, the review screen or the report visibly changes — and if you find yourself reading this
+note long after that has happened, the GIF is already lying.
+
 ## Why this framing
 
 **Lead with the document nobody reads.** The insight is not "AI reads your bill"; it is that
