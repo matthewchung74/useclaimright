@@ -1133,7 +1133,12 @@ const PLAN_TYPES = new Set(["copay_mismatch", "coinsurance_mismatch", "deductibl
 function renderReport(data, { ocrLow, model, planApplied, planReason, pairUnrelated, wrongPerson } = {}) {
   const { findings = [], totals = {}, occurrenceTable = [] } = data;
   lastReport = { findings, totals, occurrenceTable };
+  // Every report render goes through here — a fresh audit and one re-opened from
+  // history alike — so this is the one place the three mutually exclusive cards
+  // below the findings have to be reset. Leaving "coming soon" up from the last
+  // report would attach it to an audit nobody asked about.
   $("email-card").hidden = true;
+  $("letter-soon").hidden = true;
 
   $("report-caveat").hidden = !ocrLow;
 
@@ -1235,8 +1240,28 @@ $("new-audit").onclick = () => { resetState(); show("upload"); };
 // one thing there is any prospect of charging for, and a gate in the browser is
 // decoration — so the text never exists client-side until the server hands it
 // over. Free today; when there is a price, the check goes in the callable.
+// The letter is built, server-side and working; what is switched off is offering
+// it. Payments went off on 2026-09-07 (sandbox keys behind a live paywall), and
+// rather than hand the letter out free while the regulatory question is open, the
+// button now records the press and says so.
+//
+// This is the ONE line to flip when it comes back. The callable, the entitlement
+// gate and the whole purchase path are untouched behind it, so re-enabling is not
+// a rebuild — and `letter_requested` keeps accruing the demand signal meanwhile,
+// which is the number docs/STRIPE.md §5.1 says has to arrive before any of it is
+// worth doing.
+const LETTER_ENABLED = false;
+
 $("gen-email").onclick = async () => {
   if (!lastAuditId) return;
+  if (!LETTER_ENABLED) {
+    // The press IS the measurement — count it before anything can go wrong.
+    track("letter_requested", { findings: (lastReport?.findings || []).length });
+    $("paywall").hidden = true;
+    $("letter-soon").hidden = false;
+    $("letter-soon").scrollIntoView({ behavior: "smooth" });
+    return;
+  }
   const btn = $("gen-email");
   const label = btn.textContent;
   btn.disabled = true;

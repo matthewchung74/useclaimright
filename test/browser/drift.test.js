@@ -218,3 +218,29 @@ test("every plan has a by-plan fixture folder", () => {
   assert.deepEqual(missing, [],
     `plans with no by-plan/ folder — their Data: line points nowhere: ${missing.join(", ")}`);
 });
+
+// ---------------------------------------------------------------------------
+// Analytics: an event that fires and is written down nowhere is an event nobody
+// will look at, and the funnel in ANALYTICS.md is the only place the numbers are
+// given meaning. This is cheaper than noticing six months later that the one
+// ratio the business rests on was never being read.
+// ---------------------------------------------------------------------------
+test("ANALYTICS.md documents every event app.js fires", () => {
+  const ANALYTICS = read("docs/ANALYTICS.md");
+  const fired = [...new Set([...APP_JS.matchAll(/\btrack\("([a-z_]+)"/g)].map((m) => m[1]))];
+  const undocumented = fired.filter((e) => !ANALYTICS.includes(`\`${e}\``));
+  assert.deepEqual(undocumented, [],
+    `events fired but absent from the funnel table in docs/ANALYTICS.md: ${undocumented.join(", ")}`);
+});
+
+// The reason vocabulary is fixed on purpose — a free-text reason turns the error
+// funnel into a pile of unique strings. Same argument as above: if a slug exists
+// in the code and not the doc, nobody knows what they are looking at.
+test("ANALYTICS.md documents every error_shown reason", () => {
+  const ANALYTICS = read("docs/ANALYTICS.md");
+  const block = APP_JS.slice(APP_JS.indexOf("const ERROR_REASONS"), APP_JS.indexOf("const auditShape"));
+  const slugs = [...new Set([...block.matchAll(/,\s*"([a-z_]+)"\]/g)].map((m) => m[1]))];
+  const missing = slugs.filter((s) => !ANALYTICS.includes(`\`${s}\``));
+  assert.deepEqual(missing, [],
+    `error_shown reasons in app.js that ANALYTICS.md never names: ${missing.join(", ")}`);
+});

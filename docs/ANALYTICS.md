@@ -29,6 +29,7 @@ medical bill into a third-party analytics system.
 | `audit_started` | "Looks right — analyze" clicked — **the click that spends money** | `kind`: single \| batch \| plan |
 | `audit_completed` | a report came back | `findings` (count), `found` (bool), `plan_applied` (bool), `mode`: single \| batch |
 | `batch_started` / `batch_completed` | a multi-bill run | `audits` (count, on completion) |
+| `letter_requested` | **the appeal letter is asked for** — fires on the press itself, before anything can fail, so it counts intent rather than delivery | `findings` (count) |
 | `dispute_email_generated` | the appeal letter is produced | `findings` (count) |
 | `limit_reached` | the daily cap dialog opens | `kind`: audits \| plans |
 | `error_shown` | **any** visible error (`setError()`) | `where` (element id), `reason` (enum below) |
@@ -59,9 +60,15 @@ needs a new entry.
 2. **Does the product work?** `audit_completed { found }`. An audit that completes and
    finds nothing is not the same product as one that finds something, and only one of
    them has a business behind it.
-3. **Is the appeal letter the thing to charge for?** `dispute_email_generated` over
-   `audit_completed { found: true }`. If people who find money do not generate the
+3. **Is the appeal letter the thing to charge for?** `letter_requested` over
+   `audit_completed { found: true }`. If people who find money do not ask for the
    letter, the letter is not the wedge, and no amount of Stripe plumbing fixes that.
+
+   Use `letter_requested`, not `dispute_email_generated`, for this ratio. Since
+   2026-09-07 the letter is not handed out — `LETTER_ENABLED` is false in `app.js`
+   and the press shows "coming soon" — so `dispute_email_generated` fires zero times
+   and would read as zero demand. `letter_requested` fires on the press either way,
+   which is what makes the two eras comparable when the letter comes back.
 
 `limit_reached { kind: "audits" }` is the fourth number worth watching: it says whether
 the 10/day cap is protecting the budget or capping the business.

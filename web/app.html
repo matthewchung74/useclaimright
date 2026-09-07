@@ -693,6 +693,25 @@
 
     <!-- Shown only when the server refuses the letter for payment. The price
          comes from the server on that refusal, never hardcoded here. -->
+    <!-- Shown instead of the letter while LETTER_ENABLED is false. It sits in the
+         same slot as the paywall so the report's shape does not change, and it is
+         a card rather than a modal because it is an answer to a press, not an
+         interruption. The letter itself is built and works — the button is what is
+         withheld — so the copy says "not open yet", never "not built". -->
+    <div class="card no-print" id="letter-soon" hidden>
+      <h2>Appeal letters are coming soon</h2>
+      <p class="muted" style="margin-bottom:14px">
+        The letter quotes your own bill and EOB line by line, cites the amounts, and asks for a
+        written response within 30 days — you send it yourself from your own email. It is not
+        open yet while we settle how it should work.
+      </p>
+      <p class="muted" style="margin-bottom:0">
+        <b>Nothing here is blocked in the meantime.</b> Every finding above shows the exact line
+        it came from, labelled BILL, EOB or SBC. That evidence is the substance of an appeal, and
+        it is yours to quote today — use <b>Print / save PDF</b> to keep a copy.
+      </p>
+    </div>
+
     <div class="card no-print" id="paywall" hidden>
       <h2>Unlock this appeal letter</h2>
       <p class="muted" style="margin-bottom:14px">
