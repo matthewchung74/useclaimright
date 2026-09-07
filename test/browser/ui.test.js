@@ -271,3 +271,48 @@ test("phone: a family bill row fits, and the finding keeps full width", async ()
   assert.ok(m.named.summaryWidth > 200,
     `the finding summary must keep the second line to itself, got ${m.named.summaryWidth}px`);
 });
+
+// ---------------------------------------------------------------------------
+// A1 — the module boots and every control it wires is actually bound
+//
+// The one failure that has reached production: app.js referenced an identifier
+// nothing bound, and the module threw on load, so the dashboard was blank for
+// every signed-in user. Nothing in node --test can see it — the file is only
+// ever evaluated by a browser. This is that check, and it is why this test
+// loads the page properly (networkidle) instead of reusing the shared page,
+// which deliberately does not wait for app.js to boot.
+// ---------------------------------------------------------------------------
+test("app.js loads clean and binds every control it wires", async () => {
+  const p = await browser.newPage({ viewport: { width: 375, height: 812 } });
+  const errors = [];
+  p.on("pageerror", (e) => errors.push(`pageerror: ${e.message}`));
+  p.on("console", (m) => { if (m.type() === "error") errors.push(`console: ${m.text()}`); });
+  try {
+    await p.goto(`${origin}/app`, { waitUntil: "networkidle" });
+    const state = await p.evaluate(() => {
+      // Every id app.js assigns an onclick to. A typo in either place — the
+      // markup or the module — shows up here as an unbound control rather than
+      // as a dead button someone finds in production.
+      const wired = [
+        "google-signin", "password-signin", "toggle-signup", "forgot-password",
+        "go-signup", "verify-continue", "verify-resend", "verify-signout",
+        "menu-btn", "signout", "reset-account", "skip-onboarding",
+      ];
+      return {
+        missing: wired.filter((id) => !document.getElementById(id)),
+        unbound: wired.filter((id) => {
+          const el = document.getElementById(id);
+          return el && typeof el.onclick !== "function";
+        }),
+      };
+    });
+    assert.deepEqual(state.missing, [], `app.js wires ids that app.html does not have: ${state.missing.join(", ")}`);
+    assert.deepEqual(state.unbound, [], `controls with no handler — app.js threw before reaching them: ${state.unbound.join(", ")}`);
+    // App Check runs reCAPTCHA Enterprise against registered origins only, so
+    // 127.0.0.1 always fails it. That one is expected; anything else is not.
+    const real = errors.filter((e) => !/app-?check|recaptcha/i.test(e));
+    assert.deepEqual(real, [], `errors on load:\n${real.join("\n")}`);
+  } finally {
+    await p.close();
+  }
+});

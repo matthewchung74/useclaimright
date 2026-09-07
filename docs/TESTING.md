@@ -990,12 +990,22 @@ goes wrong and they are where the raw Firebase strings used to leak through.
 **Prerequisite:** Firebase Console → Authentication → Sign-in method → **Email/Password** enabled.
 
 1. **Create an account.** Enter email and a password, click "Create an account" (the button
-   becomes "Create account"), submit. ✓ Signed straight in, landing on onboarding.
+   becomes "Create account"), submit. ✓ Lands on **Confirm your email**, not onboarding —
+   a password account is gated until the address is confirmed (added 2026-09-06).
    ✓ The toggle now reads "I already have an account", and "Forgot password?" is hidden —
    it makes no sense in sign-up mode.
-2. **Sign out**, then sign back in with the same credentials. ✓ Works.
-3. **Google** still works, and lands the same place.
-4. ~~**Email link**~~ — **REMOVED 2026-08-26.** ✓ The sign-in card offers exactly two routes:
+2. **Confirm the address.** ✓ A confirmation email arrives. Open its link, return to the tab,
+   click "I've confirmed it — continue". ✓ Lands on onboarding.
+   ✓ Clicking it *before* opening the link says "Not confirmed yet. Open the link in the
+   email, then try again." rather than letting you through.
+   ✓ "Send it again" resends and shows "Sent — check your inbox, and your spam folder."
+   ✓ "Sign out and start again" returns to the sign-in card, for the typo this screen exists
+   to catch.
+3. **Sign out**, then sign back in with the same credentials. ✓ Works, and does NOT show the
+   confirm screen a second time.
+4. **Google** still works, lands the same place, and never sees the confirm screen — a Google
+   account arrives with the address already verified.
+5. ~~**Email link**~~ — **REMOVED 2026-08-26.** ✓ The sign-in card offers exactly two routes:
    "Continue with Google" and email + password. There is no "Email me a link instead" link, and
    no `prompt()` anywhere in the app. See the note below for why it went.
 
@@ -1019,6 +1029,22 @@ goes wrong and they are where the raw Firebase strings used to leak through.
   into an account-existence oracle.
 - **Enter submits** from both the email and the password field.
 - **The button disables while in flight** — double-clicking must not fire two attempts.
+- **The error is above the escape hatches.** ✓ A failed sign-in renders the red box directly
+  under the "Sign in" button, with "Create an account · Forgot password?" *below* it. It used
+  to be the last thing on the card, so you read the diagnosis after scrolling past both cures.
+- **A failed sign-in offers sign-up without guessing.** ✓ After a credential failure, the card
+  shows "No account yet? Create one with this email." Clicking it switches to sign-up mode and
+  **keeps both typed values** — no retyping. ✓ It appears only for credential failures: force a
+  network failure (devtools offline) and it must stay hidden, since "couldn't reach the server"
+  is no reason to send someone to sign-up. ✓ It never fires automatically — the app cannot tell
+  "no account" from "wrong password" (see above) and must not act as if it can.
+
+**Known limitation — the confirm gate is client-side.** `firestore.rules` does not require
+`request.auth.token.email_verified`, so the gate stops the honest typo, not an attacker with
+devtools. Adding that line is what would make it a real boundary; it is deliberately not done
+yet, because it locks out every account created before 2026-09-06 and must not ship until
+sending is confirmed working on production. `verify-continue` already calls `getIdToken(true)`
+so the refreshed claim is in the token when that day comes.
 
 **Cost:** 0 audits.
 

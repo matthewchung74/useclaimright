@@ -324,8 +324,12 @@
     details.explain summary{min-height:44px;display:flex;align-items:center}
     /* The standalone links only. The reCAPTCHA attribution links are inline in
        a wrapped paragraph, where a 44px band would overlap its neighbours and
-       break the prose — left alone deliberately. */
-    #toggle-signup,#forgot-password,#skip-onboarding{display:inline-block;padding:14px 6px}
+       break the prose — left alone deliberately.
+       #go-signup and #verify-signout are the recovery action on their screen —
+       the one thing a stuck person needs to hit — so they get the band, and
+       their own line (via <br>) to spend it in without overlapping the prose. */
+    #toggle-signup,#forgot-password,#skip-onboarding,
+    #go-signup,#verify-signout{display:inline-block;padding:14px 6px}
   }
   @media print{
     header,.no-print,.banner{display:none !important}
@@ -377,13 +381,28 @@
       <input id="password-input" type="password" placeholder="••••••••" autocomplete="current-password">
       <button id="password-signin" class="btn" style="width:100%;margin-top:10px">Sign in</button>
 
+      <!-- The error sits directly under the button and ABOVE both escape
+           hatches. It used to be the last thing on the card, below the links,
+           so a failed sign-in read the diagnosis after having already scrolled
+           past the two remedies for it. -->
+      <div id="signin-error" class="error" hidden></div>
+
+      <!-- Firebase's email enumeration protection returns auth/invalid-credential
+           for an unknown address AND a wrong password alike, so a failed sign-in
+           cannot tell which happened (see AUTH_MESSAGES in app.js). Rather than
+           guess and switch modes on the member's behalf — which is wrong half
+           the time and fails again on auth/email-already-in-use — offer the
+           other path as one click that keeps what they already typed. -->
+      <p id="signin-suggest" class="muted" style="margin:0 0 12px;font-size:13px" hidden>
+        No account yet?<br><a href="#" id="go-signup">Create one with this email.</a>
+      </p>
+
       <p class="muted" style="margin-top:12px;font-size:13px">
         <a href="#" id="toggle-signup">Create an account</a> ·
         <a href="#" id="forgot-password">Forgot password?</a>
       </p>
 
       <p id="reset-sent" class="muted" hidden>Password reset sent — check your inbox.</p>
-      <div id="signin-error" class="error" hidden></div>
       <!-- Required by Google's reCAPTCHA terms. App Check runs reCAPTCHA Enterprise in
            invisible mode and its badge is hidden, which the terms allow ONLY if this
            attribution is shown in the user flow. Do not remove it while App Check is on. -->
@@ -391,6 +410,29 @@
         Protected by reCAPTCHA to block automated abuse — you'll never be asked to solve a puzzle.
         Google's <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Privacy Policy</a>
         and <a href="https://policies.google.com/terms" target="_blank" rel="noopener">Terms of Service</a> apply.
+      </p>
+    </div>
+  </section>
+
+  <!-- Email confirmation, password path only. A Google account arrives with
+       emailVerified already true and never sees this screen.
+       What it is actually for is a typo. Someone who signs up as
+       name@gmial.com can use the app perfectly well until they forget the
+       password — and then the reset goes to an address nobody owns, with no
+       way to prove the account is theirs. The audits are stranded. -->
+  <section id="verify" hidden>
+    <div class="card" style="max-width:420px;margin:40px auto;text-align:center">
+      <h1>Confirm your email</h1>
+      <p class="lead">
+        We sent a confirmation link to <b id="verify-email"></b>.
+        Open it, then come back to this page.
+      </p>
+      <button id="verify-continue" class="btn" style="width:100%">I've confirmed it — continue</button>
+      <button id="verify-resend" class="btn ghost" style="width:100%;margin-top:10px">Send it again</button>
+      <p id="verify-sent" class="muted" hidden>Sent — check your inbox, and your spam folder.</p>
+      <div id="verify-error" class="error" hidden></div>
+      <p class="muted" style="margin-top:18px;font-size:13px">
+        Wrong address?<br><a href="#" id="verify-signout">Sign out and start again.</a>
       </p>
     </div>
   </section>
