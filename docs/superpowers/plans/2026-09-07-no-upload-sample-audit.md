@@ -51,7 +51,7 @@
 
 ## Task 3 — The banner and the CTA
 
-- [x] `#sample-banner` above `#report-totals`, using the existing `.banner` class (not `.error`): *"This is a sample audit on a made-up bill, so you can see what a result looks like before signing up. Nothing here is a real person's."* with an **Audit my bill →** button linking to `/app`.
+- [x] `#sample-banner` above `#report-totals`, using the existing `.banner` class (not `.error`): *"This is a sample audit on a sample bill, so you can see what a result looks like before signing up."* with an **Audit my bill →** button linking to `/app`. *(Wording settled 2026-09-07: "made-up bill" became "sample bill" and the trailing "Nothing here is a real person's" was cut. The constraint above is still met — "sample" is the disclosure — and the shorter line is the one that gets read.)*
 - [x] A second CTA below the findings, after someone has read them — the same link. One at the top for people who bounce, one at the bottom for people who are convinced.
 - [x] Verify at 375px: banner wraps, button reaches 44px, nothing overflows. `ui.test.js` already iterates every section for overflow and tap targets, so this is covered once the section renders.
 
