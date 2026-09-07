@@ -251,11 +251,11 @@ $("password-signin").onclick = async () => {
   try {
     if (signupMode) {
       const cred = await createUserWithEmailAndPassword(auth, email, password);
-      // Sent here rather than from the verify screen so the link is already in
-      // the inbox by the time that screen renders. It is best-effort: a failure
-      // to send must not strand a created account, and the screen it routes to
-      // has its own "Send it again".
-      await sendVerification(cred.user);
+      // Started here so the link is on its way before the verify screen
+      // renders, and deliberately not awaited: a slow or failing send must not
+      // hold up an account that already exists. showVerify awaits this same
+      // promise and is where any failure is reported.
+      sendVerificationOnce(cred.user);
     } else {
       await signInWithEmailAndPassword(auth, email, password);
     }
@@ -359,16 +359,32 @@ $("reset-account").onclick = async () => {
 // what would make it real. Deliberately not in this change: those rules lock
 // out every account created before this shipped, so they must not go live until
 // sending is confirmed working on production.
-let verifySent = false;
+// One automatic send per session — and "per session" has to count a send that
+// is still IN FLIGHT. Creating an account fires onAuthStateChanged immediately,
+// so the sign-up path and the verify screen it routes to both ran before either
+// could set a flag on completion, and Firebase got asked twice. Holding the
+// promise makes the guard the send itself rather than its result.
+let verifySend = null;
 
 async function sendVerification(user) {
   try {
     await sendEmailVerification(user);
-    verifySent = true;
     return null;
   } catch (e) {
     return authError(e);
   }
+}
+
+// Cleared again if the send failed, so a failure does not count as the one
+// allowed attempt and leave the screen with nothing on its way.
+function sendVerificationOnce(user) {
+  if (!verifySend) {
+    verifySend = sendVerification(user).then((err) => {
+      if (err) verifySend = null;
+      return err;
+    });
+  }
+  return verifySend;
 }
 
 function showVerify(user) {
@@ -376,10 +392,11 @@ function showVerify(user) {
   setError("verify-error", "");
   $("verify-sent").hidden = true;
   show("verify");
-  // Anyone who signed up before this screen existed has never been sent a link,
-  // and would otherwise sit here being told to open an email nobody sent. Once
-  // per session, so a reload does not fire another.
-  if (!verifySent) sendVerification(user).then((err) => { if (err) setError("verify-error", err); });
+  // Unconditional: the guard lives in sendVerificationOnce. This is also the
+  // one place a send failure is reported — the sign-up path deliberately does
+  // not report it, because both await the same promise and two copies of the
+  // same error on two screens is worse than one on the screen you end up on.
+  sendVerificationOnce(user).then((err) => { if (err) setError("verify-error", err); });
 }
 
 $("verify-resend").onclick = async () => {
@@ -446,7 +463,7 @@ async function enterApp(user) {
 onAuthStateChanged(auth, async (user) => {
   document.body.classList.toggle("authed", !!user);
   if (!user) {
-    verifySent = false; // the next account gets its own send
+    verifySend = null; // the next account gets its own send
     show("signin");
     return;
   }
