@@ -316,3 +316,49 @@ test("app.js loads clean and binds every control it wires", async () => {
     await p.close();
   }
 });
+
+// ---------------------------------------------------------------------------
+// The no-upload sample. It is the first thing a visitor sees work, so it has to
+// render — and it has to stay free. Both are asserted here because both are the
+// kind of thing that breaks silently: a fixture drifts from the schema and the
+// groups render unlabelled, or someone wires the sample to a live call and it
+// starts costing a model call per curious visitor.
+// ---------------------------------------------------------------------------
+test("sample: /app?sample=1 renders a real report with no sign-in and no model call", async () => {
+  const p = await browser.newPage({ viewport: { width: 375, height: 812 } });
+  const calls = [];
+  p.on("request", (r) => { if (/analyze|extractPlan|generateLetter/.test(r.url())) calls.push(r.url()); });
+  try {
+    await p.goto(`${origin}/app?sample=1`, { waitUntil: "networkidle" });
+    await p.waitForTimeout(1200);
+    const state = await p.evaluate(() => {
+      const vis = (id) => { const e = document.getElementById(id); return e && !e.hidden; };
+      return {
+        section: [...document.querySelectorAll("main > section")].find((s) => !s.hidden)?.id,
+        totals: [...document.querySelectorAll("#report-totals .tot")].map((e) => e.textContent.replace(/\s+/g, " ").trim()),
+        groups: [...document.querySelectorAll("#report h3")].map((e) => e.textContent.trim()),
+        evidence: document.querySelectorAll("#report .finding details").length,
+        banner: vis("sample-banner"),
+        cta: vis("sample-cta"),
+        // Nothing may act on a report with no document behind it.
+        genEmailHidden: !vis("gen-email"),
+        newAuditHidden: !vis("new-audit"),
+      };
+    });
+    assert.equal(state.section, "report", "the sample must land on the report, not the sign-in card");
+    assert.ok(state.banner, "the made-up-bill banner must be visible above the totals");
+    assert.ok(state.cta, "the sign-up call to action must be visible");
+    assert.ok(state.genEmailHidden && state.newAuditHidden,
+      "the letter and new-audit buttons act on an audit the sample does not have");
+    // The figures a real run produced. If these drift, the fixture was edited by
+    // hand — which is the one thing its own _source note forbids.
+    for (const want of ["$2,115.00", "$841.75", "$186.35", "$822.15"]) {
+      assert.ok(state.totals.some((t) => t.includes(want)), `totals missing ${want}: ${state.totals.join(" | ")}`);
+    }
+    assert.equal(state.groups.length, 3, `expected 3 finding groups, got: ${state.groups.join(", ")}`);
+    assert.ok(state.evidence >= 1, "at least one finding must carry an openable Evidence block — it is the proof");
+    assert.deepEqual(calls, [], `the sample must cost nothing, but called: ${calls.join(", ")}`);
+  } finally {
+    await p.close();
+  }
+});

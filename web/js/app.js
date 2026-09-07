@@ -460,8 +460,46 @@ async function enterApp(user) {
   await resumeAfterCheckout();
 }
 
+// ---------- The sample audit ----------
+//
+// A visitor is asked for an account before being shown a single result. This
+// renders one, from a committed fixture, with no sign-in and no model call.
+//
+// It goes through renderReport() — the REAL one — rather than a second copy of
+// the report laid out on the marketing page. That is the whole design: on
+// 2026-08-28 the dashboard was found duplicated inside <section id="upload">
+// with 17 duplicated element ids, so getElementById always returned the wrong
+// copy and the visible one was never populated. A hand-built sample report is
+// that failure with a slower fuse, and the copy that rots is the one prospects
+// see. Through the real renderer, drift is not possible.
+const sampleMode = () => new URLSearchParams(location.search).get("sample") === "1";
+
+async function showSample() {
+  // Not awaited before the section switch, so a slow fetch does not leave the
+  // visitor on a blank screen wondering.
+  const res = await fetch("/sample-audit.json", { cache: "no-cache" });
+  const data = await res.json();
+  // Nothing may act on a report with no document behind it: no letter, no
+  // delete, no re-open. The call to action here is signing up.
+  lastAuditId = null;
+  renderReport(data, {});
+  $("gen-email").hidden = true;
+  $("new-audit").hidden = true;
+  $("sample-banner").hidden = false;
+  $("sample-cta").hidden = false;
+  show("report");
+}
+
 onAuthStateChanged(auth, async (user) => {
   document.body.classList.toggle("authed", !!user);
+  // Before both branches. The URL has to be linkable by anyone — signed out for
+  // a visitor, signed in so it can be shared and tested — and a signed-in person
+  // who follows the link wants the sample, not to be bounced to their dashboard.
+  if (sampleMode()) {
+    // A sample that 404s must fall through to the normal route rather than
+    // becoming a dead screen.
+    try { await showSample(); return; } catch (e) { console.error("sample failed", e); }
+  }
   if (!user) {
     verifySend = null; // the next account gets its own send
     show("signin");
@@ -1130,6 +1168,10 @@ $("fb-send").onclick = async () => {
 
 const PLAN_TYPES = new Set(["copay_mismatch", "coinsurance_mismatch", "deductible_misapplied", "not_covered_per_plan"]);
 
+// The three documents a finding can quote, in the order they are read: what you
+// were charged, what the insurer allowed, what the plan promised.
+const EVIDENCE_SOURCES = [["billQuote", "Bill"], ["eobQuote", "EOB"], ["sbcQuote", "SBC"]];
+
 function renderReport(data, { ocrLow, model, planApplied, planReason, pairUnrelated, wrongPerson } = {}) {
   const { findings = [], totals = {}, occurrenceTable = [] } = data;
   lastReport = { findings, totals, occurrenceTable };
@@ -1139,6 +1181,14 @@ function renderReport(data, { ocrLow, model, planApplied, planReason, pairUnrela
   // report would attach it to an audit nobody asked about.
   $("email-card").hidden = true;
   $("letter-soon").hidden = true;
+  // The sample's chrome, reset for every report — showSample() re-reveals it
+  // straight after. Without this, viewing the sample and then a real audit in
+  // the same session leaves someone else's bill wearing "this is made up", and
+  // the buttons the sample hides never come back.
+  $("sample-banner").hidden = true;
+  $("sample-cta").hidden = true;
+  $("gen-email").hidden = false;
+  $("new-audit").hidden = false;
 
   $("report-caveat").hidden = !ocrLow;
 
@@ -1201,8 +1251,19 @@ function renderReport(data, { ocrLow, model, planApplied, planReason, pairUnrela
             <div class="f-head"><b>${fmt(f.amountAtStake)}</b><span class="conf">${f.confidence} confidence</span></div>
             <p>${escapeHtml(f.description)}</p>
             <details><summary>Evidence</summary>
-              <p><b>Bill:</b> “${escapeHtml(f.evidence.billQuote)}”</p>
-              ${f.evidence.eobQuote ? `<p><b>EOB:</b> “${escapeHtml(f.evidence.eobQuote)}”</p>` : ""}
+              ${/* All three guarded the same way. The bill line used to be
+                    unconditional while the EOB line was guarded, so a finding
+                    whose evidence lives entirely in one document — a
+                    cost_share_error is pure EOB arithmetic and quotes no bill
+                    line at all — rendered a literal Bill: “” . Empty quotes
+                    under a heading called Evidence read as a bug in the thing
+                    whose whole promise is showing its sources. The SBC quote
+                    was simply never rendered here; a plan finding showed it in
+                    the cross-reference block above and nowhere in Evidence. */""}
+              ${EVIDENCE_SOURCES.map(([key, label]) => {
+                const q = f.evidence[key];
+                return q ? `<p><b>${label}:</b> “${escapeHtml(q)}”</p>` : "";
+              }).join("")}
               <p class="lineref">${escapeHtml(f.lineRef)}</p>
             </details>
           </div>`).join("")}`).join("")

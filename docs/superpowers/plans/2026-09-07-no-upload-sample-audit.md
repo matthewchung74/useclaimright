@@ -1,6 +1,6 @@
 # No-Upload Sample Audit (+ flow GIF) Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** A visitor can see a complete, real audit report — four totals and three findings, each with its quoted evidence openable — **without signing in and without spending a model call**. Today the funnel is landing page → "Audit my bill" → sign-in wall, and nothing has been demonstrated at the point the account is asked for. This is the highest-leverage change for a free launch with no marketing spend, because organic traffic converts on the result, not the pitch.
 
@@ -32,42 +32,51 @@
 
 ## Task 1 — Capture the fixture
 
-- [ ] Read the E1 audit document from the signed-in account's history (`users/{uid}/audits/{id}`) — the 2026-09-07 run: billed $2,115.00, EOB allowed $841.75, responsibility $186.35, worth disputing **$822.15**, findings `duplicate_charge` $145.50, `billed_vs_allowed_mismatch` $658.65, `cost_share_error` $18.00.
-- [ ] Write `web/sample-audit.json` containing **only** `totals`, `findings` and `occurrenceTable`. Strip `billText`, `eobText`, `patientName`, `statementId`, timestamps, uid and model/token metadata — none of it renders, and a fixture carrying document text is a document published by accident.
-- [ ] Verify by eye that every string in the file comes from the synthetic fixtures (Jane Q. Testpatient, St. Verification General Hospital, Acme Health Insurance). **If any real name appears, stop** — the wrong audit was captured.
-- [ ] Verify: `node -e` parses it and asserts `totals.totalAtStake === 82215` (or the stored unit) and `findings.length === 3`.
+- [x] Read the E1 audit document from the signed-in account's history (`users/{uid}/audits/{id}`) — the 2026-09-07 run: billed $2,115.00, EOB allowed $841.75, responsibility $186.35, worth disputing **$822.15**, findings `duplicate_charge` $145.50, `billed_vs_allowed_mismatch` $658.65, `cost_share_error` $18.00.
+- [x] Write `web/sample-audit.json` containing **only** `totals`, `findings` and `occurrenceTable`. Strip `billText`, `eobText`, `patientName`, `statementId`, timestamps, uid and model/token metadata — none of it renders, and a fixture carrying document text is a document published by accident.
+- [x] Verify by eye that every string in the file comes from the synthetic fixtures (Jane Q. Testpatient, St. Verification General Hospital, Acme Health Insurance). **If any real name appears, stop** — the wrong audit was captured.
+- [x] Verify: `node -e` parses it and asserts `totals.totalAtStake === 82215` (or the stored unit) and `findings.length === 3`.
 
 **Why this audit:** the third finding is the reason. A duplicate charge is what people expect a bill checker to find. `cost_share_error` — the EOB's own per-line amounts summing to $168.35 while it states $186.35 — is the insurer's statement contradicting itself, and that is the moment a reader stops skimming.
 
 ## Task 2 — Sample mode in the app
 
-- [ ] Add `const sampleMode = () => new URLSearchParams(location.search).get("sample") === "1";`
-- [ ] In `onAuthStateChanged`, check sample mode **before** both branches — signed out *and* signed in — so the URL is linkable by anyone and testable without auth. A signed-in visitor who follows the link should see the sample, not be bounced to their dashboard.
-- [ ] `showSample()`: `fetch("/sample-audit.json")` → `renderReport(data, {})` → reveal `#sample-banner` → `show("report")`.
-- [ ] Set `lastAuditId = null` in sample mode so nothing can act on a report that has no document behind it.
-- [ ] Hide `#gen-email` and `#new-audit` in sample mode; leave `#print-report`. The call to action here is signing up, not the letter.
-- [ ] On fetch failure fall through to the normal route rather than showing a broken report — a sample that 404s must not become a dead screen.
-- [ ] Verify: `/app?sample=1` signed out renders four totals; signed in renders the same; `/app` unchanged in both states.
+- [x] Add `const sampleMode = () => new URLSearchParams(location.search).get("sample") === "1";`
+- [x] In `onAuthStateChanged`, check sample mode **before** both branches — signed out *and* signed in — so the URL is linkable by anyone and testable without auth. A signed-in visitor who follows the link should see the sample, not be bounced to their dashboard.
+- [x] `showSample()`: `fetch("/sample-audit.json")` → `renderReport(data, {})` → reveal `#sample-banner` → `show("report")`.
+- [x] Set `lastAuditId = null` in sample mode so nothing can act on a report that has no document behind it.
+- [x] Hide `#gen-email` and `#new-audit` in sample mode; leave `#print-report`. The call to action here is signing up, not the letter.
+- [x] On fetch failure fall through to the normal route rather than showing a broken report — a sample that 404s must not become a dead screen.
+- [x] Verify: `/app?sample=1` signed out renders four totals; signed in renders the same; `/app` unchanged in both states.
 
 ## Task 3 — The banner and the CTA
 
-- [ ] `#sample-banner` above `#report-totals`, using the existing `.banner` class (not `.error`): *"This is a sample audit on a made-up bill, so you can see what a result looks like before signing up. Nothing here is a real person's."* with an **Audit my bill →** button linking to `/app`.
-- [ ] A second CTA below the findings, after someone has read them — the same link. One at the top for people who bounce, one at the bottom for people who are convinced.
-- [ ] Verify at 375px: banner wraps, button reaches 44px, nothing overflows. `ui.test.js` already iterates every section for overflow and tap targets, so this is covered once the section renders.
+- [x] `#sample-banner` above `#report-totals`, using the existing `.banner` class (not `.error`): *"This is a sample audit on a made-up bill, so you can see what a result looks like before signing up. Nothing here is a real person's."* with an **Audit my bill →** button linking to `/app`.
+- [x] A second CTA below the findings, after someone has read them — the same link. One at the top for people who bounce, one at the bottom for people who are convinced.
+- [x] Verify at 375px: banner wraps, button reaches 44px, nothing overflows. `ui.test.js` already iterates every section for overflow and tap targets, so this is covered once the section renders.
 
 ## Task 4 — Entry points
 
-- [ ] `web/index.html`: a compact section between the hero and `#how` — headline result in text plus the link. Something like *"A $2,115 hospital bill, audited: $822.15 worth disputing, including an $18 error in the insurer's own arithmetic."* → **See the sample audit →**. Text only; **do not** rebuild the totals cards here.
-- [ ] Placement is deliberate: **before** "How it works". That section describes the process; the sample demonstrates the outcome, and people decide on the outcome.
-- [ ] `web/app.html` sign-in card: *"Not sure yet? See a sample audit first."* below the reCAPTCHA attribution. This is the wall an HN spike actually hits.
-- [ ] Verify: both links resolve to `/app?sample=1` and render.
+- [x] `web/index.html`: a compact section between the hero and `#how` — headline result in text plus the link. Something like *"A $2,115 hospital bill, audited: $822.15 worth disputing, including an $18 error in the insurer's own arithmetic."* → **See the sample audit →**. Text only; **do not** rebuild the totals cards here.
+- [x] Placement is deliberate: **before** "How it works". That section describes the process; the sample demonstrates the outcome, and people decide on the outcome.
+- [x] `web/app.html` sign-in card: *"Not sure yet? See a sample audit first."* below the reCAPTCHA attribution. This is the wall an HN spike actually hits.
+- [x] Verify: both links resolve to `/app?sample=1` and render.
 
 ## Task 5 — Tests
 
-- [ ] `ui.test.js`: load `/app?sample=1`, assert the four totals read $2,115.00 / $841.75 / $186.35 / $822.15, three finding groups render, and at least one `<details>` evidence block exists and opens.
-- [ ] `ui.test.js`: assert **no request to `analyze`** is made while the sample renders — this is the constraint that keeps it free, and it should fail loudly if someone later wires it to a live call.
-- [ ] `drift.test.js`: every `type` in the fixture appears in `functions/schema.js`. A finding type renamed server-side would otherwise render as an unlabelled group in the one report prospects see.
-- [ ] Break each new assertion once and confirm it fails before trusting it.
+- [x] `ui.test.js`: load `/app?sample=1`, assert the four totals read $2,115.00 / $841.75 / $186.35 / $822.15, three finding groups render, and at least one `<details>` evidence block exists and opens.
+- [x] `ui.test.js`: assert **no request to `analyze`** is made while the sample renders — this is the constraint that keeps it free, and it should fail loudly if someone later wires it to a live call.
+- [x] `drift.test.js`: every `type` in the fixture appears in `functions/schema.js`. A finding type renamed server-side would otherwise render as an unlabelled group in the one report prospects see.
+- [x] Break each new assertion once and confirm it fails before trusting it.
+
+
+**Tasks 1–5 completed 2026-09-07.** One thing the sample immediately exposed, fixed in the
+report rather than in the sample as this plan requires: the Evidence block rendered `Bill: ""`
+for any finding whose evidence lives in one document only. `cost_share_error` is pure EOB
+arithmetic and quotes no bill line, so the first thing a prospect would have opened showed empty
+quotes under a heading called Evidence — in the one place whose entire promise is showing its
+sources. The bill line was unconditional while the EOB line was guarded, and `sbcQuote` was
+never rendered there at all. All three are now guarded symmetrically via `EVIDENCE_SOURCES`.
 
 ## Task 6 — The flow GIF (separate, lower priority)
 
