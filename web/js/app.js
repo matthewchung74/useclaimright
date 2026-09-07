@@ -3,6 +3,7 @@ import {
   getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup,
   signOut,
   signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail,
+  sendEmailVerification,
   connectAuthEmulator,
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 import {
@@ -216,9 +217,28 @@ function setSignupMode(on) {
   $("forgot-password").hidden = on;
   setError("signin-error", "");
   $("reset-sent").hidden = true;
+  $("signin-suggest").hidden = true;
 }
 
 $("toggle-signup").onclick = (e) => { e.preventDefault(); setSignupMode(!signupMode); };
+
+// The failures that mean "no account here" and "wrong password" alike. Firebase
+// returns the same code for both while email enumeration protection is on, so
+// this set is exactly the ambiguity — never a network error or a rate limit,
+// where suggesting sign-up would send someone down the wrong path entirely.
+const AMBIGUOUS_CREDENTIAL = new Set([
+  "auth/invalid-credential", "auth/invalid-login-credentials",
+  "auth/wrong-password", "auth/user-not-found",
+]);
+
+// Switch to create-account mode keeping what is already typed. setSignupMode
+// only changes labels and autocomplete, so both fields survive — the point of
+// the one form, two modes design is that this costs a click and no re-entry.
+$("go-signup").onclick = (e) => {
+  e.preventDefault();
+  setSignupMode(true);
+  $("password-input").focus();
+};
 
 $("password-signin").onclick = async () => {
   const email = $("email-input").value.trim();
@@ -229,12 +249,22 @@ $("password-signin").onclick = async () => {
   const btn = $("password-signin");
   btn.disabled = true;
   try {
-    await (signupMode
-      ? createUserWithEmailAndPassword(auth, email, password)
-      : signInWithEmailAndPassword(auth, email, password));
+    if (signupMode) {
+      const cred = await createUserWithEmailAndPassword(auth, email, password);
+      // Sent here rather than from the verify screen so the link is already in
+      // the inbox by the time that screen renders. It is best-effort: a failure
+      // to send must not strand a created account, and the screen it routes to
+      // has its own "Send it again".
+      await sendVerification(cred.user);
+    } else {
+      await signInWithEmailAndPassword(auth, email, password);
+    }
     track("signed_in", { method: signupMode ? "password_signup" : "password" });
   } catch (e) {
     setError("signin-error", authError(e));
+    // Only where the code genuinely cannot tell "no account" from "wrong
+    // password". Offered, never taken automatically.
+    $("signin-suggest").hidden = signupMode || !AMBIGUOUS_CREDENTIAL.has(e?.code);
   } finally {
     btn.disabled = false;
   }
@@ -318,32 +348,114 @@ $("reset-account").onclick = async () => {
   }
 };
 
+// ---------- Email confirmation (password accounts only) ----------
+//
+// A Google account arrives with emailVerified already true, so this whole path
+// is invisible to it.
+//
+// The gate is client-side, which makes it a guard against the honest typo —
+// which is what it is for — and NOT a security boundary. firestore.rules does
+// not require request.auth.token.email_verified, and adding that one line is
+// what would make it real. Deliberately not in this change: those rules lock
+// out every account created before this shipped, so they must not go live until
+// sending is confirmed working on production.
+let verifySent = false;
+
+async function sendVerification(user) {
+  try {
+    await sendEmailVerification(user);
+    verifySent = true;
+    return null;
+  } catch (e) {
+    return authError(e);
+  }
+}
+
+function showVerify(user) {
+  $("verify-email").textContent = user.email || "";
+  setError("verify-error", "");
+  $("verify-sent").hidden = true;
+  show("verify");
+  // Anyone who signed up before this screen existed has never been sent a link,
+  // and would otherwise sit here being told to open an email nobody sent. Once
+  // per session, so a reload does not fire another.
+  if (!verifySent) sendVerification(user).then((err) => { if (err) setError("verify-error", err); });
+}
+
+$("verify-resend").onclick = async () => {
+  const user = auth.currentUser;
+  if (!user) return;
+  const btn = $("verify-resend");
+  btn.disabled = true;
+  setError("verify-error", "");
+  const err = await sendVerification(user);
+  if (err) setError("verify-error", err);
+  else $("verify-sent").hidden = false;
+  btn.disabled = false;
+};
+
+$("verify-continue").onclick = async () => {
+  const user = auth.currentUser;
+  if (!user) return;
+  const btn = $("verify-continue");
+  btn.disabled = true;
+  setError("verify-error", "");
+  try {
+    // reload() refreshes emailVerified on the user object; getIdToken(true)
+    // refreshes the same claim inside the ID token, which is a separate cache
+    // and the one Firestore rules read. Without the second call the app would
+    // believe the address is confirmed while the server still did not.
+    await user.reload();
+    await user.getIdToken(true);
+    if (auth.currentUser?.emailVerified) await enterApp(auth.currentUser);
+    else setError("verify-error", "Not confirmed yet. Open the link in the email, then try again.");
+  } catch (e) {
+    setError("verify-error", authError(e));
+  } finally {
+    btn.disabled = false;
+  }
+};
+
+$("verify-signout").onclick = (e) => { e.preventDefault(); signOut(auth); };
+
+// The signed-in landing sequence. Shared by onAuthStateChanged and the verify
+// screen's "I've confirmed it", because confirming an address has to land in
+// the same place a fresh sign-in does, not in a second, subtly different one.
+async function enterApp(user) {
+  // Plan first: the coverage cards and the dashboard's plan-year window read
+  // activePlan, so loading history in parallel raced it — the out-of-pocket
+  // card silently vanished and the deductible credited the EOB for the SBC's
+  // limit, depending on which query returned first.
+  await loadPlan();
+  // Both awaited before routing: the bills list IS the home screen, so
+  // showing it mid-query would flash "no bills audited yet" at a user who
+  // has plenty.
+  await loadHistory();
+  // First-run gate: no plan on file and never skipped → one-time setup screen.
+  if (!activePlan && localStorage.getItem("ucr-skip-onboarding") !== user.uid) {
+    openOnboarding("signin");
+  } else {
+    show("bills");
+  }
+  // Returning from Stripe. Last, and only after history is loaded, because it
+  // opens a specific audit and would otherwise be overridden by the routing
+  // above.
+  await resumeAfterCheckout();
+}
+
 onAuthStateChanged(auth, async (user) => {
   document.body.classList.toggle("authed", !!user);
-  if (user) {
-    $("user-email").textContent = user.email || "";
-    // Plan first: the coverage cards and the dashboard's plan-year window read
-    // activePlan, so loading history in parallel raced it — the out-of-pocket
-    // card silently vanished and the deductible credited the EOB for the SBC's
-    // limit, depending on which query returned first.
-    await loadPlan();
-    // Both awaited before routing: the bills list IS the home screen, so
-    // showing it mid-query would flash "no bills audited yet" at a user who
-    // has plenty.
-    await loadHistory();
-    // First-run gate: no plan on file and never skipped → one-time setup screen.
-    if (!activePlan && localStorage.getItem("ucr-skip-onboarding") !== user.uid) {
-      openOnboarding("signin");
-    } else {
-      show("bills");
-    }
-    // Returning from Stripe. Last, and only after history is loaded, because it
-    // opens a specific audit and would otherwise be overridden by the routing
-    // above.
-    await resumeAfterCheckout();
-  } else {
+  if (!user) {
+    verifySent = false; // the next account gets its own send
     show("signin");
+    return;
   }
+  $("user-email").textContent = user.email || "";
+  // Before anything loads. Nothing below this line runs for an unconfirmed
+  // address, so no plan, no history and no checkout resumption happens behind
+  // the gate.
+  if (!user.emailVerified) { showVerify(user); return; }
+  await enterApp(user);
 });
 
 function openOnboarding(origin) {
