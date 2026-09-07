@@ -25,9 +25,17 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const read = (p) => readFileSync(join(ROOT, p), "utf8");
 
 const TESTING = read("docs/TESTING.md");
-const APP_HTML = read("web/app.html");
-const APP_JS = read("web/js/app.js");
-const EXTRACT_JS = read("web/js/extract.js");
+// Comments stripped, and this is not fussiness. On 2026-09-07 the doc claimed the
+// manual tracker form is labelled "Add a custom limit"; it is labelled "Add a limit
+// the insurer mentioned", and the old phrase survives ONLY inside an app.html comment
+// explaining the rename. So the check passed on the very sentence recording that the
+// claim had stopped being true — a doc-drift suite kept alive by the changelog it was
+// meant to catch. A claim must be held to what the app RENDERS, never to its history.
+const stripComments = (s) =>
+  s.replace(/<!--[\s\S]*?-->/g, " ").replace(/\/\*[\s\S]*?\*\//g, " ").replace(/^\s*\/\/.*$/gm, " ");
+const APP_HTML = stripComments(read("web/app.html"));
+const APP_JS = stripComments(read("web/js/app.js"));
+const EXTRACT_JS = stripComments(read("web/js/extract.js"));
 
 // Two kinds of text mention a feature, and only one is a claim about today:
 //
@@ -101,7 +109,16 @@ const CLAIMS = [
     what: "the custom-limit form as a visible fallback",
     docSays: "Add a custom limit",
     holds: () => APP_HTML.includes("Add a custom limit"),
-    why: "the manual tracker form was hidden behind the remark path",
+    why: "the manual tracker form was renamed to 'Add a limit the insurer mentioned'",
+  },
+  {
+    // Its element id is already covered above, but E6 step 2 quoted the banner's
+    // WORDS and not `#pair-banner`, so the id check sailed past it and the plan
+    // went on telling you to look for a banner that had been deleted.
+    what: "the pre-send mismatched-pair banner, by its wording",
+    docSays: "may not cover this bill** (",
+    holds: () => APP_HTML.includes('id="pair-banner"'),
+    why: "the pre-send guard was removed; only the report-side warning remains",
   },
 ];
 

@@ -33,40 +33,40 @@ the file and easy to miss.
 
 | Plan | Last run | By | Result |
 |---|---|---|---|
-| E1 | 2026-08-29 | agent | $2,115.00 / $841.75 / $186.35 / **$822.15** · `charity_care_eligible` did not fire (advisory, excluded from the total) |
-| E1b | 2026-08-28 | matt | — |
-| M1 | 2026-08-29 | agent | Acme Silver PPO on file, trackers auto-created 0/20 and 0/6 |
-| M2 | 2026-08-29 | agent | $210.00 / $95.00 / $95.00 / **$150.00** · SBC quote present, tracker 1 of 20 |
-| M3 | 2026-08-29 | agent | $175.00 / $120.00 / $120.00 / **$55.00** · no false positives (the control) |
-| M4 | 2026-08-29 | agent | 2 audits, **$110.00** · per-audit `serviceDates`, consolidated EOB saved once |
-| M5 | 2026-08-29 | agent | $175.00 / $0.00 / $175.00 / **$175.00** · tracker 4 of 6, no false mismatch warning |
-| M6 | 2026-08-31 | agent | **found**: duplicate check was blind to scans, re-extracting and spending an upload each time → fixed, re-verified |
+| E1 | 2026-09-07 | agent | $2,115.00 / $841.75 / $186.35 / **$822.15** — exact. `charity_care_eligible` did not fire (advisory, excluded). 145.50+658.65+18.00 = 822.15 exactly |
+| E1b | 2026-09-07 | agent | ✓ all 5 steps. Reveal really animates (probe caught 820px between 777 and 1364); step 2 stays open when the last bill is removed |
+| M1 | 2026-09-07 | agent | ✓ plan on file, both trackers auto-created 0/20 and 0/6, deductible target from SBC |
+| M2 | 2026-09-07 | agent | $210.00 / $95.00 / $95.00 / **$150.00** — exact; SBC+BILL mono quotes, highlighter on "$35.00 you may not owe", tracker 1 of 20 |
+| M3 | 2026-09-07 | agent | $175.00 / $120.00 / $120.00 / **$55.00** — exact, zero plan-mismatch findings and no `cost_share_error` (the control) |
+| M4 | 2026-09-07 | agent | ✓ 2 audits, JUST AUDITED **$110.00**, both t-series, block stays pinned after opening one and returning |
+| M5 | 2026-09-07 | agent | $175.00 / $0.00 / $175.00 / **$175.00**, tracker 4 of 6. Nothing pre-selected with 4 saved EOBs; consolidated EOB saved once |
+| M6 | 2026-09-07 | agent | ✓ "This plan is already on file." — a MutationObserver confirmed "Reading your plan's terms…" never rendered |
 | M7 | 2026-08-29 | agent | 3 audits · one-click tracker from an EOB remark, deductible $720.00 of $1,500.00 |
-| D1 | 2026-08-29 | agent | 2 audits · duplicate hero on the re-bill, **and** no hero on the same statement twice |
-| E2 | 2026-08-29 | agent | $175.00 / $0.00 / $0.00 / $0.00 · zero findings, no tab row |
+| D1 | 2026-09-07 | agent | ✓ hero **$175.00** on the dashboard only, absent from both reports; 3 provider groups, casing merged into one |
+| E2 | 2026-09-07 | agent | $175.00 / $0.00 / $0.00 / **$0.00**, zero findings, no EOB-comparison types |
 | E3 | 2026-08-31 | agent | ✓ dialog counts the limits (5), SBC trackers removed with the plan, manual and remark ones kept, deductible falls back to the EOB |
-| E4 | 2026-08-31 | agent | ✓ "This doesn't look like a Summary of Benefits.", plan on file untouched |
+| E4 | 2026-09-07 | agent | ✓ "This doesn't look like a Summary of Benefits.", plan on file survived untouched |
 | E5 | 2026-08-31 | agent | ✓ plan restored, trackers re-derived with no duplicates |
-| E6 | 2026-08-29 | agent | step 5: $2,115.00 / $0.00 / $845.00 / **$2,115.00**, warning on the post-run report |
+| E6 | 2026-09-07 | agent | ✓ report-side warning fires. **Step 2 was stale** — the pre-send banner is gone. Worth disputing came back **$990.50**, not the recorded $2,115.00 (model wrote a narrower lineRef; under the cap, understating) |
 | E7 | — | — | destructive (erases the account). Needs a deliberate decision — the dialog itself is covered by X1 |
 | X1 | 2026-08-31 | agent | ✓ all six dialogs, each naming its target, plus backdrop-dismiss deleting nothing |
 | R2 | 2026-08-31 | agent | ✓ routing, exits and labels. Step 1's true sign-out not run — re-auth needs a password |
 | F1 | 2026-08-31 | agent | ✓ bubble, categories, send, "Thanks — we read every note.", card self-closes. Field-level check needs the Firebase console |
 | A1 | — | — | **cannot be run by the agent** — creating an account and entering a password. Needs you |
-| FAM1 | 2026-08-29 | agent | 2 audits · Matthew and Sarah stayed two bills, no duplicate hero. Re-confirmed 2026-08-31: the dashboard now names them |
+| FAM1 | 2026-09-07 | agent | ✓ 2 audits, **no** family duplicate hero (the only hero present is D1's genuine one), rows named Sarah and Matthew |
 | FAM2 | partial | agent | arithmetic covered by 4 new unit tests (family vs individual vs conflict). Browser step still blocked: needs the family EOB to be the newest accumulator |
-| FAM3 | 2026-08-31 | agent | ✓ `matthew` and `family` stems disagree, still paired correctly (0 audits) |
-| FAM4 | 2026-08-31 | agent | found a false positive ($85.00 on a correct charge, no warning) → **fixed and re-verified same day** |
-| FAM5 | 2026-08-31 | agent | ✓ per-member counting verified live (0 audits) |
-| S2 | 2026-08-31 | agent | ✓ both documents as images — figures identical to the text PDFs |
+| FAM3 | 2026-09-07 | agent | ✓ covered by FAM1 step 1 — `matthew` and `family` stems disagree and still paired correctly (0 audits) |
+| FAM4 | 2026-09-07 | agent | ✓ "This EOB is for someone else. The bill is for Matthew T. Testpatient, but this statement covers Sarah L. Testpatient." |
+| FAM5 | 2026-09-07 | agent | ✓ badge **2/2** = highest member, not the household 3. "Matthew 2 of 2 · Sarah 1 of 2 … 3 across everyone" |
+| S2 | 2026-09-07 | agent | ✓ both documents as PNGs: $2,115.00 / $841.75 / $186.35 / **$822.15** — identical to E1's text PDFs, same three findings |
 | S3 | 2026-08-31 | agent | printed fields identical from a scan; **found** Replace discarding confirmed tracker codes → fixed |
-| S4 | 2026-08-31 | agent | **found two bugs** — SBC zone took one file; 5-page scan overran the output cap → both fixed, extracts 15 cost shares vs the PDF's 13 |
-| S1 | 2026-08-29 | agent | $2,115.00 / $841.75 / $186.35 / **$836.00** from a 110dpi PNG — identical to E1's digital PDF |
+| S4 | 2026-09-07 | agent | ✓ 5 PNGs accepted, five pills, all render. Extracted across pages: deductible $500 + OOP $2,500 (p1), 60-visit caps and pediatric vision (p3). Older-plan guard fired first and asked before replacing |
+| S1 | 2026-09-07 | agent | ✓ covered by S2's image bill; the removed scan banner stayed removed, review explains pages |
 | IMG1 | 2026-08-29 | agent | 8 fixtures · HEIC refusal fixed, now covered by `test/browser` |
 | P1 | partial | agent | ✓ `cms-2025.pdf` — 5 pages, home health 60/yr, 13 cost shares. `cms-2019` and `cms-older` not run |
 | G1 | partial | agent | logic covered by 7 unit tests incl. the kill switch and reserve-before-call. Live flip needs the Firebase console — `meta/guard` denies client writes |
 | PAY1 | 2026-08-26 | agent | sandbox cycle verified; payments are still **on** |
-| REV1 | 2026-08-31 | agent | ✓ no pills for 1 page, five for five, none for HTML |
+| REV1 | 2026-09-07 | agent | ✓ 0 pills on 1 page, 5 on cms-2025, pill 3 → "Page 3 of 5", tab switch resets to page 1, HTML and saved-EOB show no pages |
 | PHONE1 | 2026-08-29 | agent | 375px · 0 overflow, 0 controls under 16px, 44→2 short tap targets |
 | TAP1 | 2026-08-31 | agent | ✓ card and rows tappable whole, ✕ deletes without opening the audit |
 
@@ -188,7 +188,11 @@ from, which is the exact failure this tier exists to catch.
    ✓ The **Bills & coverage** page appears — this is home. The "**Audit a new bill**" card is the first thing on it, above "No bills audited yet…", so the primary action is never hidden behind the empty state. Scroll to "Your coverage": the **dashed one-line reminder** "No plan on file — add your Summary of Benefits · Add now" sits there (not a big card, not a gold banner).
 2. Click **Start an audit →**. ✓ The audit form appears; **the logo is the way back**. **Step 1 is "Add your bill"** — the document the user actually has — and **step 2 is "Add the letter from your insurance, if you have it"**, with the "What's an EOB…" explainer under it. *(Reordered 2026-08-16: the EOB used to be step 1, putting eight elements and an acronym in front of the bill.)* Drag `fake-bill.pdf` onto the bill zone, `fake-eob.pdf` onto the insurance-letter zone. ✓ One "✓ file ✕" row under each zone.
 3. Click **Prepare audit →**. ✓ Processing is quick — the pages are rendered locally, no model download. *(Was "the PDF's text layer is read directly" until 2026-08-29; PDFs are sent as page images and the browser reads no text layer.)*
-4. Review both tabs. ✓ Left pane shows the rendered pages, right pane the extracted text under "What we'll analyze". Text matches the document; no placeholder chips anywhere (redaction was removed 2026-08-23).
+4. Review both tabs. ✓ Each tab shows the **rendered pages**, large, under "This is what we send".
+   ~~Left pane shows the rendered pages, right pane the extracted text under "What we'll analyze".~~
+   **Corrected 2026-09-07:** there is no right pane and no "What we'll analyze" — the browser
+   extracts no text, so the pages ARE what is sent and there is nothing to show beside them.
+   ✓ No placeholder chips anywhere (redaction was removed 2026-08-23).
 5. Click **Looks right — analyze**.
    ✓ **The four totals cards** (observed 2026-08-10):
 
@@ -303,11 +307,17 @@ hovers red, not teal, as the plan requires.
 **Data:** `fake-sbc.pdf` (Acme Silver PPO: deductible $1,500/$3,000, OOP $6,000/$12,000, period 2026-01-01→12-31, mental health 6/yr, rehab 20/yr, planted "$60 copay" rehab row).
 
 1. Click **Add now** on the reminder line. ✓ The onboarding screen returns, and its skip link now reads "**Not now — back to your audits**" (origin-aware). Drag `fake-sbc.pdf` onto the dropzone.
-2. Review screen (single document; the tab is labeled "**Plan (SBC)**", not "Bill"). ✓ Member name/ID chipped. Click **Looks right — analyze**.
+2. Review screen (single document, so **no tab strip renders at all**; the tab is labeled
+   "**Plan (SBC)**", not "Bill", when one does). ~~✓ Member name/ID chipped.~~
+   **Corrected 2026-09-07:** the member name and ID render in the clear — redaction was removed
+   2026-08-23, which E1 step 4 already said. Click **Looks right — analyze**.
 3. Back on the bills page, under **Your coverage**:
    ✓ The SBC card is replaced by ONE line: `Plan: Acme Silver PPO · 2026-01-01 → 2026-12-31 · View · Replace · Remove`.
    ✓ Coverage usage: two trackers tagged "**from your plan (SBC) — check the codes**" (6/yr mental health, 20/yr rehab).
-   ✓ Deductible card: "$0.00 of $1,500.00 · Target from your plan (SBC)."
+   ✓ Deductible card: "**Target from your plan (SBC).**" The *target* is $1,500.00; the progress
+     figure depends on what has already been audited. ~~$0.00 of $1,500.00~~ — **corrected
+     2026-09-07**: E1 must run before M1 (see the ordering table), and E1's EOB applies $50.00,
+     so a correctly-ordered run reads **$50.00 of $1,500.00** here, not $0.00.
    ✓ **View** toggles the stored SBC text; opening a tracker's details clears its tag.
    ✓ The review screen in step 2 shows the SBC itself — never a previously uploaded bill. (The tab label used to read "Bill" here, which made it look like an old document was being reused.)
 
@@ -338,7 +348,10 @@ $6,000/$12,000, limits "Outpatient mental health services 6/yr" and "Rehabilitat
    ✓ "**Copay doesn't match your plan**" ($35.00, medium confidence): mono `SBC` quote of the rehab row, mono `BILL` quote, sentence ending in yellow-highlighted "**$35.00 you may not owe**".
    ✓ "**Billed above EOB allowed**" ($115, high confidence — bill demands $210, EOB says $95).
    ✓ Tracker line "Rehabilitation…: visit 1 of 20". ✓ NO "not checked" footer.
-   ✓ Dispute email includes `My plan (SBC) states: "…$60 copay…"`.
+   ~~✓ Dispute email includes `My plan (SBC) states: "…$60 copay…"`.~~
+   **Unreachable while PAYMENTS=on (found 2026-09-07).** "Generate dispute email" opens the
+   **paywall** ("Unlock this appeal letter"), so the letter's contents cannot be asserted here
+   without buying one. Assert it in PAY1, which owns the purchase, or turn payments off first.
 
 **Cost:** 1 audit.
 
@@ -512,7 +525,7 @@ from M1) and no confirmation dialog — the duplicate check is client-side, befo
 **Cheaper route (1 audit):** with an SBC on file, delete the mental-health tracker first, then audit the **t5 pair only** — the remark path fires on that single audit.
 
 1. Audit the pairs in order. After t5 (remark "5 of 6 covered outpatient mental health visits used"), if its codes are untracked:
-   ✓ The 💡 banner offers "Track it" — ONE click creates the tracker fully configured (codes, limit 6, plan year, `source:"remark"`) with no form. The manual form is labeled "**Add a custom limit**" and remains the fallback for unprinted limits.
+   ✓ The 💡 banner offers "Track it" — ONE click creates the tracker fully configured (codes, limit 6, plan year, `source:"remark"`) with no form. The manual form is labeled "**Add a limit the insurer mentioned**" and remains the fallback for unprinted limits. *(Was "Add a custom limit" — corrected 2026-09-07 after running it; that phrase now survives only in an app.html comment recording the rename, which is exactly what made the drift check pass on it.)*
    *(Regression guard, fixed 2026-08-16: the remark matcher required "visits" to follow "N of M covered" immediately, so the real remark — which names the benefit in between — never matched and this banner never appeared. `web/js/usage.js` now allows up to 5 words there.)*
 2. After t6: ✓ tracker red ("Limit reached…"), deductible card $720 of $1,500.
 
@@ -697,8 +710,11 @@ report**; de-overlap changes the total, never what is surfaced.
 **Data:** copies of two unrelated fixtures given matching stems so they pair by filename — e.g. `mixup-bill.pdf` (copy of `fake-bill.pdf`, ED visit 2026-06-12) + `mixup-eob.pdf` (copy of `series/p1-eob.pdf`, PT 2026-03-20).
 
 1. Upload both, Prepare audit. ✓ They pair ("1 audit: 1 bill+EOB pair").
-2. On the review screen, **before** analyzing:
-   ✓ Banner: "⚠️ **This EOB may not cover this bill** (mixup-bill.pdf) — they share no service dates and no procedure codes…"
+2. ~~On the review screen, **before** analyzing: Banner "⚠️ This EOB may not cover this bill
+   (mixup-bill.pdf) — they share no service dates and no procedure codes…"~~
+   **REMOVED 2026-09-07.** The pre-send banner element is gone; the report-side warning
+   in step 5 replaced it. Verified live: the pair still forms ("1 audit: 1 bill+EOB pair.") and
+   the review screen carries no warning at all. Assert on step 5, not here.
 3. Repeat with a genuine pair (`p1-bill.pdf` + `p1-eob.pdf`). ✓ **No banner** — a real pair shares dates and codes.
 4. ~~Note: files with clearly different stems never pair at all.~~ **Changed 2026-08-25.**
    Exactly one bill and exactly one EOB now pair regardless of filename — the user put them in
