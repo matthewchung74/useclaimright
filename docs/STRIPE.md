@@ -1,8 +1,18 @@
 # Stripe
 
-**Status 2026-08-26: built and deployed, switched OFF.** The letter is server-side and still
+**Status 2026-09-07: built, deployed, and switched OFF again.** The letter is server-side and
 free; `createCheckoutSession`, `stripeWebhook` and the entitlement gate are all live but inert
-behind `PAYMENTS=on`, which is not set. Turning it on needs real Stripe keys — see §7.
+behind `PAYMENTS=on`, which is now explicitly `off`. Turning it on needs real Stripe keys — §7.
+
+⚠️ **This header said "switched OFF" while payments were on.** Found 2026-09-07 by running M2
+against production: "Generate dispute email" opened the paywall. All four functions had
+`PAYMENTS=on` live while `STRIPE_SECRET_KEY` was still `sk_test`, so the site was gating the
+appeal letter behind a **sandbox** checkout no real visitor could complete — they could neither
+pay nor get the letter. Set back to `off` and redeployed the same day; verified by all four
+functions reporting `PAYMENTS=off`, the webhook returning **503** rather than 400, and the
+letter coming back free in the browser (1,573 chars, placeholders intact).
+The lesson is the one this file already teaches about `.env`: **the flag's real state is what
+`gcloud functions describe` says, never what a doc says.** Check it before believing either.
 
 The decision this rests on: **audits stay free, the appeal letter is paid.**
 
@@ -255,3 +265,31 @@ and starts retrying, which is how the duplicate above happens in the first place
 - **Automated refunds.** Do them by hand in the dashboard until the volume hurts.
 - **Saved cards.** Checkout handles the one-off; storing cards adds PCI surface for a
   product people use once or twice a year.
+
+---
+
+## 8. What is left before real money (2026-09-07)
+
+Everything in §5 is done except the parts that are not code. Nothing below is blocked on
+engineering.
+
+| # | Item | Who | State |
+|---|---|---|---|
+| 1 | **Terms of Service + refund policy** | owner + attorney | **Drafted** at `docs/drafts/terms-of-service-DRAFT.html`. Deliberately NOT in `web/`, because that directory ships on the next hosting deploy and an unreviewed ToS must not go live by accident. Three placeholders only the owner can fill: legal entity, governing state, and contact address — plus the arbitration/class-waiver decision, which is a choice and not a default |
+| 2 | **Attorney review** of that draft AND of `web/privacy.html` | attorney | Not started. The privacy policy has said "no attorney review" since it was written; bundle the two into one engagement |
+| 3 | **Live Stripe keys** | owner | `firebase functions:secrets:set STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET`. Currently `sk_test`. An agent must not do this — it is entering credentials |
+| 4 | **One real purchase, then refund it** | owner | Never done. §5.7. Verify both directions and that the entitlement is revoked or honoured as intended after a refund — the code has no refund handler, so decide whether a refunded letter stays unlocked |
+| 5 | **The card-entry leg** | owner | Never driven. Stripe's hosted form needs a human at the keyboard |
+| 6 | **Tax classification** | owner | `LETTER_TAX_CODE = txcd_10000000` under Managed Payments, Stripe as merchant of record. A business decision, one line to change |
+| 7 | **The conversion number** | traffic | `dispute_email_generated / audit_completed{found:true}`. Instrumented, no real traffic yet. §5.1 calls this genuinely step one — one $4.99 letter funds ~450 free audits, so the ratio need not be large, but it must not be zero |
+
+**Turn `PAYMENTS=on` in the same change as items 1–3, never before.** The 2026-09-07 incident
+is what happens otherwise: payments on, test keys, and a live paywall nobody could pass.
+
+### An open question item 4 will force
+
+There is **no refund handler**. `stripeWebhook` grants on `checkout.session.completed` and
+nothing listens for `charge.refunded`, so refunding in the dashboard returns the money and
+leaves the letter unlocked. For a $4.99 product that is arguably correct — clawing back a
+letter someone already downloaded achieves nothing — but it should be a decision that is
+written down, not an omission discovered during the first refund.
