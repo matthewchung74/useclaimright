@@ -36,6 +36,13 @@
   .lead{color:var(--ink-soft);margin-bottom:24px}
   .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:28px;margin-bottom:20px}
   .error{background:#fdf0f0;border:1px solid #ecc8c8;color:var(--bad);border-radius:10px;padding:12px 16px;margin:12px 0}
+  /* The way out, offered beside a failure. Same shape as .error deliberately —
+     stacked, the two read as one exchange (what went wrong, then the route
+     forward) instead of as a red box and some loose link text. Green is the
+     route, not a success; the copy carries that, so the box must not claim
+     anything happened yet. Text darker than --good for contrast on the tint. */
+  .offer{background:#eef8f3;border:1px solid #bfe3d2;color:#076b4a;border-radius:10px;padding:12px 16px;margin:12px 0;font-size:14px}
+  .offer a{color:#076b4a;font-weight:700;text-decoration:underline}
   /* Daily-limit dialog. Deliberately not styled as an error: hitting the cap is
      the tool working as intended, not the user doing something wrong. */
   /* margin:auto explicitly — a global reset zeroes it, which pins the dialog to
@@ -393,7 +400,7 @@
            guess and switch modes on the member's behalf — which is wrong half
            the time and fails again on auth/email-already-in-use — offer the
            other path as one click that keeps what they already typed. -->
-      <p id="signin-suggest" class="muted" style="margin:0 0 12px;font-size:13px" hidden>
+      <p id="signin-suggest" class="offer" hidden>
         No account yet?<br><a href="#" id="go-signup">Create one with this email.</a>
       </p>
 
