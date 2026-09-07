@@ -117,6 +117,34 @@ Deferred items with context. Created by /plan-ceo-review 2026-08-20.
 - [ ] **The Show HN framing is stale.** The CEO plan's launch pitch was built on
       the on-device redaction hook, which no longer exists.
 
+## Before taking real money (2026-09-07)
+
+Full detail in `docs/STRIPE.md` §8. The plumbing is finished and sandbox-verified; none of
+these are engineering.
+
+- [ ] **Attorney review** of `docs/drafts/terms-of-service-DRAFT.html` and of
+      `web/privacy.html`. Bundle them — the privacy policy has never been reviewed either.
+      An AI drafting tool is not this; the legal plugin's own README says every output is
+      "a draft for attorney review, not a legal conclusion."
+- [ ] **Fill the ToS placeholders**: legal entity, governing state, contact address, and
+      whether arbitration and a class-action waiver apply. The last one is a choice.
+- [ ] **Move the reviewed ToS into `web/` and link it** from the app and the landing page.
+      It is held outside `web/` on purpose so it cannot ship unreviewed.
+- [ ] **Live Stripe keys** — `firebase functions:secrets:set STRIPE_SECRET_KEY` /
+      `STRIPE_WEBHOOK_SECRET`. Owner only; an agent must not enter credentials.
+- [ ] **One real purchase, then refund it.** Never done.
+- [ ] **Decide what a refund does to an unlocked letter.** There is no `charge.refunded`
+      handler, so today a refund returns the money and the letter stays unlocked. Probably
+      right for $4.99 — but write it down rather than discover it.
+- [ ] **Confirm the tax code.** `LETTER_TAX_CODE = txcd_10000000`, Stripe as merchant of
+      record under Managed Payments.
+- [ ] **Wait for the conversion number** before any of the above earns its cost:
+      `dispute_email_generated / audit_completed{found:true}`.
+- [x] ~~Payments were live with sandbox keys~~ — FIXED 2026-09-07. Found by running M2
+      against production: the paywall opened on a site whose `STRIPE_SECRET_KEY` was
+      `sk_test`, so no visitor could pay *or* get the letter. `PAYMENTS=off` explicitly set
+      and redeployed; webhook back to 503, letter free again.
+
 ## From the CEO plan (2026-08-20-launch-and-appeal-letter.md)
 
 - [ ] **`extractPlan` scope question.** The SBC plan-upload path is a second
