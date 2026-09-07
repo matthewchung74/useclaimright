@@ -336,7 +336,7 @@
        the one thing a stuck person needs to hit — so they get the band, and
        their own line (via <br>) to spend it in without overlapping the prose. */
     #toggle-signup,#forgot-password,#skip-onboarding,
-    #go-signup,#verify-signout{display:inline-block;padding:14px 6px}
+    #go-signup,#verify-signout,#see-sample{display:inline-block;padding:14px 6px}
   }
   @media print{
     header,.no-print,.banner{display:none !important}
@@ -410,6 +410,12 @@
       </p>
 
       <p id="reset-sent" class="muted" hidden>Password reset sent — check your inbox.</p>
+
+      <!-- The wall. Everything before this point describes the product; nobody has
+           seen it work yet, and this is where they are asked for an account. -->
+      <p class="muted" style="margin-top:14px;font-size:13px">
+        Not sure yet?<br><a href="/app?sample=1" id="see-sample">See a sample audit first.</a>
+      </p>
       <!-- Required by Google's reCAPTCHA terms. App Check runs reCAPTCHA Enterprise in
            invisible mode and its badge is hidden, which the terms allow ONLY if this
            attribution is shown in the user flow. Do not remove it while App Check is on. -->
@@ -668,6 +674,17 @@
     <div class="card">
       <div id="batch-progress-report" class="muted" style="font-weight:700" hidden></div>
       <h1>Audit findings</h1>
+      <!-- Above the totals, deliberately. This page renders medical line items and
+           dollar figures, and without saying so it reads as somebody's actual
+           record — which for a health product is the wrong kind of wrong. A
+           footnote does not do that job; the first thing read has to. -->
+      <div id="sample-banner" class="banner" hidden style="display:flex;gap:14px;align-items:center;flex-wrap:wrap">
+        <span style="flex:1;min-width:260px">
+          <b>This is a sample audit on a made-up bill</b>, so you can see what a result looks like
+          before signing up. Nothing here is a real person's.
+        </span>
+        <a href="/app" class="btn sm">Audit my bill →</a>
+      </div>
       <div id="report-caveat" class="banner" hidden>⚠️ Source document was a scan; verify quoted amounts
         against your original before disputing.</div>
       <div id="report-pair-warning" class="banner" hidden></div>
@@ -693,6 +710,17 @@
 
     <!-- Shown only when the server refuses the letter for payment. The price
          comes from the server on that refusal, never hardcoded here. -->
+    <!-- The second ask, after the findings have been read. The banner at the top
+         catches whoever bounces; this catches whoever was convinced. -->
+    <div class="card no-print" id="sample-cta" hidden style="text-align:center">
+      <h2>That was a made-up bill. Yours is the interesting one.</h2>
+      <p class="lead" style="margin-bottom:18px">
+        Upload your itemized bill and the letter from your insurance. It's free — 10 audits a day,
+        no card — and every finding shows you the line it came from.
+      </p>
+      <a href="/app" class="btn">Audit my bill →</a>
+    </div>
+
     <!-- Shown instead of the letter while LETTER_ENABLED is false. It sits in the
          same slot as the paywall so the report's shape does not change, and it is
          a card rather than a modal because it is an answer to a press, not an

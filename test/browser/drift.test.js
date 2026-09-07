@@ -244,3 +244,14 @@ test("ANALYTICS.md documents every error_shown reason", () => {
   assert.deepEqual(missing, [],
     `error_shown reasons in app.js that ANALYTICS.md never names: ${missing.join(", ")}`);
 });
+
+// The sample is the one report a prospect sees, and it is served from a frozen
+// fixture. A finding type renamed server-side would render there as an
+// unlabelled group — on the marketing path, where nobody is looking.
+test("the sample fixture only uses finding types the schema still defines", () => {
+  const fixture = JSON.parse(read("web/sample-audit.json"));
+  const schema = read("functions/schema.js");
+  const unknown = fixture.findings.map((f) => f.type).filter((t) => !schema.includes(`"${t}"`));
+  assert.deepEqual(unknown, [],
+    `web/sample-audit.json uses finding types functions/schema.js no longer defines: ${unknown.join(", ")}`);
+});

@@ -132,12 +132,29 @@
   <div class="wrap">One patient cut a <b>$195,000</b> hospital bill down to <b>$37,000</b> by challenging the charges. The hard part is the line-by-line cross-check against your EOB — <b>our tool does that part in minutes.</b></div>
 </div>
 
+<!-- Before "How it works" on purpose: that section describes the process, this
+     shows the outcome, and people decide on the outcome. Text and a link only —
+     the report is NOT rebuilt here. /app?sample=1 renders the real one. -->
+<section class="block wrap" id="sample">
+  <h2>See a real result first</h2>
+  <p class="lead">
+    A $2,115 emergency-room bill, checked against the insurer's own statement:
+    <b>$822.15 worth disputing</b> — a lab test billed twice, $658.65 charged above what the plan
+    allowed, and an $18.00 error in the insurer's own arithmetic. Every figure shows the line it
+    came from.
+  </p>
+  <a href="/app?sample=1" class="btn">See the sample audit →</a>
+  <p class="muted" style="margin-top:12px;font-size:13.5px">
+    No sign-up, and the bill is made up — it's there so you can see what the output looks like.
+  </p>
+</section>
+
 <section class="block wrap" id="how">
   <h2>How it works</h2>
   <p class="lead">Three steps, a few minutes, nothing to install.</p>
   <div class="steps">
     <div class="step"><div class="n">1</div><h3>Upload bill + EOB</h3><p>Your itemized bill and the matching Explanation of Benefits. Digital PDFs from your portals work best; photos and scans work too.</p></div>
-    <div class="step"><div class="n">2</div><h3>Check we read it right</h3><p>You see the exact text pulled out of your documents, next to the documents themselves, before anything is analyzed. Scans and photos are read with OCR, and OCR makes mistakes — this is where you catch them. The text is then sent to Google's Gemini API to be analyzed.</p></div>
+    <div class="step"><div class="n">2</div><h3>Check we're sending the right pages</h3><p>You see the exact pages that will be sent, laid out large, before anything leaves your browser. Check they're the right documents, the right way up, and that nothing is cut off — if a page is unreadable here, the audit will be wrong too. The pages are then sent to Google's Gemini models on Vertex AI to be read.</p></div>
     <div class="step"><div class="n">3</div><h3>Read your findings</h3><p>Duplicate charges, billing above the EOB allowed amount, coding errors, cost-share math — each finding with quoted evidence and a dollar amount. Or a clean result: your bill checks out.</p></div>
   </div>
 </section>
