@@ -157,6 +157,20 @@
     <div class="step"><div class="n">2</div><h3>Check we're sending the right pages</h3><p>You see the exact pages that will be sent, laid out large, before anything leaves your browser. Check they're the right documents, the right way up, and that nothing is cut off — if a page is unreadable here, the audit will be wrong too. The pages are then sent to Google's Gemini models on Vertex AI to be read.</p></div>
     <div class="step"><div class="n">3</div><h3>Read your findings</h3><p>Duplicate charges, billing above the EOB allowed amount, coding errors, cost-share math — each finding with quoted evidence and a dollar amount. Or a clean result: your bill checks out.</p></div>
   </div>
+  <!-- A real run, recorded end to end on the live site — not a mock-up and not
+       sped up beyond trimming dead air. It shows the part the sample audit cannot:
+       what the three steps feel like. lazy, because it is 477KB and sits below the
+       fold, and acquisition here is organic and mobile-heavy. -->
+  <figure style="margin:28px 0 0">
+    <img src="/img/flow.gif" width="900" height="597" loading="lazy" decoding="async"
+         style="width:100%;height:auto;border:1px solid var(--line);border-radius:14px;display:block"
+         alt="A screen recording of the three steps: an itemized bill and an insurance EOB are added to
+              the upload form, the pages that will be sent are shown for review, and the findings appear —
+              $2,115.00 billed, $841.75 allowed by the plan, $186.35 owed, and $822.15 worth disputing.">
+    <figcaption class="muted" style="margin-top:10px;font-size:13.5px">
+      A real run on a made-up bill, start to finish. <a href="/app?sample=1">Open the result it produced →</a>
+    </figcaption>
+  </figure>
 </section>
 
 <section class="block" style="background:var(--card);border-top:1px solid var(--line);border-bottom:1px solid var(--line)">

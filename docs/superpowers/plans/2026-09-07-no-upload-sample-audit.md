@@ -82,11 +82,11 @@ never rendered there at all. All three are now guarded symmetrically via `EVIDEN
 
 The live sample answers *"are the findings any good?"*. It cannot answer *"what is this like to use?"* — that is the upload → review → processing leg, and it is the only thing a GIF is better at.
 
-- [ ] Record on production with the Chrome tooling's `gif_creator`, driving a **real** run on the E1 fixtures. Do not mock frames.
-- [ ] **6–10 seconds**, upload leg only, ending as the findings appear. The sample takes over from there.
-- [ ] Budget **≤2MB**. Acquisition is organic and mobile-heavy; a multi-megabyte hero GIF is a real cost. If it will not fit, cut seconds before cutting resolution.
-- [ ] Place in `#how`, `loading="lazy"`, with alt text describing the flow for anyone who cannot see it.
-- [ ] Add a dated note in `docs/LAUNCH.md` recording what build it was recorded against. **A GIF is the most drift-prone artifact in the repo** — nothing fails when the UI moves on — so the mitigation is that its staleness is at least written down next to the launch pitch that links it.
+- [x] Record on production with the Chrome tooling's `gif_creator`, driving a **real** run on the E1 fixtures. Do not mock frames.
+- [x] **6–10 seconds**, upload leg only, ending as the findings appear. The sample takes over from there.
+- [x] Budget **≤2MB**. Acquisition is organic and mobile-heavy; a multi-megabyte hero GIF is a real cost. If it will not fit, cut seconds before cutting resolution.
+- [x] Place in `#how`, `loading="lazy"`, with alt text describing the flow for anyone who cannot see it.
+- [x] Add a dated note in `docs/LAUNCH.md` recording what build it was recorded against. **A GIF is the most drift-prone artifact in the repo** — nothing fails when the UI moves on — so the mitigation is that its staleness is at least written down next to the launch pitch that links it.
 
 ## Risks
 
