@@ -28,30 +28,33 @@ product; "audit" reads as accounting software.)*
 
 **Body:**
 
-> My hospital bill and my insurer's EOB turn up weeks apart, in different envelopes, and nobody ever puts them next to each other. That gap is where billing errors live.
+> I got overcharged once. Ever since, I've checked my own claims against my EOBs line by line — and it's slow, dull work, which is presumably why almost nobody does it.
 >
-> So: upload the itemized bill and the EOB, and it tells you what disagrees — a line billed twice, a charge above what your plan allowed, something on the bill the EOB never processed, or the EOB's own numbers not adding up. Add your Summary of Benefits once and it checks the bill against what the plan actually promised too.
+> The documents don't help. The bill comes from the provider; the EOB that would prove the error turns up weeks later, in a different envelope, from the insurer. Catching anything means holding the two next to each other and comparing them by hand.
 >
-> Every finding quotes the line it came from. That's enforced, not encouraged: if the quote isn't verbatim in your document, the finding is dropped before you see it. Doesn't make the model right, but you can check any claim in about two seconds.
+> So I built something that does that part. Upload the itemized bill and the EOB and it tells you what disagrees — a line billed twice, a charge above what your plan allowed, something on the bill the EOB never processed, or the EOB's own numbers not adding up. Add your Summary of Benefits once and it checks the bill against what the plan promised too.
 >
-> Two things surprised me building it.
+> Every finding quotes the line it came from. That's enforced, not encouraged: if the quote isn't verbatim in your document, the finding gets dropped before you see it. Doesn't make the model right, but you can check any claim in about two seconds.
 >
-> Reading the PDF text layer was making it worse. Everything's rendered to page images now and the model reads those. The same bill as a digital PDF and as a 110 DPI scan comes back identical to the cent — and table columns survive, which pdftotext reliably destroys.
->
-> The hard part isn't finding errors, it's not inventing them. Pair a bill with the wrong family member's EOB and every line comes back "missing from the EOB" — a perfectly correct bill that looks like fraud. Same clinic, same day, same code, and only the patient name on the claim line tells them apart. The subscriber block names the same person on all of them, so a document-level name check sails right past it. It compares claim-level names now and just says "This EOB is for someone else."
+> The hard part turned out not to be finding errors — it's not inventing them. Pair a bill with the wrong family member's EOB and every line comes back "missing from the EOB": a perfectly correct bill that looks like fraud. Same clinic, same day, same code, and only the patient name on the claim line tells them apart — and the subscriber block names the same person on all of them, so a document-level name check sails straight past it. It compares claim-level names now and just says "This EOB is for someone else."
 >
 > On ChatGPT + Epic, since that landed last week: it reads the clinical chart. A billing error isn't in the chart — it's in the gap between your provider's bill and your insurer's EOB, and neither party holds both.
 >
 > Free, 10 a day, because each one is a real model call I pay for. There's a sample audit you can read without signing up.
 >
-> Your documents go to Gemini on Vertex AI with your name still on them. No on-device redaction — I tried, the model I used silently passed everything through, and a privacy feature that doesn't work is worse than none. That's said on the upload screen before anything is sent.
+> Your documents go to Gemini on Vertex AI with your name still on them. No on-device redaction — I tried, the model I used silently passed everything through, and a privacy feature that doesn't work is worse than none. It says so on the upload screen before anything is sent.
 >
 > I'd most like to hear from anyone who runs a real bill through it and gets a wrong answer. False positives are the failure that matters here — telling someone to dispute something they do owe is worse than missing one — and I've got no way to measure them yet.
 
-*Shortened 2026-09-08 from ~4,850 chars to ~2,400, and loosened. The long version
-explained; this one just says the thing. Cut: two of the three build notes, the stack
-paragraph, and most of the hedging. The Epic point went from a paragraph to two lines —
-it earns a mention, not an essay, and at that length it cannot read as picking a fight.*
+*Shortened and personalised 2026-09-08. Was ~4,850 chars, now ~2,400. It opens on the
+author's own experience rather than a statistic, because that anecdote IS the general
+point — bill and EOB arrive separately, so checking means comparing them by hand — and
+a first-person annoyance earns more attention than "8 in 10 bills contain errors."
+Cut: the PDF-text-layer note, the per-member limits note, the stack paragraph, and most
+of the hedging. The Epic point is two lines rather than a paragraph; at that length it
+reads as an observation instead of picking a fight during someone else's launch week.
+No invented specifics in the opener — no amount, no procedure, no date. Only what the
+author actually said, because the anecdote is the part commenters probe.*
 
 ---
 
