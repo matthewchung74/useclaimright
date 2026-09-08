@@ -273,6 +273,66 @@ test("phone: a family bill row fits, and the finding keeps full width", async ()
 });
 
 // ---------------------------------------------------------------------------
+// FAM2 — the deductible card, the one screen only a signed-in household sees
+//
+// renderUsage() runs behind auth, so nothing here could reach the card and the
+// first thing shipped into it was a layout bug: naming the scope ("Family
+// target from your plan (SBC).") lengthened the sourcing line by one word,
+// which pushed it onto a third line at 375px. The "to go" figure beside it is
+// floated, and a float adds no height to its parent, so it hung 5px below the
+// card's bottom border — dollar text sitting outside the box that owns it.
+//
+// The block is executed verbatim out of app.js rather than retyped, because a
+// copy of the card here would keep passing after the real one changed.
+// ---------------------------------------------------------------------------
+
+test("phone: the deductible card names its scope and keeps the 'to go' inside the card", async () => {
+  const src = await readFile(join(WEB, "js", "app.js"), "utf8");
+  const between = (a, b) => {
+    const i = src.indexOf(a), j = src.indexOf(b, i);
+    assert.ok(i >= 0 && j > i, `renderUsage moved — this test can no longer find ${a}`);
+    return src.slice(i, j);
+  };
+  const block = between("const applied = typeof snapshot?.deductibleToDate", '} else {\n    dc.innerHTML = ""');
+  const fmtSrc = between("const fmt = (n) =>", "\n");
+  const escSrc = between("function escapeHtml(s) {", "\n}\n") + "\n}";
+
+  await showSection("bills");
+  // One SBC printing both of the plan's figures; the EOB decides which one the
+  // household is measured against, which is the whole point of the label.
+  const render = (deductibleLimit, deductibleToDate) => page.evaluate(async (a) => {
+    const [block, fmtSrc, escSrc, deductibleLimit, deductibleToDate] = a;
+    const { deductibleTarget, targetLabel } = await import("/js/plan.js");
+    const fmt = new Function(`${fmtSrc} return fmt;`)();
+    const escapeHtml = new Function(`${escSrc} return escapeHtml;`)();
+    const card = new Function("snapshot", "summedApplied", "target", "asOf",
+      "disagreement", "dc", "fmt", "escapeHtml", "targetLabel", block);
+    const snapshot = { deductibleToDate, deductibleLimit };
+    const dc = document.getElementById("deductible-card");
+    card(snapshot, null, deductibleTarget({ deductible: { individual: 500, family: 1000 } }, snapshot),
+      "2026-08-25", false, dc, fmt, escapeHtml, targetLabel);
+    const el = dc.querySelector(".usage-card");
+    const togo = el.querySelector("span[style*=float]");
+    return {
+      text: el.innerText.replace(/\s+/g, " "),
+      overflow: togo.getBoundingClientRect().bottom - el.getBoundingClientRect().bottom,
+    };
+  }, [block, fmtSrc, escSrc, deductibleLimit, deductibleToDate]);
+
+  const family = await render(1000, 640);
+  assert.match(family.text, /Family target from your plan \(SBC\)/,
+    `a household measured against the family figure must be told so, got: ${family.text}`);
+  assert.ok(family.overflow <= 0,
+    `"to go" escaped the card by ${family.overflow.toFixed(1)}px`);
+
+  const individual = await render(500, 320);
+  assert.match(individual.text, /Individual target from your plan \(SBC\)/,
+    `the individual figure must be named too, got: ${individual.text}`);
+  assert.ok(individual.overflow <= 0,
+    `"to go" escaped the card by ${individual.overflow.toFixed(1)}px`);
+});
+
+// ---------------------------------------------------------------------------
 // A1 — the module boots and every control it wires is actually bound
 //
 // The one failure that has reached production: app.js referenced an identifier
