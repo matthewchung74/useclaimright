@@ -80,16 +80,17 @@ product; "audit" reads as accounting software.)*
 > counted twice — an early version reported more money at stake than the bill was for.
 >
 > **What it doesn't do:** it is not a law firm and does not represent you. It won't contact your
-> provider or insurer — it drafts a letter you send yourself. And your bill and EOB go to
+> provider or insurer and it won't file anything on your behalf — it shows you the findings and the
+> lines they came from, and what you do with those is yours. And your bill and EOB go to
 > Google's Gemini models on Vertex AI with your name and everything else printed on them
 > intact. There is no on-device redaction; I tried, the model I used for it was broken in a way
 > that silently passed everything through, and shipping a privacy feature that doesn't work is
 > worse than not having one. That tradeoff is stated on the upload screen before anything is
 > sent, and you can delete any audit or the whole account at any time.
 >
-> Free, 10 audits a day, because each one is a real model call I pay for. No account needed to
-> read this; one is needed to run an audit, because the results are yours and stored under your
-> uid.
+> Free, 10 audits a day, because each one is a real model call I pay for. There is a sample audit
+> you can read without an account — a real run on a synthetic bill, findings and quoted evidence
+> and all. Running your own needs one, because the results are stored under your uid.
 >
 > I would especially like to hear from anyone who runs it on a real bill and gets a wrong
 > answer. False positives are the failure that matters here — telling someone to dispute
