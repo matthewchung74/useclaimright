@@ -38,6 +38,16 @@ product; "audit" reads as accounting software.)*
 > upload your Summary of Benefits once, it checks the bill against what your plan promised —
 > the $60 copay billed as $175 case.
 >
+> Worth addressing, since it landed the week before this post: OpenAI connected ChatGPT to Epic.
+> It reads the clinical chart — notes, labs, medications — read-only, and mostly for clinicians. It
+> does not reach billing, and that is not an oversight waiting to be patched. A billing error does
+> not exist inside either document; it exists in the difference between two documents held by two
+> different organisations. Your provider issues the itemized statement. Your insurer issues the EOB,
+> weeks later, separately. The chart has neither, and even the itemized bill usually lives in a
+> billing module rather than the clinical record. The closest thing in that announcement is a CMS
+> Coverage lookup, which tells you what Medicare covers in general — not what your hospital charged
+> you in particular.
+>
 > Every finding quotes the line it came from, labelled BILL, EOB or SBC. That is enforced
 > rather than encouraged: a finding whose quoted evidence does not appear verbatim in the
 > source document is dropped before you see it. It is not a complete defence against a model
@@ -110,6 +120,53 @@ the absence of the picker is verified by a luminance scan of the output rather t
 when the upload form, the review screen or the report visibly changes — and if you are reading this
 note long after that happened, the video is already lying. The step timings in `index.html`
 (`data-at` on each `.step`) are cut points in this specific file and must be re-derived with it.
+
+---
+
+## LinkedIn post
+
+Different audience, opposite rules. HN punishes a post that opens on a competitor; LinkedIn rewards
+a timely structural take on news people are already reading about. So this one *does* lead with the
+Epic integration, keeps the product to a closing line, and stands up as an observation even for
+someone who never clicks.
+
+**Body:**
+
+> OpenAI connected ChatGPT to Epic last week. I tried it on my own records and it is genuinely good
+> — it read my history, my labs and my medications, and gave me a clearer summary than any portal
+> ever has.
+>
+> Then I asked it about a bill.
+>
+> It has no access to one, and that gap is not closing soon, because of where the data lives.
+>
+> Your clinical record sits with your provider. Your Explanation of Benefits — the document that
+> says what your insurer actually allowed — arrives from your insurer, weeks later, in a separate
+> envelope. A billing error is not in either document on its own. It is in the difference between
+> them.
+>
+> The nearest thing in OpenAI's announcement is a CMS Coverage lookup: what Medicare covers, in
+> general. Genuinely useful. It cannot tell you whether your hospital charged you correctly.
+>
+> Here is what that gap looks like in practice. On one $2,115 emergency-room bill: a lab test billed
+> twice at $145.50, $658.65 charged above what the plan allowed, and my favourite — the insurer's own
+> EOB did not add up. Its per-line amounts summed to $168.35 while the same page stated $186.35. An
+> $18 arithmetic error on the document you are supposed to trust.
+>
+> None of that is visible from the chart. All of it is visible the moment the two documents sit side
+> by side.
+>
+> That is the whole product: useclaimright.com — free, and you can see a sample audit without an
+> account.
+
+### Before posting this
+
+- **Check the timing words.** "Last week" is only true for a few days. Say the date or drop it.
+- **Keep the claim narrow.** The Epic integration is read-only, clinical, and largely
+  clinician-facing. Do not say ChatGPT "cannot read documents" — it can, if you paste them. The
+  accurate claim is that the *integration* connects to records rather than to billing.
+- **The $18 finding is the hook.** It is specific, checkable, and surprising in a way "we find
+  errors" never is. Keep it concrete; drop the adjectives before you drop the number.
 
 ## Why this framing
 
