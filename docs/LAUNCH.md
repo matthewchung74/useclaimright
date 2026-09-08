@@ -28,33 +28,34 @@ product; "audit" reads as accounting software.)*
 
 **Body:**
 
-> I got overcharged once. Ever since, I've checked my own claims against my EOBs line by line — and it's slow, dull work, which is presumably why almost nobody does it.
+> I got overcharged over one hundred dollars on my kiddo's medical bill before. Ever since, I've checked my own claims against my EOBs line by line — and it's slow and a pain.
 >
-> The documents don't help. The bill comes from the provider; the EOB that would prove the error turns up weeks later, in a different envelope, from the insurer. Catching anything means holding the two next to each other and comparing them by hand.
+> The process for bills is a mess. The bill comes from the provider; the EOB that would prove the error turns up weeks later, in a different envelope, from the insurer. Catching anything means holding the two next to each other and comparing them by hand.
 >
 > So I built something that does that part. Upload the itemized bill and the EOB and it tells you what disagrees — a line billed twice, a charge above what your plan allowed, something on the bill the EOB never processed, or the EOB's own numbers not adding up. Add your Summary of Benefits once and it checks the bill against what the plan promised too.
 >
 > Every finding quotes the line it came from. That's enforced, not encouraged: if the quote isn't verbatim in your document, the finding gets dropped before you see it. Doesn't make the model right, but you can check any claim in about two seconds.
 >
-> The hard part turned out not to be finding errors — it's not inventing them. Pair a bill with the wrong family member's EOB and every line comes back "missing from the EOB": a perfectly correct bill that looks like fraud. Same clinic, same day, same code, and only the patient name on the claim line tells them apart — and the subscriber block names the same person on all of them, so a document-level name check sails straight past it. It compares claim-level names now and just says "This EOB is for someone else."
->
 > On ChatGPT + Epic, since that landed last week: it reads the clinical chart. A billing error isn't in the chart — it's in the gap between your provider's bill and your insurer's EOB, and neither party holds both.
 >
-> Free, 10 a day, because each one is a real model call I pay for. There's a sample audit you can read without signing up.
+> Free, 10 a day, since I am covering LLM calls myself. There's a sample audit you can read without signing up.
 >
 > Your documents go to Gemini on Vertex AI with your name still on them. No on-device redaction — I tried, the model I used silently passed everything through, and a privacy feature that doesn't work is worse than none. It says so on the upload screen before anything is sent.
 >
-> I'd most like to hear from anyone who runs a real bill through it and gets a wrong answer. False positives are the failure that matters here — telling someone to dispute something they do owe is worse than missing one — and I've got no way to measure them yet.
+> I'd most like to hear from anyone who runs a real bill through it and gets a wrong answer or anyone who runs a bill through it and it is helpful.
+>
+> Thanks for your time!
 
-*Shortened and personalised 2026-09-08. Was ~4,850 chars, now ~2,400. It opens on the
-author's own experience rather than a statistic, because that anecdote IS the general
-point — bill and EOB arrive separately, so checking means comparing them by hand — and
-a first-person annoyance earns more attention than "8 in 10 bills contain errors."
-Cut: the PDF-text-layer note, the per-member limits note, the stack paragraph, and most
-of the hedging. The Epic point is two lines rather than a paragraph; at that length it
-reads as an observation instead of picking a fight during someone else's launch week.
-No invented specifics in the opener — no amount, no procedure, no date. Only what the
-author actually said, because the anecdote is the part commenters probe.*
+*This is the author's own final wording, 2026-09-08 — kept verbatim rather than
+re-edited. 1,801 chars. The opener carries a real detail (a hundred-plus dollars, a
+child's bill) that no draft of mine could have supplied, and the closing ask now
+invites reports of it WORKING as well as failing, which is the more useful signal
+when there is no traffic yet.
+One deliberate loss to know about: the "hard part isn't finding errors, it's not
+inventing them" paragraph — the wrong family member's EOB turning a correct bill into
+apparent fraud — was cut for length. It was the only build detail in the post, and
+build details are what HN rewards. It is preserved below under Why this framing in
+case the thread asks for it, which is the likeliest place it gets used anyway.*
 
 ---
 
