@@ -19,7 +19,7 @@ import { initializeAppCheck, ReCaptchaEnterpriseProvider } from "https://www.gst
 import { firebaseConfig, APP_CHECK_SITE_KEY } from "./firebase-config.js";
 import { extractText } from "./extract.js";
 import { pairFiles, classifyFile, uniqueDocs } from "./batch.js";
-import { planYearStartMonthFrom, mergeSbcTrackers, deductibleTarget, oopTarget } from "./plan.js";
+import { planYearStartMonthFrom, mergeSbcTrackers, deductibleTarget, oopTarget, targetLabel } from "./plan.js";
 import { crossBillDuplicates, runningTotals, groupAuditsByProvider, splitJustAudited, billKeyOf } from "./crossbill.js";
 import { documentsRelated, wrongPatient } from "./eobmatch.js";
 import { personKey } from "./person.js";
@@ -2140,11 +2140,15 @@ function renderUsage() {
   if (typeof snapshot?.deductibleToDate === "number" || target.limit !== null) {
     const applied = typeof snapshot?.deductibleToDate === "number" ? snapshot.deductibleToDate : (summedApplied ?? 0);
     const lim = target.limit !== null ? ` of ${fmt(target.limit)}` : "";
+    // Say WHICH of the plan's two numbers this is. A household measuring against
+    // $1,000 when the plan also prints $500 is correct, but indistinguishable from
+    // a bug unless the card admits which one it chose.
+    const label = targetLabel(target.scope);
     let sourcing;
     if (target.source === "sbc" && snapshot) {
-      sourcing = `Target from your plan (SBC). As stated on your most recent EOB (${escapeHtml(asOf)}).`;
+      sourcing = `${label} from your plan (SBC). As stated on your most recent EOB (${escapeHtml(asOf)}).`;
     } else if (target.source === "sbc") {
-      sourcing = "Target from your plan (SBC).";
+      sourcing = `${label} from your plan (SBC).`;
     } else {
       sourcing = `As stated on your most recent EOB (${escapeHtml(asOf)}).`;
     }
@@ -2169,7 +2173,7 @@ function renderUsage() {
       <div class="usage-head"><b>Out-of-pocket maximum</b>
         <span class="usage-count">${fmt(oopPaid ?? 0)}${oop.limit !== null ? ` of ${fmt(oop.limit)}` : ""}${pct !== null ? ` · ${pct}%` : ""}</span></div>
       ${oop.limit !== null ? `<div class="progress"><div class="bar" style="width:${pct}%"></div></div>` : ""}
-      ${oop.conflict ? `<div class="muted">Note: your EOB states a different out-of-pocket limit (${fmt(snapshot.oopLimit)}) than your SBC (${fmt(oop.limit)}) — worth a look.</div>` : ""}
+      ${oop.source === "sbc" ? `<div class="muted">${targetLabel(oop.scope)} from your plan (SBC).${oop.conflict ? ` Note: your EOB states a different out-of-pocket limit (${fmt(snapshot.oopLimit)}) than your SBC (${fmt(oop.limit)}) — worth a look.` : ""}</div>` : ""}
     </div>`;
   } else {
     oc.innerHTML = "";

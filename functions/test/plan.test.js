@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import Ajv from "ajv";
 import { FINDING_TYPES, findingsSchema } from "../schema.js";
-import { planApplies, mergeSbcTrackers, deductibleTarget, oopTarget, planYearStartMonthFrom } from "../../web/js/plan.js";
+import { planApplies, mergeSbcTrackers, deductibleTarget, oopTarget, planYearStartMonthFrom, targetLabel } from "../../web/js/plan.js";
 import { planSchema, buildDigest, replaceDecision, planTermsBlock, applyPlanGate } from "../plan.js";
 
 const ajv = new Ajv({ allErrors: true });
@@ -333,4 +333,28 @@ test("oopTarget: resolves family the same way", () => {
   const t = oopTarget(FAM2_PLAN, { oopLimit: 5000 });
   assert.equal(t.limit, 5000);
   assert.equal(t.scope, "family");
+});
+
+// The scope was computed correctly and then thrown away at the point of display:
+// deductibleTarget returned scope "family", and the card said only "Target from
+// your plan (SBC)". A household measuring $640 against a $1,000 family deductible
+// is right, but from the card it is indistinguishable from the $500 individual
+// bug that shipped before it — same words, different number.
+test("targetLabel names which of the plan's two numbers a card is measured against", () => {
+  assert.equal(targetLabel("family"), "Family target");
+  assert.equal(targetLabel("individual"), "Individual target");
+  // No scope means the figure came from the EOB alone, where there is only one
+  // number and nothing to disambiguate. Naming it would invent a distinction.
+  assert.equal(targetLabel(null), "Target");
+  assert.equal(targetLabel(undefined), "Target");
+});
+
+test("targetLabel composes with the target it describes", () => {
+  const family = deductibleTarget({ deductible: { individual: 500, family: 1000 } }, { deductibleLimit: 1000 });
+  assert.equal(targetLabel(family.scope), "Family target");
+  assert.equal(family.limit, 1000);
+  assert.equal(family.conflict, false, "the family figure is the plan, not a disagreement with it");
+
+  const eobOnly = deductibleTarget(null, { deductibleLimit: 1500 });
+  assert.equal(targetLabel(eobOnly.scope), "Target");
 });

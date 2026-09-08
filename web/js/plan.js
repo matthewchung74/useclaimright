@@ -89,6 +89,17 @@ export function oopTarget(structured, snapshot) {
   return limitTarget(structured?.oopMax?.individual, structured?.oopMax?.family, snapshot?.oopLimit);
 }
 
+// Which of the plan's two numbers a card is measured against.
+//
+// limitTarget picks between them — the EOB is the only document that says which
+// one a household actually accrues toward — but the cards never said which it
+// had chosen. So a member of a family plan seeing "$640.00 of $1,000.00" had no
+// way to tell the correct family target from a bug rendering the wrong number,
+// and the one question the card exists to answer went unanswered. Naming it
+// costs one word.
+export const targetLabel = (scope) =>
+  scope === "family" ? "Family target" : scope === "individual" ? "Individual target" : "Target";
+
 export function planYearStartMonthFrom(planYearStart) {
   const m = Number(String(planYearStart || "").split("-")[1]);
   return Number.isInteger(m) && m >= 1 && m <= 12 ? m : 1;
