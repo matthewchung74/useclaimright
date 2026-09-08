@@ -32,6 +32,8 @@ product; "audit" reads as accounting software.)*
 >
 > The process for bills is a mess. The bill comes from the provider; the EOB that would prove the error turns up weeks later, in a different envelope, from the insurer. Catching anything means holding the two next to each other and comparing them by hand.
 >
+> Family plans make it messier. Two of us can see the same clinic on the same day for the same code, and the bills look identical — a real duplicate charge and two legitimate visits are the same picture until you check the name on the claim line. Pick up the wrong kid's EOB and a perfectly fine bill looks like fraud, because every line comes back missing from it. Insurers also send a consolidated EOB covering everybody, or one per person, and the deductible on it is two numbers — individual and family — that you have to know which of you is counting against. Limits like "6 visits a year" are per person, not per household, and getting that backwards tells someone they're out of covered visits when they aren't.
+>
 > So I built something that does that part. Upload the itemized bill and the EOB and it tells you what disagrees — a line billed twice, a charge above what your plan allowed, something on the bill the EOB never processed, or the EOB's own numbers not adding up. Add your Summary of Benefits once and it checks the bill against what the plan promised too.
 >
 > Every finding quotes the line it came from. That's enforced, not encouraged: if the quote isn't verbatim in your document, the finding gets dropped before you see it. Doesn't make the model right, but you can check any claim in about two seconds.
@@ -46,16 +48,18 @@ product; "audit" reads as accounting software.)*
 >
 > Thanks for your time!
 
-*This is the author's own final wording, 2026-09-08 — kept verbatim rather than
-re-edited. 1,801 chars. The opener carries a real detail (a hundred-plus dollars, a
-child's bill) that no draft of mine could have supplied, and the closing ask now
-invites reports of it WORKING as well as failing, which is the more useful signal
-when there is no traffic yet.
-One deliberate loss to know about: the "hard part isn't finding errors, it's not
-inventing them" paragraph — the wrong family member's EOB turning a correct bill into
-apparent fraud — was cut for length. It was the only build detail in the post, and
-build details are what HN rewards. It is preserved below under Why this framing in
-case the thread asks for it, which is the likeliest place it gets used anyway.*
+*Author's wording, with a family-plan paragraph added 2026-09-08. 2,519 chars.
+
+That paragraph does three jobs at once, which is why it earns its length. It follows
+from the opener — a kiddo's bill means a family plan — so the hardest case in the
+product is also the author's own. It restores the build detail HN rewards, framed as a
+real problem rather than an engineering aside. And every claim in it is behaviour
+verified in TESTING.md rather than colour: FAM1 (two members are not one person billed
+twice), FAM4 (the wrong member's EOB), FAM3 (consolidated vs per-member), FAM2
+(individual vs family deductible) and FAM5 (limits are per member).
+
+It is also the honest answer to "why not just paste this into a chatbot": the
+family cases are where a plausible-sounding wrong answer costs someone money or care.*
 
 ---
 
