@@ -48,7 +48,28 @@
   .lead{text-align:center;color:var(--ink-soft);max-width:680px;margin:0 auto 44px;font-size:17px}
 
   /* Steps */
+  /* Centred, not top-aligned: the steps column is nearly twice the height of
+     the video, and starting both at the top left the video stranded above a
+     block of empty space. */
+  .flow{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:26px;align-items:center}
+  .flow-video{width:100%;height:auto;border:1px solid var(--line);border-radius:14px;display:block;
+    background:var(--card);box-shadow:0 2px 10px rgba(18,50,50,.06)}
   .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
+  /* Inside .flow the three steps stack beside the video instead of sitting in a row. */
+  .flow .steps{grid-template-columns:1fr;gap:12px;list-style:none;margin:0;padding:0}
+  .flow .step{padding:16px 18px;transition:border-color .25s,background .25s,opacity .25s}
+  /* Inactive steps recede rather than disappear — all three stay readable for
+     anyone who does not want to wait for the video to come round to them. */
+  .flow .step{opacity:.55}
+  .flow .step.on{opacity:1;border-color:var(--brand);background:var(--accent)}
+  .flow .step.on .n{background:var(--brand);color:#fff}
+  .flow .step h3{font-size:16px}
+  .flow .step p{font-size:14px}
+  @media (prefers-reduced-motion: reduce){
+    /* No autoplay and no dimming: the poster stands still and every step is
+       equally legible, because the highlight is only meaningful while it moves. */
+    .flow .step{opacity:1}
+  }
   .step{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:28px 24px}
   .step .n{width:34px;height:34px;border-radius:50%;background:var(--accent);color:var(--brand-dark);
     font-weight:800;display:flex;align-items:center;justify-content:center;margin-bottom:14px}
@@ -92,6 +113,7 @@
 
   @media(max-width:760px){
     h1{font-size:34px}.steps{grid-template-columns:1fr}
+    .flow{grid-template-columns:1fr}
     .compare .row{grid-template-columns:1.3fr .8fr .8fr}.sub{font-size:18px}
     .signin-link{display:none}
   }
@@ -138,10 +160,10 @@
 <section class="block wrap" id="sample">
   <h2>See a real result first</h2>
   <p class="lead">
-    A $2,115 emergency-room bill, checked against the insurer's own statement:
-    <b>$822.15 worth disputing</b> — a lab test billed twice, $658.65 charged above what the plan
-    allowed, and an $18.00 error in the insurer's own arithmetic. Every figure shows the line it
-    came from.
+    A $2,115 emergency-room bill, checked against the insurer's own statement and the plan it was
+    written under: <b>$842.39 worth disputing</b> — a lab test billed twice, $658.65 charged above
+    what the plan allowed, an $18.00 error in the insurer's own arithmetic, and three tests charged
+    at 20% coinsurance where the plan document says 10%. Every figure shows the line it came from.
   </p>
   <a href="/app?sample=1" class="btn">See the sample audit →</a>
   <p class="muted" style="margin-top:12px;font-size:13.5px">
@@ -152,25 +174,57 @@
 <section class="block wrap" id="how">
   <h2>How it works</h2>
   <p class="lead">Three steps, a few minutes, nothing to install.</p>
-  <div class="steps">
-    <div class="step"><div class="n">1</div><h3>Upload bill + EOB</h3><p>Your itemized bill and the matching Explanation of Benefits. Digital PDFs from your portals work best; photos and scans work too.</p></div>
-    <div class="step"><div class="n">2</div><h3>Check we're sending the right pages</h3><p>You see the exact pages that will be sent, laid out large, before anything leaves your browser. Check they're the right documents, the right way up, and that nothing is cut off — if a page is unreadable here, the audit will be wrong too. The pages are then sent to Google's Gemini models on Vertex AI to be read.</p></div>
-    <div class="step"><div class="n">3</div><h3>Read your findings</h3><p>Duplicate charges, billing above the EOB allowed amount, coding errors, cost-share math — each finding with quoted evidence and a dollar amount. Or a clean result: your bill checks out.</p></div>
+
+  <!-- Video, not a GIF, for one reason that decides it: a GIF exposes no playback
+       state — no currentTime, no events, no way to know when it started — so the
+       step highlighting below could only be guessed at with a timer and would
+       drift within one loop. <video> gives timeupdate, so the highlight is exact.
+       It is also ~5x smaller than the same content as a GIF, which matters when
+       acquisition is organic and mobile.
+       A real run, recorded end to end on the live site; the only editing is
+       trimming dead air. It shows the part the sample audit cannot — what the
+       three steps feel like — while the sample shows whether the findings are any
+       good, which is the question that decides whether anyone signs up. -->
+  <div class="flow">
+    <video id="flow-video" class="flow-video" muted loop playsinline autoplay preload="metadata"
+           poster="/img/flow-poster.jpg" width="762" height="480"
+           aria-label="A screen recording of the three steps: an itemized bill and an insurance
+                       letter are added to the upload form, the pages that will be sent are shown
+                       for review, and the findings appear — $2,115.00 billed, $841.75 allowed by
+                       the plan, $186.35 owed, and $842.39 worth disputing.">
+      <source src="/img/flow.webm" type="video/webm">
+      <source src="/img/flow.mp4" type="video/mp4">
+    </video>
+
+    <!-- The steps stay real text rather than being burned into the frames: text in
+         a video is not selectable, indexable, translatable or readable by a screen
+         reader, and re-wording it would mean re-recording. data-at is the second
+         the step begins in the video. -->
+    <ol class="steps" id="flow-steps">
+      <li class="step" data-at="0">
+        <div class="n">1</div><h3>Upload bill + EOB</h3>
+        <p>Your itemized bill and the matching Explanation of Benefits. Digital PDFs from your
+        portals work best; photos and scans work too.</p>
+      </li>
+      <li class="step" data-at="7.1">
+        <div class="n">2</div><h3>Check we're sending the right pages</h3>
+        <p>You see the exact pages that will be sent, laid out large, before anything leaves your
+        browser. Check they're the right documents, the right way up, and that nothing is cut off
+        — if a page is unreadable here, the audit will be wrong too. The pages are then sent to
+        Google's Gemini models on Vertex AI to be read.</p>
+      </li>
+      <li class="step" data-at="11.7">
+        <div class="n">3</div><h3>Read your findings</h3>
+        <p>Duplicate charges, billing above the EOB allowed amount, cost-share math, and — if your
+        plan is on file — charges that contradict what it promised, each quoting the line it came
+        from. Or a clean result: your bill checks out.</p>
+      </li>
+    </ol>
   </div>
-  <!-- A real run, recorded end to end on the live site — not a mock-up and not
-       sped up beyond trimming dead air. It shows the part the sample audit cannot:
-       what the three steps feel like. lazy, because it is 477KB and sits below the
-       fold, and acquisition here is organic and mobile-heavy. -->
-  <figure style="margin:28px 0 0">
-    <img src="/img/flow.gif" width="900" height="597" loading="lazy" decoding="async"
-         style="width:100%;height:auto;border:1px solid var(--line);border-radius:14px;display:block"
-         alt="A screen recording of the three steps: an itemized bill and an insurance EOB are added to
-              the upload form, the pages that will be sent are shown for review, and the findings appear —
-              $2,115.00 billed, $841.75 allowed by the plan, $186.35 owed, and $822.15 worth disputing.">
-    <figcaption class="muted" style="margin-top:10px;font-size:13.5px">
-      A real run on a sample bill, start to finish. <a href="/app?sample=1">Open the result it produced →</a>
-    </figcaption>
-  </figure>
+
+  <p class="muted" style="margin-top:14px;font-size:13.5px">
+    A real run on a sample bill, start to finish. <a href="/app?sample=1">Open the result it produced →</a>
+  </p>
 </section>
 
 <section class="block" style="background:var(--card);border-top:1px solid var(--line);border-bottom:1px solid var(--line)">
@@ -223,5 +277,44 @@
   <p class="disclaimer">UseClaimRight is a self-help tool that analyzes the documents you provide. We are not a law firm, do not provide legal or medical advice, and do not represent you in disputes or appeals. Findings are generated by automated analysis and may contain errors — verify every quoted amount against your original documents before disputing a charge. Results vary and are not guaranteed.<br><br>Your documents are sent to Google's Gemini API to be analyzed, including the personal details printed on them. Google does not train its models on data sent through that API. See our <a href="/privacy">privacy policy</a>.</p>
 </footer>
 
+<script>
+// Keep the step highlight in step with the video.
+//
+// This is the whole reason the flow is a <video> and not a GIF: a GIF exposes no
+// playback state, so "which step are we on" could only be guessed with a timer,
+// and the guess drifts the moment the load is slow, the tab is backgrounded, or
+// the loop restarts. timeupdate is exact and self-correcting.
+(function () {
+  var v = document.getElementById("flow-video");
+  var list = document.getElementById("flow-steps");
+  if (!v || !list) return;
+  var steps = [].slice.call(list.querySelectorAll(".step"));
+  var marks = steps.map(function (s) { return parseFloat(s.dataset.at) || 0; });
+
+  // Someone who has asked for less motion gets a still frame and three equally
+  // legible steps. Highlighting means nothing if nothing is moving, and a
+  // looping video is exactly what that setting is asking us not to do.
+  var still = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (still) { v.autoplay = false; v.removeAttribute("autoplay"); v.pause(); return; }
+
+  var shown = -1;
+  function sync() {
+    var t = v.currentTime, i = 0;
+    for (var k = 0; k < marks.length; k++) if (t >= marks[k]) i = k;
+    if (i === shown) return;              // timeupdate fires ~4x a second
+    shown = i;
+    for (var j = 0; j < steps.length; j++) steps[j].classList.toggle("on", j === i);
+  }
+  v.addEventListener("timeupdate", sync);
+  v.addEventListener("seeked", sync);
+  sync();
+
+  // Autoplay is refused often enough — low power mode, some mobile browsers —
+  // that it cannot be assumed. If it never starts, light the first step so the
+  // panel does not sit there greyed out looking broken.
+  var kick = v.play && v.play();
+  if (kick && kick.catch) kick.catch(function () { steps[0].classList.add("on"); });
+})();
+</script>
 </body>
 </html>

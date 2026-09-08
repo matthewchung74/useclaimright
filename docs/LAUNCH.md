@@ -87,21 +87,29 @@ product; "audit" reads as accounting software.)*
 
 ---
 
-## The flow GIF
+## The flow video
 
-`web/img/flow.gif` — 900×597, 10.4s, 477KB, embedded in `#how` on the landing page.
+`web/img/flow.mp4` (484KB) + `flow.webm` (331KB) + `flow-poster.jpg` — 762×480, 19.2s, in `#how`
+beside the three steps, which highlight in time with it.
 
-**Recorded 2026-09-07 against the production build at commit `91f7dfa`**, driving a real audit
-on `fake-bill.pdf` + `fake-eob.pdf`. Not a mock-up: the run reproduced $2,115.00 / $841.75 /
-$186.35 / **$822.15**, the same figures E1 and S2 produced, which is now the third independent
-confirmation of them. The only editing is trimming dead air — 11.8s of real time to 10.4s — and
-a scale down from 1350px. No overlays, no watermark, no invented frames.
+**A video rather than a GIF, and the reason decides it.** A GIF exposes no playback state — no
+`currentTime`, no events, no way to know when it started or where it is in its loop — so the step
+highlighting could only be guessed at with a timer, and the guess drifts the moment a load is slow
+or a tab is backgrounded. `timeupdate` is exact and self-correcting. It is also about five times
+smaller than the same footage as a GIF, which matters where acquisition is organic and mobile.
 
-**This is the most drift-prone artifact in the repo**, which is why it is recorded here rather
-than only in the commit. Nothing fails when the UI moves on; a GIF is a frozen claim about a
-moving product, and this project's recurring bug is exactly that. Re-record it when the upload
-form, the review screen or the report visibly changes — and if you find yourself reading this
-note long after that has happened, the GIF is already lying.
+**Recorded 2026-09-08 against production**, driving a real audit on `sample-bill.pdf` +
+`sample-eob.pdf` with the Acme Silver PPO plan on file. The run produced $2,115.00 / $841.75 /
+$186.35 / **$842.39**, and `web/sample-audit.json` is that same audit — so the video and
+`/app?sample=1` end on identical numbers rather than two versions of the truth. Editing is limited
+to trimming dead air (82s to 19.2s, including 40s of spinner) and cutting two macOS file-picker
+windows that showed the recorder's home directory. No overlays, no watermark, no invented frames;
+the absence of the picker is verified by a luminance scan of the output rather than by eye.
+
+**Still the most drift-prone artifact in the repo.** Nothing fails when the UI moves on. Re-record
+when the upload form, the review screen or the report visibly changes — and if you are reading this
+note long after that happened, the video is already lying. The step timings in `index.html`
+(`data-at` on each `.step`) are cut points in this specific file and must be re-derived with it.
 
 ## Why this framing
 

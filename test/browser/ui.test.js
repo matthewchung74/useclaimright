@@ -352,10 +352,11 @@ test("sample: /app?sample=1 renders a real report with no sign-in and no model c
       "the letter and new-audit buttons act on an audit the sample does not have");
     // The figures a real run produced. If these drift, the fixture was edited by
     // hand — which is the one thing its own _source note forbids.
-    for (const want of ["$2,115.00", "$841.75", "$186.35", "$822.15"]) {
+    for (const want of ["$2,115.00", "$841.75", "$186.35", "$842.39"]) {
       assert.ok(state.totals.some((t) => t.includes(want)), `totals missing ${want}: ${state.totals.join(" | ")}`);
     }
-    assert.equal(state.groups.length, 3, `expected 3 finding groups, got: ${state.groups.join(", ")}`);
+    // Four groups, six findings: the three coinsurance mismatches share one heading.
+    assert.equal(state.groups.length, 4, `expected 4 finding groups, got: ${state.groups.join(", ")}`);
     assert.ok(state.evidence >= 1, "at least one finding must carry an openable Evidence block — it is the proof");
     assert.deepEqual(calls, [], `the sample must cost nothing, but called: ${calls.join(", ")}`);
   } finally {

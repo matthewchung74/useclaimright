@@ -1,30 +1,30 @@
 {
-  "_source": "Captured 2026-09-07 from a real audit on production: test-fixtures/fake-bill.pdf + fake-eob.pdf (TESTING.md plan E1), run against gemini-3.6-flash with no plan on file. The bill and the patient are synthetic — Jane Q. Testpatient at St. Verification General Hospital — which is why this can be published. Only the three fields renderReport() reads are kept; the stored audit's bill/eob document text, patientName, statementId, tokens and timestamps are deliberately absent. Do not hand-edit the figures: their value is that a real run produced them.",
+  "_source": "Captured 2026-09-08 from a real audit on production, and the same run the flow video on the landing page shows — the numbers here are the numbers it ends on. sample-bill.pdf + sample-eob.pdf (TESTING.md plan E1) against gemini-3.6-flash WITH the Acme Silver PPO plan on file, which is why three coinsurance_mismatch findings quote the SBC. The bill and the patient are synthetic — Jane Q. Testpatient at St. Verification General Hospital — which is why this can be published. Only the three fields renderReport() reads are kept; the stored audit's bill/eob document text, patientName, statementId, tokens and timestamps are deliberately absent. Do not hand-edit the figures: their value is that a real run produced them.",
   "totals": {
     "billed": 2115,
     "eobAllowed": 841.75,
     "patientResponsibility": 186.35,
-    "totalAtStake": 822.15
+    "totalAtStake": 842.39
   },
   "findings": [
     {
       "type": "duplicate_charge",
+      "lineRef": "Line 2",
+      "description": "Comprehensive metabolic panel (CPT 80053) is billed twice on the itemized statement for the same date of service, but only one unit was processed on the EOB.",
       "amountAtStake": 145.5,
       "confidence": "high",
-      "lineRef": "1, 2",
-      "description": "Code 80053 (Comprehensive metabolic panel) is billed twice on the itemized bill for $145.50 each on 06/12/2026, but only one unit was submitted to or processed on the EOB.",
       "evidence": {
-        "billQuote": "1 80053 Comprehensive metabolic panel 1 $145.50\n2 80053 Comprehensive metabolic panel 1 $145.50",
+        "billQuote": "2 80053 Comprehensive metabolic panel 1 $145.50",
         "eobQuote": "80053 Comprehensive metabolic panel $145.50 $41.20 $32.96 $8.24",
         "sbcQuote": ""
       }
     },
     {
       "type": "billed_vs_allowed_mismatch",
+      "lineRef": "PATIENT BALANCE DUE",
+      "description": "The provider statement shows a balance due of $845.00, which exceeds the EOB total member responsibility of $186.35 by $658.65.",
       "amountAtStake": 658.65,
       "confidence": "high",
-      "lineRef": "bill summary",
-      "description": "The provider billed the patient $845.00, which exceeds the EOB determined patient responsibility of $186.35.",
       "evidence": {
         "billQuote": "PATIENT BALANCE DUE: $845.00 — payable within 30 days",
         "eobQuote": "CLAIM TOTALS $1,969.50 $841.75 $673.40 $186.35",
@@ -33,14 +33,50 @@
     },
     {
       "type": "cost_share_error",
+      "lineRef": "CLAIM TOTALS",
+      "description": "The individual line item patient responsibility amounts on the EOB sum to $168.35, but the EOB claim total states patient responsibility as $186.35, resulting in an arithmetic error of $18.00.",
       "amountAtStake": 18,
       "confidence": "high",
-      "lineRef": "EOB totals",
-      "description": "The EOB's per-line patient responsibility amounts sum to $168.35 ($8.24 + $4.55 + $124.00 + $27.70 + $3.86), but the EOB states the total patient responsibility as $186.35, an internal error of $18.00.",
       "evidence": {
-        "billQuote": "",
+        "billQuote": "PATIENT BALANCE DUE: $845.00 — payable within 30 days",
         "eobQuote": "80053 Comprehensive metabolic panel $145.50 $41.20 $32.96 $8.24\n85025 CBC with differential $89.00 $22.75 $18.20 $4.55\n99284 Emergency dept visit, level 4 $1,250.00 $620.00 $496.00 $124.00\n71046 Chest X-ray, 2 views $410.00 $138.50 $110.80 $27.70\nJ1200 Diphenhydramine inj., 50 mg $75.00 $19.30 $15.44 $3.86\nCLAIM TOTALS $1,969.50 $841.75 $673.40 $186.35",
         "sbcQuote": ""
+      }
+    },
+    {
+      "type": "coinsurance_mismatch",
+      "lineRef": "Line 5",
+      "description": "Diagnostic tests such as X-rays have a 10% coinsurance requirement under the plan after deductible, but the EOB charged 20% coinsurance ($27.70 patient responsibility on $138.50 allowed instead of $13.85).",
+      "amountAtStake": 13.85,
+      "confidence": "high",
+      "evidence": {
+        "billQuote": "5 71046 Chest X-ray, 2 views 1 $410.00",
+        "eobQuote": "71046 Chest X-ray, 2 views $410.00 $138.50 $110.80 $27.70",
+        "sbcQuote": "Row: Diagnostic test (x-ray, blood work) — 10% coinsurance after deductible"
+      }
+    },
+    {
+      "type": "coinsurance_mismatch",
+      "lineRef": "Line 3",
+      "description": "Diagnostic tests such as blood work have a 10% coinsurance requirement under the plan after deductible, but the EOB charged 20% coinsurance ($4.55 patient responsibility on $22.75 allowed instead of $2.28).",
+      "amountAtStake": 2.27,
+      "confidence": "high",
+      "evidence": {
+        "billQuote": "3 85025 Complete blood count (CBC) with differential 1 $89.00",
+        "eobQuote": "85025 CBC with differential $89.00 $22.75 $18.20 $4.55",
+        "sbcQuote": "Row: Diagnostic test (x-ray, blood work) — 10% coinsurance after deductible"
+      }
+    },
+    {
+      "type": "coinsurance_mismatch",
+      "lineRef": "Line 1",
+      "description": "Diagnostic tests such as blood work have a 10% coinsurance requirement under the plan after deductible, but the EOB charged 20% coinsurance ($8.24 patient responsibility on $41.20 allowed instead of $4.12).",
+      "amountAtStake": 4.12,
+      "confidence": "high",
+      "evidence": {
+        "billQuote": "1 80053 Comprehensive metabolic panel 1 $145.50",
+        "eobQuote": "80053 Comprehensive metabolic panel $145.50 $41.20 $32.96 $8.24",
+        "sbcQuote": "Row: Diagnostic test (x-ray, blood work) — 10% coinsurance after deductible"
       }
     }
   ],
