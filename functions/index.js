@@ -3,7 +3,7 @@ import { defineSecret } from "firebase-functions/params";
 import { initializeApp } from "firebase-admin/app";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import Ajv from "ajv";
-import { findingsSchema, computeAtStake, verifyEvidence } from "./schema.js";
+import { findingsSchema, computeAtStake, verifyEvidence, reconcileStatedAmounts } from "./schema.js";
 import { buildDisputeLetter } from "./letter.js";
 import Stripe from "stripe";
 import {
@@ -412,6 +412,16 @@ export const analyze = onCall(
       eob: !!(eobDoc.text.trim() || eobDoc.images.length),
       sbc: !!planDigest,
     };
+    // Before the evidence check, because a finding corrected here still has to
+    // survive it: an amount can be repaired, a fabricated quote cannot.
+    const reconciled = reconcileStatedAmounts(result);
+    result = reconciled.result;
+    if (reconciled.corrected.length) {
+      // Loud. This is the model contradicting its own stated arithmetic, and the
+      // gap lands in the headline figure — the one number a member acts on.
+      console.error("finding amount disagreed with its own description", { uid, model: MODEL_ID, corrected: reconciled.corrected });
+    }
+
     const verified = verifyEvidence(result, { bill: billSource, eob: eobSource, sbc: planDigest, supplied });
     result = verified.result;
     if (verified.unverifiable?.length) {

@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import Ajv from "ajv";
-import { findingsSchema, computeAtStake, verifyEvidence, linesIn } from "../schema.js";
+import { findingsSchema, computeAtStake, verifyEvidence, linesIn, statedDifference, reconcileStatedAmounts } from "../schema.js";
 
 const ajv = new Ajv({ allErrors: true });
 const validate = ajv.compile(findingsSchema);
@@ -322,4 +322,64 @@ test("verifyEvidence: a quote from a document that was never supplied is still d
   const v = verifyEvidence(result, { bill: "90837 $175.00", eob: "", sbc: "", supplied: { bill: true } });
   assert.equal(v.result.findings.length, 0, "no EOB was uploaded, so the quote is invented");
   assert.equal(v.dropped.length, 1);
+});
+
+// ---------------------------------------------------------------------------
+// statedDifference / reconcileStatedAmounts
+//
+// The live case, 2026-09-08: the model wrote the subtraction correctly in its
+// description and put a different number in amountAtStake, and the difference
+// reached the headline. These are the three phrasings observed across four runs
+// of the same two documents — the wording moves, the arithmetic does not.
+// ---------------------------------------------------------------------------
+test("statedDifference: derives the discrepancy the description states", () => {
+  const cases = [
+    // The failing run: description says 168.35 vs 186.35, field said 20.
+    "The sum of the per-line patient responsibility amounts on the EOB ($8.24 + $4.55 + $124.00 + $27.70 + $3.86 = $168.35) does not equal the stated claim total patient responsibility of $186.35.",
+    // Sum stated before the chain.
+    "The EOB's per-line patient responsibility amounts sum to $168.35 ($8.24 + $4.55 + $124.00 + $27.70 + $3.86), but the EOB states the total patient responsibility as $186.35, an internal error of $18.00.",
+    // Difference cited in the same sentence — must not be mistaken for the total.
+    "The sum of the EOB's per-line patient responsibility amounts ($8.24 + $4.55 + $124.00 + $27.70 + $3.86 = $168.35) does not equal the stated total patient responsibility of $186.35, overstating the patient's obligation by $18.00.",
+  ];
+  for (const d of cases) assert.equal(statedDifference(d), 18, `wrong difference for: ${d.slice(0, 60)}…`);
+});
+
+test("statedDifference: silent when there is no arithmetic to check", () => {
+  // No addition chain: nothing is being asserted that can be derived, and
+  // guessing from loose figures would invent a correction.
+  assert.equal(statedDifference("The provider billed $845.00, exceeding the allowed $186.35."), null);
+  assert.equal(statedDifference("Code 80053 is billed twice at $145.50 each."), null);
+  assert.equal(statedDifference(""), null);
+  assert.equal(statedDifference(undefined), null);
+});
+
+test("reconcileStatedAmounts: corrects the amount and re-derives the headline", () => {
+  const result = {
+    totals: { billed: 2115, totalAtStake: 824.15 },
+    findings: [
+      { type: "duplicate_charge", amountAtStake: 145.5, lineRef: "1, 2", description: "Code 80053 is billed twice at $145.50 each." },
+      { type: "billed_vs_allowed_mismatch", amountAtStake: 658.65, lineRef: "bill summary", description: "Balance due $845.00 exceeds $186.35." },
+      { type: "cost_share_error", amountAtStake: 20, lineRef: "EOB totals",
+        description: "The sum of the per-line patient responsibility amounts on the EOB ($8.24 + $4.55 + $124.00 + $27.70 + $3.86 = $168.35) does not equal the stated claim total patient responsibility of $186.35." },
+    ],
+  };
+  const { result: out, corrected } = reconcileStatedAmounts(result);
+  assert.deepEqual(corrected, [{ type: "cost_share_error", was: 20, now: 18 }]);
+  assert.equal(out.findings[2].amountAtStake, 18);
+  // The headline is re-derived, not patched: 145.50 + 658.65 + 18.00.
+  assert.equal(out.totals.totalAtStake, 822.15);
+  // The findings it had no business touching are untouched.
+  assert.equal(out.findings[0].amountAtStake, 145.5);
+  assert.equal(out.findings[1].amountAtStake, 658.65);
+});
+
+test("reconcileStatedAmounts: leaves a consistent finding exactly as it was", () => {
+  const result = {
+    totals: { billed: 2115, totalAtStake: 822.15 },
+    findings: [{ type: "cost_share_error", amountAtStake: 18, lineRef: "EOB totals",
+      description: "The sum ($8.24 + $4.55 + $124.00 + $27.70 + $3.86 = $168.35) does not equal the stated total of $186.35." }],
+  };
+  const { result: out, corrected } = reconcileStatedAmounts(result);
+  assert.deepEqual(corrected, []);
+  assert.equal(out, result, "an untouched result must be returned by identity, not rebuilt");
 });

@@ -75,6 +75,71 @@ export function computeAtStake(findings, billed) {
   return typeof billed === "number" && billed > 0 ? Math.min(total, billed) : total;
 }
 
+// A finding that spells out its own arithmetic can be held to it.
+//
+// `cost_share_error` always does: the model writes the addition — "$8.24 +
+// $4.55 + $124.00 + $27.70 + $3.86 = $168.35 … does not equal the stated total
+// patient responsibility of $186.35" — and then reports `amountAtStake` as a
+// separate field. On 2026-09-08 it wrote that sentence correctly and put
+// **$20.00** in the field, two dollars more than its own subtraction, and the
+// $2 went straight into the headline "worth disputing" figure ($824.15 for a
+// bill whose real answer was $822.15). Three earlier runs on the identical
+// documents said $18.00, so it is variance rather than a regression — which is
+// precisely why it needs a check and not a re-run.
+//
+// Inflating the headline is the worst direction for this error to go: it is the
+// number a member acts on, and too high means telling someone to dispute money
+// they actually owe.
+//
+// Same principle as computeAtStake and verifyEvidence, one level further in:
+// where the model asserts something we can derive, derive it.
+const round2 = (n) => Math.round(n * 100) / 100;
+const MONEY = /\$\s?([\d,]+\.\d{2})/g;
+const asMoney = (s) => Number(String(s).replace(/[$,\s]/g, ""));
+
+export function statedDifference(description) {
+  const text = String(description || "");
+  // An addition of two or more amounts. Without one there is no arithmetic
+  // claim here and nothing for this function to check.
+  const chain = text.match(/\$\s?[\d,]+\.\d{2}(?:\s*\+\s*\$\s?[\d,]+\.\d{2})+/);
+  if (!chain) return null;
+  const terms = chain[0].match(/[\d,]+\.\d{2}/g).map(asMoney);
+  const sum = round2(terms.reduce((a, b) => a + b, 0));
+  // Everything else quoted in the sentence: the sum restated, the claim total,
+  // and sometimes the difference itself. Drop the terms and the sum; of what
+  // remains the LARGEST is the total, because a difference cited beside it is
+  // smaller than it by construction.
+  const others = [...text.matchAll(MONEY)]
+    .map((m) => asMoney(m[1]))
+    .filter((n) => !terms.includes(n) && Math.abs(n - sum) > 0.005);
+  if (!others.length) return null;
+  return round2(Math.abs(Math.max(...others) - sum));
+}
+
+// Correct rather than drop. The finding is real — the EOB genuinely does not add
+// up — and deleting it would lose a true discrepancy over a arithmetic slip in
+// one field. The quoted evidence still has to survive verifyEvidence, so a
+// finding cannot be corrected into existence out of nothing.
+export function reconcileStatedAmounts(result) {
+  const corrected = [];
+  const findings = (result?.findings || []).map((f) => {
+    if (typeof f?.amountAtStake !== "number") return f;
+    const derived = statedDifference(f?.description);
+    if (derived === null || Math.abs(f.amountAtStake - derived) <= 0.005) return f;
+    corrected.push({ type: f.type, was: f.amountAtStake, now: derived });
+    return { ...f, amountAtStake: derived };
+  });
+  if (!corrected.length) return { result, corrected };
+  return {
+    result: {
+      ...result,
+      findings,
+      totals: { ...result.totals, totalAtStake: computeAtStake(findings, result.totals?.billed) },
+    },
+    corrected,
+  };
+}
+
 // Evidence, verified. The schema proves a quote is a STRING; it cannot prove the
 // string is in the document. That gap matters more than it looks: every finding
 // is rendered under its quote, and buildDisputeEmail puts those quotes in a
