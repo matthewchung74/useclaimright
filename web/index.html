@@ -189,7 +189,13 @@
                        letter are added to the upload form, the pages that will be sent are shown
                        for review, and the findings appear — $2,115.00 billed, $841.75 allowed by
                        the plan, $186.35 owed, and $842.39 worth disputing.">
-      <source src="/img/flow.webm" type="video/webm">
+      <!-- MP4 only, and MP4 FIRST is the point. A browser takes the first source it
+           says it can play, and iOS Safari claims WebM then renders it badly: on a
+           real iPhone (2026-09-08) the video froze on one frame while the step
+           highlight stayed on 1, because WebM was listed first. H.264 has hardware
+           decode on every phone. The 153KB WebM saved was never worth a format the
+           most important mobile platform mishandles — and with MP4 first, nothing
+           would ever have reached the WebM anyway. -->
       <source src="/img/flow.mp4" type="video/mp4">
     </video>
 
