@@ -28,7 +28,10 @@
   .btn.lg{padding:16px 30px;font-size:17px}
 
   /* Hero */
-  .hero{padding:76px 0 60px;text-align:center}
+  /* Longhand for the same reason section.block uses it: the shorthand zeroes
+     the side padding .wrap supplies, and .hero is declared after .wrap at equal
+     specificity, so it wins on source order. */
+  .hero{padding-top:76px;padding-bottom:60px;text-align:center}
   .eyebrow{display:inline-block;background:var(--accent);color:var(--brand-dark);font-weight:700;font-size:13px;
     padding:6px 14px;border-radius:30px;margin-bottom:22px;letter-spacing:.2px}
   h1{font-size:47px;line-height:1.08;letter-spacing:-1.2px;max-width:800px;margin:0 auto 20px;font-weight:800}
@@ -43,9 +46,17 @@
   .proof b{color:#fff}
 
   /* Sections */
-  section.block{padding:64px 0}
+  /* Longhand, deliberately. `padding:64px 0` is element+class (0,1,1) and beat
+     `.wrap {padding:0 24px}` (0,1,0), so every <section class="block wrap"> lost
+     its side padding and ran edge to edge on anything under 1040px. Invisible on
+     a desktop, where max-width supplies the margin instead. */
+  section.block{padding-top:64px;padding-bottom:64px}
   h2{font-size:31px;letter-spacing:-.6px;text-align:center;margin-bottom:12px;font-weight:800}
   .lead{text-align:center;color:var(--ink-soft);max-width:680px;margin:0 auto 44px;font-size:17px}
+  /* h2 and .lead centre themselves; nothing else in a block section does, which
+     left the sample CTA and its footnote hanging off to the left under a centred
+     heading while the hero button above them was centred. */
+  .centred{text-align:center}
 
   /* Steps */
   /* Centred, not top-aligned: the steps column is nearly twice the height of
@@ -157,20 +168,6 @@
 <!-- Before "How it works" on purpose: that section describes the process, this
      shows the outcome, and people decide on the outcome. Text and a link only —
      the report is NOT rebuilt here. /app?sample=1 renders the real one. -->
-<section class="block wrap" id="sample">
-  <h2>See a real result first</h2>
-  <p class="lead">
-    A $2,115 emergency-room bill, checked against the insurer's own statement and the plan it was
-    written under: <b>$842.39 worth disputing</b> — a lab test billed twice, $658.65 charged above
-    what the plan allowed, an $18.00 error in the insurer's own arithmetic, and three tests charged
-    at 20% coinsurance where the plan document says 10%. Every figure shows the line it came from.
-  </p>
-  <a href="/app?sample=1" class="btn">See the sample audit →</a>
-  <p class="muted" style="margin-top:12px;font-size:13.5px">
-    No sign-up, and the bill is a sample — it's there so you can see what the output looks like.
-  </p>
-</section>
-
 <section class="block wrap" id="how">
   <h2>How it works</h2>
   <p class="lead">Three steps, a few minutes, nothing to install.</p>
@@ -217,7 +214,8 @@
         <div class="n">3</div><h3>Read your findings</h3>
         <p>Duplicate charges, billing above the EOB allowed amount, cost-share math, and — if your
         plan is on file — charges that contradict what it promised, each quoting the line it came
-        from. Or a clean result: your bill checks out.</p>
+        from. Audit more than one bill and it also catches the same visit charged on two different
+        statements, which no single bill can show you. Or a clean result: your bill checks out.</p>
       </li>
     </ol>
   </div>
@@ -227,19 +225,20 @@
   </p>
 </section>
 
-<section class="block" style="background:var(--card);border-top:1px solid var(--line);border-bottom:1px solid var(--line)">
-  <div class="wrap">
-    <h2>Why not just use ChatGPT?</h2>
-    <p class="lead">Chatbots are great — but they can't see your bills. Even ChatGPT's new health integrations connect to <i>medical records</i>, not billing systems. And a chatbot will happily quote a line that isn't in your bill — we check every quoted line against the document it came from, and drop the ones that aren't there.</p>
-    <div class="compare">
-      <div class="row head"><div>&nbsp;</div><div>ChatGPT</div><div class="us">UseClaimRight</div></div>
-      <div class="row"><div>Answers questions about text you paste in</div><div class="yes">✓</div><div class="us"><span class="yes">✓</span></div></div>
-      <div class="row"><div>Connects to your bills (health-record integrations don't include billing)</div><div class="no">—</div><div class="us"><span class="yes">✓</span></div></div>
-      <div class="row"><div>Cross-checks the bill against your EOB, line by line</div><div class="no">—</div><div class="us"><span class="yes">✓</span></div></div>
-      <div class="row"><div>Catches the same charge billed twice across two different statements</div><div class="no">—</div><div class="us"><span class="yes">✓</span></div></div>
-      <div class="row"><div>Backs every finding with a verbatim quote, and verifies the quote is really there</div><div class="no">—</div><div class="us"><span class="yes">✓</span></div></div>
-      <div class="row"><div>Saves your audit history — deletable anytime</div><div class="no">—</div><div class="us"><span class="yes">✓</span></div></div>
-    </div>
+<section class="block wrap" id="sample">
+  <h2>Now look at one properly</h2>
+  <p class="lead">
+    That run, stopped and laid out so you can read it. A $2,115 emergency-room bill checked against
+    the insurer's own statement and the plan it was written under: <b>$842.39 worth disputing</b> —
+    a lab test billed twice, $658.65 charged above what the plan allowed, an $18.00 error in the
+    insurer's own arithmetic, and three tests charged at 20% coinsurance where the plan document
+    says 10%. Open any finding and it shows you the line it came from.
+  </p>
+  <div class="centred">
+    <a href="/app?sample=1" class="btn lg">See the sample audit →</a>
+    <p class="muted" style="margin-top:14px;font-size:13.5px">
+      No sign-up, and the bill is a sample — it's there so you can see what the output looks like.
+    </p>
   </div>
 </section>
 

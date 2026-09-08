@@ -363,3 +363,40 @@ test("sample: /app?sample=1 renders a real report with no sign-in and no model c
     await p.close();
   }
 });
+
+// ---------------------------------------------------------------------------
+// The landing page's section padding. `section.block { padding: 64px 0 }` is
+// element+class (0,1,1) and beat `.wrap { padding: 0 24px }` (0,1,0), so every
+// <section class="block wrap"> silently lost its side padding and ran edge to
+// edge below 1040px. Invisible on a desktop, because max-width supplies the
+// margin there instead — which is exactly why it survived until someone looked
+// at the page on a phone.
+// ---------------------------------------------------------------------------
+test("landing: no section text touches the screen edge on a phone", async () => {
+  const p = await browser.newPage({ viewport: { width: 375, height: 812 } });
+  try {
+    await p.goto(`${origin}/`, { waitUntil: "domcontentloaded" });
+    const tight = await p.evaluate(() => {
+      const bad = [];
+      for (const el of document.querySelectorAll("h1,h2,h3,p,li,a.btn")) {
+        const r = el.getBoundingClientRect();
+        if (!r.width || !r.height) continue;
+        // The CONTENT edge, not the border box. An element that supplies its own
+        // inset — the footer disclaimer carries `padding: 0 24px` — sits at x=0
+        // quite correctly, and measuring the box alone flags it as broken.
+        const cs = getComputedStyle(el);
+        const left = r.left + parseFloat(cs.paddingLeft);
+        const right = r.right - parseFloat(cs.paddingRight);
+        // 12px is generous — the design uses 24px — but under it is a layout
+        // fault rather than a matter of taste.
+        if (left < 12 || right > window.innerWidth - 12) {
+          bad.push(`${el.tagName.toLowerCase()}${el.id ? "#" + el.id : ""} "${(el.textContent || "").trim().slice(0, 30)}" left=${Math.round(left)}`);
+        }
+      }
+      return [...new Set(bad)].slice(0, 8);
+    });
+    assert.deepEqual(tight, [], `content reaching the viewport edge at 375px:\n${tight.join("\n")}`);
+  } finally {
+    await p.close();
+  }
+});
