@@ -28,73 +28,30 @@ product; "audit" reads as accounting software.)*
 
 **Body:**
 
-> Roughly 8 in 10 US medical bills are estimated to contain errors, and the document that would
-> prove it — the Explanation of Benefits your insurer sends — arrives separately, weeks apart,
-> in a format designed to be filed rather than read. Nobody puts them side by side.
+> My hospital bill and my insurer's EOB turn up weeks apart, in different envelopes, and nobody ever puts them next to each other. That gap is where billing errors live.
 >
-> This puts them side by side. You upload the itemized bill and the EOB, and it reports what
-> disagrees: a line billed twice, a charge above the amount your plan allowed, a service on the
-> bill that the EOB never adjudicated, or the EOB's own arithmetic not adding up. If you also
-> upload your Summary of Benefits once, it checks the bill against what your plan promised —
-> the $60 copay billed as $175 case.
+> So: upload the itemized bill and the EOB, and it tells you what disagrees — a line billed twice, a charge above what your plan allowed, something on the bill the EOB never processed, or the EOB's own numbers not adding up. Add your Summary of Benefits once and it checks the bill against what the plan actually promised too.
 >
-> Worth addressing, since it landed the week before this post: OpenAI connected ChatGPT to Epic.
-> It reads the clinical chart — notes, labs, medications — read-only, and mostly for clinicians. It
-> does not reach billing, and that is not an oversight waiting to be patched. A billing error does
-> not exist inside either document; it exists in the difference between two documents held by two
-> different organisations. Your provider issues the itemized statement. Your insurer issues the EOB,
-> weeks later, separately. The chart has neither, and even the itemized bill usually lives in a
-> billing module rather than the clinical record. The closest thing in that announcement is a CMS
-> Coverage lookup, which tells you what Medicare covers in general — not what your hospital charged
-> you in particular.
+> Every finding quotes the line it came from. That's enforced, not encouraged: if the quote isn't verbatim in your document, the finding is dropped before you see it. Doesn't make the model right, but you can check any claim in about two seconds.
 >
-> Every finding quotes the line it came from, labelled BILL, EOB or SBC. That is enforced
-> rather than encouraged: a finding whose quoted evidence does not appear verbatim in the
-> source document is dropped before you see it. It is not a complete defence against a model
-> being wrong, but it does mean you can check any claim in about two seconds, and that a
-> confident-sounding invention with no source behind it never reaches the page.
+> Two things surprised me building it.
 >
-> Some things I found building it that I did not expect:
+> Reading the PDF text layer was making it worse. Everything's rendered to page images now and the model reads those. The same bill as a digital PDF and as a 110 DPI scan comes back identical to the cent — and table columns survive, which pdftotext reliably destroys.
 >
-> **Extracting text in the browser was making it worse.** It originally parsed the PDF text
-> layer and sent that. Now every document — PDF, phone photo, scan — is rendered to page images
-> and the model reads those. I expected to pay for it in accuracy and didn't: the same bill as
-> a digital PDF and as a 110 DPI PNG returns identical figures, to the cent. It also deleted a
-> whole category of bug, because column association in a table does not survive `pdftotext`.
+> The hard part isn't finding errors, it's not inventing them. Pair a bill with the wrong family member's EOB and every line comes back "missing from the EOB" — a perfectly correct bill that looks like fraud. Same clinic, same day, same code, and only the patient name on the claim line tells them apart. The subscriber block names the same person on all of them, so a document-level name check sails right past it. It compares claim-level names now and just says "This EOB is for someone else."
 >
-> **The hard part is not finding errors, it's not inventing them.** Pairing a bill with the
-> wrong EOB makes a perfectly correct bill look like fraud — every line comes back "missing
-> from the EOB." The worst version is a household: two family members, same clinic, same day,
-> same procedure code, and the only thing separating the statements is the patient name on the
-> claim line. The subscriber block names the same person on all of them, so a document-level
-> name check passes and you confidently tell someone to dispute a charge they owe. It now
-> compares claim-level names and says so plainly: "This EOB is for someone else."
+> On ChatGPT + Epic, since that landed last week: it reads the clinical chart. A billing error isn't in the chart — it's in the gap between your provider's bill and your insurer's EOB, and neither party holds both.
 >
-> **Plan limits are per member, not per household.** "6 outpatient mental health visits per
-> year" pooled across a family of two with 3 visits each reads as "limit reached — further
-> visits may be your responsibility." That is the worst thing the tool can say, because it
-> costs care rather than money.
+> Free, 10 a day, because each one is a real model call I pay for. There's a sample audit you can read without signing up.
 >
-> Stack: static frontend, Firebase, Gemini on Vertex AI. Findings are structured output against
-> a JSON schema, and the totals de-overlap so a finding contained inside a larger one is not
-> counted twice — an early version reported more money at stake than the bill was for.
+> Your documents go to Gemini on Vertex AI with your name still on them. No on-device redaction — I tried, the model I used silently passed everything through, and a privacy feature that doesn't work is worse than none. That's said on the upload screen before anything is sent.
 >
-> **What it doesn't do:** it is not a law firm and does not represent you. It won't contact your
-> provider or insurer and it won't file anything on your behalf — it shows you the findings and the
-> lines they came from, and what you do with those is yours. And your bill and EOB go to
-> Google's Gemini models on Vertex AI with your name and everything else printed on them
-> intact. There is no on-device redaction; I tried, the model I used for it was broken in a way
-> that silently passed everything through, and shipping a privacy feature that doesn't work is
-> worse than not having one. That tradeoff is stated on the upload screen before anything is
-> sent, and you can delete any audit or the whole account at any time.
->
-> Free, 10 audits a day, because each one is a real model call I pay for. There is a sample audit
-> you can read without an account — a real run on a synthetic bill, findings and quoted evidence
-> and all. Running your own needs one, because the results are stored under your uid.
->
-> I would especially like to hear from anyone who runs it on a real bill and gets a wrong
-> answer. False positives are the failure that matters here — telling someone to dispute
-> something they owe is worse than missing an error — and I have no way to measure them yet.
+> I'd most like to hear from anyone who runs a real bill through it and gets a wrong answer. False positives are the failure that matters here — telling someone to dispute something they do owe is worse than missing one — and I've got no way to measure them yet.
+
+*Shortened 2026-09-08 from ~4,850 chars to ~2,400, and loosened. The long version
+explained; this one just says the thing. Cut: two of the three build notes, the stack
+paragraph, and most of the hedging. The Epic point went from a paragraph to two lines —
+it earns a mention, not an essay, and at that length it cannot read as picking a fight.*
 
 ---
 
