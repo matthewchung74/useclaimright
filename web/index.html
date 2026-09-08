@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preload" as="image" href="/img/flow-poster.jpg">
 <title>UseClaimRight — Find out if your medical bill is wrong, in minutes. Free.</title>
 <style>
   :root{
@@ -63,8 +64,17 @@
      the video, and starting both at the top left the video stranded above a
      block of empty space. */
   .flow{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:26px;align-items:center}
-  .flow-video{width:100%;height:auto;border:1px solid var(--line);border-radius:14px;display:block;
-    background:var(--card);box-shadow:0 2px 10px rgba(18,50,50,.06)}
+  .flow-frame{position:relative;aspect-ratio:762/480;border:1px solid var(--line);border-radius:14px;
+    overflow:hidden;background:var(--card);box-shadow:0 2px 10px rgba(18,50,50,.06)}
+  .flow-video{width:100%;height:100%;object-fit:cover;display:block;border:0}
+  .flow-loading{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;
+    justify-content:center;gap:12px;color:var(--ink-soft);font-size:14px;background:var(--card);
+    transition:opacity .3s ease-out}
+  .flow-loading.done{opacity:0;pointer-events:none}
+  .spin{width:26px;height:26px;border-radius:50%;border:3px solid var(--line);
+    border-top-color:var(--brand);animation:spin .8s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  @media(prefers-reduced-motion:reduce){.spin{animation:none;border-top-color:var(--line)}}
   .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
   /* Inside .flow the three steps stack beside the video instead of sitting in a row. */
   .flow .steps{grid-template-columns:1fr;gap:12px;list-style:none;margin:0;padding:0}
@@ -183,7 +193,13 @@
        three steps feel like — while the sample shows whether the findings are any
        good, which is the question that decides whether anyone signs up. -->
   <div class="flow">
-    <video id="flow-video" class="flow-video" muted loop playsinline autoplay preload="metadata"
+    <div class="flow-frame">
+      <!-- The box is reserved by aspect-ratio, so nothing shifts; this fills it while
+           the file arrives. On a phone on a slow connection that was ten seconds of
+           blank rectangle — the layout was correct and the page still looked broken,
+           which is the difference between no layout shift and no perceived wait. -->
+      <div class="flow-loading" id="flow-loading" aria-hidden="true"><span class="spin"></span>Loading the walkthrough…</div>
+      <video id="flow-video" class="flow-video" muted loop playsinline autoplay preload="metadata"
            poster="/img/flow-poster.jpg" width="762" height="480"
            aria-label="A screen recording of the three steps: an itemized bill and an insurance
                        letter are added to the upload form, the pages that will be sent are shown
@@ -197,7 +213,8 @@
            most important mobile platform mishandles — and with MP4 first, nothing
            would ever have reached the WebM anyway. -->
       <source src="/img/flow.mp4" type="video/mp4">
-    </video>
+      </video>
+    </div>
 
     <!-- The steps stay real text rather than being burned into the frames: text in
          a video is not selectable, indexable, translatable or readable by a screen
@@ -299,8 +316,18 @@
   // Someone who has asked for less motion gets a still frame and three equally
   // legible steps. Highlighting means nothing if nothing is moving, and a
   // looping video is exactly what that setting is asking us not to do.
+  // Clear the loading state the moment there is a frame to show — loadeddata, not
+  // canplaythrough, because the first frame is what stops it looking broken and
+  // waiting for the whole file would keep the spinner up long after the picture
+  // arrived. Belt and braces: also clear on error, so a video that fails to load
+  // leaves the poster rather than a spinner that never stops.
+  var loading = document.getElementById("flow-loading");
+  function loaded() { if (loading) loading.classList.add("done"); }
+  if (v.readyState >= 2) loaded();
+  ["loadeddata", "canplay", "playing", "error"].forEach(function (e) { v.addEventListener(e, loaded); });
+
   var still = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  if (still) { v.autoplay = false; v.removeAttribute("autoplay"); v.pause(); return; }
+  if (still) { v.autoplay = false; v.removeAttribute("autoplay"); v.pause(); v.load(); return; }
 
   var shown = -1;
   function sync() {
