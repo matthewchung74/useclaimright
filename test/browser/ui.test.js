@@ -286,6 +286,24 @@ test("phone: a family bill row fits, and the finding keeps full width", async ()
 // copy of the card here would keep passing after the real one changed.
 // ---------------------------------------------------------------------------
 
+// The verify screen is a hard gate — app.js turns away any unverified account —
+// and the mail lands in Gmail's spam folder rather than the inbox. So the one
+// sentence telling someone where to look has to be on screen when they arrive,
+// not behind the "Send it again" button that only a persistent person presses.
+test("verify screen warns about spam without needing a resend first", async () => {
+  await showSection("verify");
+  const m = await page.evaluate(() => {
+    const visible = [...document.querySelectorAll("#verify p, #verify div")]
+      .filter((el) => el.offsetParent !== null);
+    return {
+      text: visible.map((el) => el.textContent).join(" ").toLowerCase(),
+      resendStillHidden: document.getElementById("verify-sent").hidden,
+    };
+  });
+  assert.ok(m.resendStillHidden, "the post-resend line must not be what satisfies this test");
+  assert.match(m.text, /spam/, "someone who checks an empty inbox must be told where else to look");
+});
+
 test("phone: the deductible card names its scope and keeps the 'to go' inside the card", async () => {
   const src = await readFile(join(WEB, "js", "app.js"), "utf8");
   const between = (a, b) => {

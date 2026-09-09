@@ -440,6 +440,17 @@
         We sent a confirmation link to <b id="verify-email"></b>.
         Open it, then come back to this page.
       </p>
+      <!-- Gmail files these under Spam rather than dropping them (confirmed
+           2026-09-08 against a fresh account: delivered, classified, findable).
+           The spam hint used to live on #verify-sent below, which stays hidden
+           until someone presses "Send it again" — so the person who checks an
+           empty inbox and gives up never saw the one sentence that would have
+           rescued them. Verification is a hard gate, so that person loses the
+           product entirely. Say it before they go looking. -->
+      <p class="muted" style="margin-top:10px;font-size:13px">
+        Not there within a minute? Check your spam folder — searching
+        <b>useclaimright</b> will find it.
+      </p>
       <button id="verify-continue" class="btn" style="width:100%">I've confirmed it — continue</button>
       <button id="verify-resend" class="btn ghost" style="width:100%;margin-top:10px">Send it again</button>
       <p id="verify-sent" class="muted" hidden>Sent — check your inbox, and your spam folder.</p>
