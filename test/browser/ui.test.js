@@ -273,6 +273,60 @@ test("phone: a family bill row fits, and the finding keeps full width", async ()
 });
 
 // ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// CONTAIN — nothing escapes the box that draws a border around it
+//
+// The float that hung below the deductible card passed every check in this file:
+// the page did not scroll sideways, tap targets were fine, no text touched the
+// screen edge. What it broke was containment, and nothing looked for that. A
+// floated child adds no height to its parent, so the card stops short and the
+// text sits outside its own frame — visible on a phone, invisible to a suite
+// that only measures the viewport.
+// ---------------------------------------------------------------------------
+
+const BORDERED = ".card, .usage-card, .banner, .offer, .error, details.explain, .bill-row";
+
+test("phone: no element escapes the bordered box it lives in", async () => {
+  const offenders = [];
+  for (const id of await sectionIds()) {
+    await showSection(id);
+    const bad = await page.evaluate((sel) => {
+      // A CLOSED <details> still lays out its contents in some engines, so its
+      // whole subtree reads as escaped. Only measure what is actually rendered.
+      const shown = (el) => !(el.closest("details:not([open])") && !el.closest("summary"))
+        && (typeof el.checkVisibility === "function" ? el.checkVisibility() : el.offsetParent !== null);
+      const out = [];
+      for (const box of document.querySelectorAll(sel)) {
+        if (!shown(box)) continue;
+        if (getComputedStyle(box).overflow !== "visible") continue; // clipped deliberately
+        const b = box.getBoundingClientRect();
+        if (b.height === 0) continue;
+        // Step 2 of the upload form is a grid-row reveal collapsed to 0fr, and
+        // its wrapper clips. Its contents still report rects far below the card,
+        // which is not an escape — the clip is what the reader actually sees.
+        const clipped = (el) => {
+          for (let a = el.parentElement; a && a !== box; a = a.parentElement) {
+            if (getComputedStyle(a).overflow !== "visible") return true;
+          }
+          return false;
+        };
+        for (const child of box.querySelectorAll("*")) {
+          if (!shown(child) || clipped(child)) continue;
+          const c = child.getBoundingClientRect();
+          if (!c.width || !c.height) continue;
+          if (c.bottom - b.bottom > 1 || c.right - b.right > 1) {
+            out.push(`${child.tagName.toLowerCase()}${child.id ? "#" + child.id : ""} escapes ` +
+              `${box.className.split(" ")[0]} by ${(c.bottom - b.bottom).toFixed(1)}px below`);
+          }
+        }
+      }
+      return out;
+    }, BORDERED);
+    for (const b of bad) offenders.push(`${id}: ${b}`);
+  }
+  assert.deepEqual(offenders, [], `content outside its own card:\n${offenders.join("\n")}`);
+});
+
 // FAM2 — the deductible card, the one screen only a signed-in household sees
 //
 // renderUsage() runs behind auth, so nothing here could reach the card and the
