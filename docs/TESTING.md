@@ -36,8 +36,6 @@ the file and easy to miss.
 | E1 | 2026-09-07 | agent | $2,115.00 / $841.75 / $186.35 / **$822.15** — exact. `charity_care_eligible` did not fire (advisory, excluded). 145.50+658.65+18.00 = 822.15 exactly |
 | E1b | 2026-09-07 | agent | ✓ all 5 steps. Reveal really animates (probe caught 820px between 777 and 1364); step 2 stays open when the last bill is removed |
 | M1 | 2026-09-07 | agent | ✓ plan on file, both trackers auto-created 0/20 and 0/6, deductible target from SBC |
-| M2 | 2026-09-07 | agent | $210.00 / $95.00 / $95.00 / **$150.00** — exact; SBC+BILL mono quotes, highlighter on "$35.00 you may not owe", tracker 1 of 20 |
-| M3 | 2026-09-07 | agent | $175.00 / $120.00 / $120.00 / **$55.00** — exact, zero plan-mismatch findings and no `cost_share_error` (the control) |
 | M4 | 2026-09-07 | agent | ✓ 2 audits, JUST AUDITED **$110.00**, both t-series, block stays pinned after opening one and returning |
 | M5 | 2026-09-07 | agent | $175.00 / $0.00 / $175.00 / **$175.00**, tracker 4 of 6. Nothing pre-selected with 4 saved EOBs; consolidated EOB saved once |
 | M6 | 2026-09-07 | agent | ✓ "This plan is already on file." — a MutationObserver confirmed "Reading your plan's terms…" never rendered |
@@ -48,7 +46,6 @@ the file and easy to miss.
 | FAM4 | 2026-09-09 | agent | ✓ guard fires: "This EOB is for someone else… bill is for **Matthew T. Testpatient**… statement covers **Sarah L. Testpatient**". Totals $85.00 / **$32.00** / $0.00 / $85.00 — the model read Sarah's allowed amount this time, so the finding was `billed_vs_allowed` not `not_in_eob`. The guard, which is what this plan tests, held |
 | IMG1 | 2026-09-09 | agent | ✓ HEIC refused with the Settings → Camera → Formats message, not the generic one; `02-rotated-90.png` accepted and rendered visibly sideways in the review pane, which is the point — you can see it is unreadable before spending an audit. 0 audits, backed out with Start over |
 | M7 | 2026-08-29 | agent | 3 audits · one-click tracker from an EOB remark, deductible $720.00 of $1,500.00 |
-| D1 | 2026-09-07 | agent | ✓ hero **$175.00** on the dashboard only, absent from both reports; 3 provider groups, casing merged into one |
 | E2 | 2026-09-07 | agent | $175.00 / $0.00 / $0.00 / **$0.00**, zero findings, no EOB-comparison types |
 | E3 | 2026-08-31 | agent | ✓ dialog counts the limits (5), SBC trackers removed with the plan, manual and remark ones kept, deductible falls back to the EOB |
 | E4 | 2026-09-07 | agent | ✓ "This doesn't look like a Summary of Benefits.", plan on file survived untouched |
@@ -59,16 +56,13 @@ the file and easy to miss.
 | R2 | 2026-08-31 | agent | ✓ routing, exits and labels. Step 1's true sign-out not run — re-auth needs a password |
 | F1 | 2026-08-31 | agent | ✓ bubble, categories, send, "Thanks — we read every note.", card self-closes. Field-level check needs the Firebase console |
 | A1 | — | — | **cannot be run by the agent** — creating an account and entering a password. Needs you |
-| FAM1 | 2026-09-07 | agent | ✓ 2 audits, **no** family duplicate hero (the only hero present is D1's genuine one), rows named Sarah and Matthew |
 | FAM2 | partial | agent | arithmetic covered by 4 new unit tests (family vs individual vs conflict). Browser step still blocked: needs the family EOB to be the newest accumulator |
 | FAM3 | 2026-09-07 | agent | ✓ covered by FAM1 step 1 — `matthew` and `family` stems disagree and still paired correctly (0 audits) |
-| FAM4 | 2026-09-07 | agent | ✓ "This EOB is for someone else. The bill is for Matthew T. Testpatient, but this statement covers Sarah L. Testpatient." |
 | FAM5 | 2026-09-07 | agent | ✓ badge **2/2** = highest member, not the household 3. "Matthew 2 of 2 · Sarah 1 of 2 … 3 across everyone" |
 | S2 | 2026-09-07 | agent | ✓ both documents as PNGs: $2,115.00 / $841.75 / $186.35 / **$822.15** — identical to E1's text PDFs, same three findings |
 | S3 | 2026-08-31 | agent | printed fields identical from a scan; **found** Replace discarding confirmed tracker codes → fixed |
 | S4 | 2026-09-07 | agent | ✓ 5 PNGs accepted, five pills, all render. Extracted across pages: deductible $500 + OOP $2,500 (p1), 60-visit caps and pediatric vision (p3). Older-plan guard fired first and asked before replacing |
 | S1 | 2026-09-07 | agent | ✓ covered by S2's image bill; the removed scan banner stayed removed, review explains pages |
-| IMG1 | 2026-08-29 | agent | 8 fixtures · HEIC refusal fixed, now covered by `test/browser` |
 | P1 | partial | agent | ✓ `cms-2025.pdf` — 5 pages, home health 60/yr, 13 cost shares. `cms-2019` and `cms-older` not run |
 | G1 | partial | agent | logic covered by 7 unit tests incl. the kill switch and reserve-before-call. Live flip needs the Firebase console — `meta/guard` denies client writes |
 | PAY1 | dormant | — | **Unrunnable since 2026-09-07.** Payments were turned off and the letter put behind a flag, so there is no purchase to make and no paywall to exercise. Keep the plan — it matters again if payments return — but it asserts a flow the product no longer has |

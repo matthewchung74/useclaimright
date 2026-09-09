@@ -1047,6 +1047,7 @@ $("confirm-review").onclick = async () => {
     const { data } = await analyzeFn(payload);
     lastAuditId = data.auditId || null;
     renderReport(data, { ocrLow, model: data.model, planApplied: data.planApplied, planReason: data.planReason,
+      noEob: !payload.eob,
       // .text, not the doc itself: payload.bill is {text, images}, and stringifying
       // that yields "[object Object]" — no dates, no codes, so documentsRelated
       // reported "can't judge" and the warning was silently suppressed on the one
@@ -1172,7 +1173,7 @@ const PLAN_TYPES = new Set(["copay_mismatch", "coinsurance_mismatch", "deductibl
 // were charged, what the insurer allowed, what the plan promised.
 const EVIDENCE_SOURCES = [["billQuote", "Bill"], ["eobQuote", "EOB"], ["sbcQuote", "SBC"]];
 
-function renderReport(data, { ocrLow, model, planApplied, planReason, pairUnrelated, wrongPerson } = {}) {
+function renderReport(data, { ocrLow, model, planApplied, planReason, pairUnrelated, wrongPerson, noEob } = {}) {
   const { findings = [], totals = {}, occurrenceTable = [] } = data;
   lastReport = { findings, totals, occurrenceTable };
   // Every report render goes through here — a fresh audit and one re-opened from
@@ -1267,7 +1268,17 @@ function renderReport(data, { ocrLow, model, planApplied, planReason, pairUnrela
               <p class="lineref">${escapeHtml(f.lineRef)}</p>
             </details>
           </div>`).join("")}`).join("")
-    : "<p>No discrepancies found. The bill and EOB appear consistent.</p>";
+    : noEob
+      // Someone who ticked "I don't have an EOB" was told "the bill and EOB
+      // appear consistent" — about a document they had just said they do not
+      // have, and about a comparison that never ran. A clean bill-only result
+      // is the one place the report is most likely to be over-read as "all
+      // checked, nothing wrong", when the strongest check is exactly the one
+      // that was skipped. Say which check is missing.
+      ? "<p>Nothing to dispute on the bill itself. We could not compare it against what your " +
+        "insurer allowed, because there is no EOB — that is the strongest check. Run this again " +
+        "when the EOB arrives.</p>"
+      : "<p>No discrepancies found. The bill and EOB appear consistent.</p>";
 
   $("report-occurrences").innerHTML = occurrenceTable.length
     ? `<tr><th>Code</th><th>Description</th><th>Count</th><th>Unit charges</th></tr>` +
@@ -1552,6 +1563,10 @@ async function openAudit(id) {
     planApplied: data.planApplied, planReason: data.planReason,
     pairUnrelated: unrelatedPair(auditText(data, 'bill'), auditText(data, 'eob')),
     wrongPerson: wrongPatient(data.patientName, data.eobPatients),
+    // The no-EOB choice is not stored on the audit, so a re-opened report has to
+    // infer it the same way it infers everything else about the pair: from what
+    // the model transcribed. No EOB text means there was no EOB.
+    noEob: !auditText(data, 'eob'),
   });
   renderReportUsage(data);
   show("report");
