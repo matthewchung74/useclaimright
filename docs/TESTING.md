@@ -41,6 +41,9 @@ the file and easy to miss.
 | M4 | 2026-09-07 | agent | ✓ 2 audits, JUST AUDITED **$110.00**, both t-series, block stays pinned after opening one and returning |
 | M5 | 2026-09-07 | agent | $175.00 / $0.00 / $175.00 / **$175.00**, tracker 4 of 6. Nothing pre-selected with 4 saved EOBs; consolidated EOB saved once |
 | M6 | 2026-09-07 | agent | ✓ "This plan is already on file." — a MutationObserver confirmed "Reading your plan's terms…" never rendered |
+| D1 | 2026-09-09 | agent | ✓ steps 1-4 re-verified. Hero $175.00 dashboard-only; the report it links to carries $175/$120/$120/**$55** and no duplicate finding. Coverage now reads "**Individual** target from your plan (SBC)" on both cards |
+| M2 | 2026-09-09 | agent | ✓ $210.00 / $95.00 / $95.00 / **$150.00** — $115 high + $35 medium, 115+35=150 exact, verbatim SBC and BILL quotes, highlighter on "$35.00 you may not owe", tracker 1 of 20. Letter path now shows the coming-soon panel |
+| M3 | 2026-09-09 | agent | ✓ $175.00 / $120.00 / $120.00 / **$55.00**, **zero plan-mismatch findings**, tracker "visit 1 of 6". Deductible read $270.00 of $1,500.00 rather than the documented $120.00 — the account already held newer EOBs, and latestAccumulators correctly takes the newest snapshot |
 | M7 | 2026-08-29 | agent | 3 audits · one-click tracker from an EOB remark, deductible $720.00 of $1,500.00 |
 | D1 | 2026-09-07 | agent | ✓ hero **$175.00** on the dashboard only, absent from both reports; 3 provider groups, casing merged into one |
 | E2 | 2026-09-07 | agent | $175.00 / $0.00 / $0.00 / **$0.00**, zero findings, no EOB-comparison types |
@@ -349,9 +352,11 @@ $6,000/$12,000, limits "Outpatient mental health services 6/yr" and "Rehabilitat
    ✓ "**Billed above EOB allowed**" ($115, high confidence — bill demands $210, EOB says $95).
    ✓ Tracker line "Rehabilitation…: visit 1 of 20". ✓ NO "not checked" footer.
    ~~✓ Dispute email includes `My plan (SBC) states: "…$60 copay…"`.~~
-   **Unreachable while PAYMENTS=on (found 2026-09-07).** "Generate dispute email" opens the
-   **paywall** ("Unlock this appeal letter"), so the letter's contents cannot be asserted here
-   without buying one. Assert it in PAY1, which owns the purchase, or turn payments off first.
+   **No longer reachable at all, for a different reason (2026-09-09).** Payments came off and
+   the letter went behind a flag, so "Generate dispute email" now reveals an **"Appeal letters
+   are coming soon"** panel: it describes what the letter would do, says it is not open yet,
+   and points at Print / save PDF for the evidence in the meantime. Verified on production
+   today. The paywall this note used to describe is gone — there is nothing to buy.
 
 **Cost:** 1 audit.
 
