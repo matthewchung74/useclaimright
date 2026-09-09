@@ -50,7 +50,7 @@ the file and easy to miss.
 | E3 | 2026-08-31 | agent | ✓ dialog counts the limits (5), SBC trackers removed with the plan, manual and remark ones kept, deductible falls back to the EOB |
 | E4 | 2026-09-07 | agent | ✓ "This doesn't look like a Summary of Benefits.", plan on file survived untouched |
 | E5 | 2026-08-31 | agent | ✓ plan restored, trackers re-derived with no duplicates |
-| E6 | 2026-09-07 | agent | ✓ report-side warning fires. **Step 2 was stale** — the pre-send banner is gone. Worth disputing came back **$990.50**, not the recorded $2,115.00 (model wrote a narrower lineRef; under the cap, understating) |
+| E6 | 2026-09-09 | agent | ✓ warning fires ("This EOB may not cover this bill — they share no service dates and no procedure codes"). Billed **$2,115.00**, worth disputing **$2,115.00** — de-overlap held, since the naive sum is $2,260.50, a headline larger than the bill. **Both** findings still shown: `duplicate_charge` $145.50 and `not_in_eob` $2,115.00. The model named the mismatch itself — "an unrelated physical therapy claim from a different provider and date" |
 | E7 | — | — | destructive (erases the account). Needs a deliberate decision — the dialog itself is covered by X1 |
 | X1 | 2026-08-31 | agent | ✓ all six dialogs, each naming its target, plus backdrop-dismiss deleting nothing |
 | R2 | 2026-08-31 | agent | ✓ routing, exits and labels. Step 1's true sign-out not run — re-auth needs a password |
