@@ -57,8 +57,8 @@ the file and easy to miss.
 | F1 | 2026-08-31 | agent | ✓ bubble, categories, send, "Thanks — we read every note.", card self-closes. Field-level check needs the Firebase console |
 | A1 | — | — | **cannot be run by the agent** — creating an account and entering a password. Needs you |
 | FAM2 | partial | agent | arithmetic covered by 4 new unit tests (family vs individual vs conflict). Browser step still blocked: needs the family EOB to be the newest accumulator |
-| FAM3 | 2026-09-07 | agent | ✓ covered by FAM1 step 1 — `matthew` and `family` stems disagree and still paired correctly (0 audits) |
-| FAM5 | 2026-09-07 | agent | ✓ badge **2/2** = highest member, not the household 3. "Matthew 2 of 2 · Sarah 1 of 2 … 3 across everyone" |
+| FAM3 | 2026-09-09 | agent | ✓ `matthew-bill.pdf` + `family-eob.pdf` (stems "matthew" and "family") reached the review screen with **no** "Add your EOB" error. Backed out with Start over — 0 audits |
+| FAM5 | 2026-09-09 | agent | ✓ tracker over 90686, limit 2, against Matthew (1) and Sarah (1): badge read **1 / 2** — the highest member, not the household. Per-person line "Sarah 1 of 2 · Matthew 1 of 2" with "2 across everyone" as context, and amber ("One covered visit left"), not the red "limit reached" a pooled **2 / 2** would have shown |
 | S2 | 2026-09-07 | agent | ✓ both documents as PNGs: $2,115.00 / $841.75 / $186.35 / **$822.15** — identical to E1's text PDFs, same three findings |
 | S3 | 2026-08-31 | agent | printed fields identical from a scan; **found** Replace discarding confirmed tracker codes → fixed |
 | S4 | 2026-09-07 | agent | ✓ 5 PNGs accepted, five pills, all render. Extracted across pages: deductible $500 + OOP $2,500 (p1), 60-visit caps and pediatric vision (p3). Older-plan guard fired first and asked before replacing |
