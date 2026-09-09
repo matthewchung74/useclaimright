@@ -33,7 +33,7 @@ the file and easy to miss.
 
 | Plan | Last run | By | Result |
 |---|---|---|---|
-| E1 | 2026-09-07 | agent | $2,115.00 / $841.75 / $186.35 / **$822.15** — exact. `charity_care_eligible` did not fire (advisory, excluded). 145.50+658.65+18.00 = 822.15 exactly |
+| E1 | 2026-09-09 | agent | ✓ re-run on the clean account E7 produced. $2,115.00 / $841.75 / $186.35 / **$822.15** — exact, with 145.50 + 658.65 + 18.00 = 822.15. `cost_share_error` spelled out its own arithmetic ($8.24 + $4.55 + $124.00 + $27.70 + $3.86 = $168.35 against a stated $186.35). **Honest footer present**: "Not checked against your plan — add your Summary of Benefits… to enable plan checks." Occurrence table showed 80053 with count 2 |
 | E1b | 2026-09-09 | agent | ✓ dropzone copy, all three step headings visible on arrival with step 2's inputs collapsed, "Add your bill above and this opens up", no dashboard headings on the form, the EOB explainer under step 2, and the disclosure summary still carrying "including your name and everything else printed on them". Account menu: full email, Sign out, then "Reset account — erase all my data" below a divider **in red**. The reveal-animation timing check (measure `#upload` mid-transition) was not re-run |
 | M1 | 2026-09-07 | agent | ✓ plan on file, both trackers auto-created 0/20 and 0/6, deductible target from SBC |
 | M4 | 2026-09-09 | agent | ✓ "2 audits: 2 bill+EOB pairs" from filename routing, ONE review screen with 3 tabs and "Reviewing t2-bill.pdf — document 1 of 3", "Analyzing audit 1 of 2" progress, then **landed on Bills & coverage** — not on one audit's report. JUST AUDITED block: **2 bills · $110.00**, one row each at $55.00. The consolidated EOB saved **once** for both audits (M5 step 1) |
