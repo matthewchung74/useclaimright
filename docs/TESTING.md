@@ -46,7 +46,7 @@ the file and easy to miss.
 | FAM4 | 2026-09-09 | agent | ✓ guard fires: "This EOB is for someone else… bill is for **Matthew T. Testpatient**… statement covers **Sarah L. Testpatient**". Totals $85.00 / **$32.00** / $0.00 / $85.00 — the model read Sarah's allowed amount this time, so the finding was `billed_vs_allowed` not `not_in_eob`. The guard, which is what this plan tests, held |
 | IMG1 | 2026-09-09 | agent | ✓ HEIC refused with the Settings → Camera → Formats message, not the generic one; `02-rotated-90.png` accepted and rendered visibly sideways in the review pane, which is the point — you can see it is unreadable before spending an audit. 0 audits, backed out with Start over |
 | M7 | 2026-08-29 | agent | 3 audits · one-click tracker from an EOB remark, deductible $720.00 of $1,500.00 |
-| E2 | 2026-09-07 | agent | $175.00 / $0.00 / $0.00 / **$0.00**, zero findings, no EOB-comparison types |
+| E2 | 2026-09-09 | agent | ✓ $175.00 / $0.00 / $0.00 / **$0.00**, zero findings, no EOB-comparison types, tracker advanced to "visit 2 of 6". **Found a copy bug:** the clean-result line said "the bill and EOB appear consistent" to someone who had ticked "I don't have an EOB". Fixed and re-verified on both paths — bill-only now names the missing check, and an EOB-backed clean audit still reads the original line |
 | E3 | 2026-08-31 | agent | ✓ dialog counts the limits (5), SBC trackers removed with the plan, manual and remark ones kept, deductible falls back to the EOB |
 | E4 | 2026-09-07 | agent | ✓ "This doesn't look like a Summary of Benefits.", plan on file survived untouched |
 | E5 | 2026-08-31 | agent | ✓ plan restored, trackers re-derived with no duplicates |
