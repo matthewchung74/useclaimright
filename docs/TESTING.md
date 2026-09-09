@@ -314,7 +314,7 @@ hovers red, not teal, as the plan requires.
 3. Back on the bills page, under **Your coverage**:
    ✓ The SBC card is replaced by ONE line: `Plan: Acme Silver PPO · 2026-01-01 → 2026-12-31 · View · Replace · Remove`.
    ✓ Coverage usage: two trackers tagged "**from your plan (SBC) — check the codes**" (6/yr mental health, 20/yr rehab).
-   ✓ Deductible card: "**Target from your plan (SBC).**" The *target* is $1,500.00; the progress
+   ✓ Deductible card: "**Individual target from your plan (SBC).**" The *target* is $1,500.00; the progress
      figure depends on what has already been audited. ~~$0.00 of $1,500.00~~ — **corrected
      2026-09-07**: E1 must run before M1 (see the ordering table), and E1's EOB applies $50.00,
      so a correctly-ordered run reads **$50.00 of $1,500.00** here, not $0.00.
@@ -379,7 +379,7 @@ $95.00, worth disputing **$150.00** — `billed_vs_allowed_mismatch` $115.00 hig
 
    ✓ NO plan-mismatch findings. (One "Billed above EOB allowed" $55 finding is expected — the fixture bill demands the full $175.)
    ✓ Mental-health tracker: "visit 1 of 6".
-   ✓ Deductible card: "**$120.00 of $1,500.00** — Target from your plan (SBC). As stated on your most recent EOB (2026-01-15)."
+   ✓ Deductible card: "**$120.00 of $1,500.00** — Individual target from your plan (SBC). As stated on your most recent EOB (2026-01-15)."
 
 **Cost:** 1 audit.
 
@@ -565,7 +565,7 @@ behaviour, not the remark path.
    *That last row is the point of this plan: the $175 duplicate appears only on the dashboard, never in an individual report.*
 2. ✓ **Hero card** at the top of "Bills & coverage": a yellow ribbon "FOUND BY COMPARING YOUR BILLS TO EACH OTHER", **$175.00 at stake**, "The same visit is on two statements", naming the provider, 90837, and Feb 12 2026, with **Statement A / Statement B** each showing its audited date and amount (never a statement number), plus a "Why this was flagged" explainer. Clicking a statement opens that audit.
 3. ✓ **Your bills**: one group per provider — the same provider under different extraction casing must be **one** group — sorted by amount at stake, header pill "$110.00 worth disputing across 1 provider", each row showing date · plain-English finding summary · amount · ✕.
-4. ✓ **Your coverage**: Deductible "$240.00 of $1,500.00" sourced "**Target from your plan (SBC).** As stated on your most recent EOB (2026-02-12)." with "$1,260.00 to go"; **Out-of-pocket maximum** card present ("$0.00 of $6,000.00 · 0%"); tracker cards below.
+4. ✓ **Your coverage**: Deductible "$240.00 of $1,500.00" sourced "**Individual target from your plan (SBC).** As stated on your most recent EOB (2026-02-12)." with "$1,260.00 to go"; **Out-of-pocket maximum** card present ("$0.00 of $6,000.00 · 0%") and now carrying the same sourcing line; tracker cards below.
 5. ✓ Negative control: the t-series alone (same code, *different* dates) must produce **no** duplicate hero. Auditing the same bill twice must also produce none.
 
 **Cost:** 2 audits (+1 plan upload if no SBC on file).
@@ -645,6 +645,8 @@ will be removed, and audits will no longer be checked against it. Trackers you'v
 stay." / "Remove plan" in red, and the renderer stayed responsive. After confirming, the dashed
 "No plan on file — add your Summary of Benefits · Add now" reminder returned, the deductible
 card dropped its "Target from your plan (SBC)." line and fell back to EOB-only sourcing
+(that line now reads "**Individual target** from your plan (SBC)." — the scope word was added
+2026-09-08, so match on "from your plan (SBC)" when re-running)
 ("$240.00 of $1,500.00 · As stated on your most recent EOB (2026-04-15)"), and **both trackers
 survived intact** — "Outpatient mental health services 7 / 6" (over limit) and "Rehabilitation
 services 1 / 20", each keeping its contributing-audit count. Exactly what the dialog promised.
