@@ -37,7 +37,7 @@ the file and easy to miss.
 | E1b | 2026-09-07 | agent | ✓ all 5 steps. Reveal really animates (probe caught 820px between 777 and 1364); step 2 stays open when the last bill is removed |
 | M1 | 2026-09-07 | agent | ✓ plan on file, both trackers auto-created 0/20 and 0/6, deductible target from SBC |
 | M4 | 2026-09-07 | agent | ✓ 2 audits, JUST AUDITED **$110.00**, both t-series, block stays pinned after opening one and returning |
-| M5 | 2026-09-07 | agent | $175.00 / $0.00 / $175.00 / **$175.00**, tracker 4 of 6. Nothing pre-selected with 4 saved EOBs; consolidated EOB saved once |
+| M5 | 2026-09-09 | agent | ✓ $175.00 / $0.00 / $175.00 / **$175.00**, one `not_in_eob`, no "every line came back missing" backstop, "Using saved EOB: Testville Family Medicine Associates · 2026-03-10". Tracker read 3 of 6, not the documented 4 of 6 — this account's history, not a defect. Nothing was pre-selected with 6 saved EOBs and the label warned "the wrong one makes an audit look clean when it isn't". **Also closed a gap** — see below |
 | M6 | 2026-09-07 | agent | ✓ "This plan is already on file." — a MutationObserver confirmed "Reading your plan's terms…" never rendered |
 | D1 | 2026-09-09 | agent | ✓ steps 1-4 re-verified. Hero $175.00 dashboard-only; the report it links to carries $175/$120/$120/**$55** and no duplicate finding. Coverage now reads "**Individual** target from your plan (SBC)" on both cards |
 | M2 | 2026-09-09 | agent | ✓ $210.00 / $95.00 / $95.00 / **$150.00** — $115 high + $35 medium, 115+35=150 exact, verbatim SBC and BILL quotes, highlighter on "$35.00 you may not owe", tracker 1 of 20. Letter path now shows the coming-soon panel |
@@ -87,7 +87,11 @@ keeping this list honest rather than short.
 
 | Gap | Why it might matter |
 |---|---|
-| Wrong member's EOB **from the saved library** | FAM4 covers the *upload* path. The saved-EOB path is different code — it uses stored text and stored `patients`, and only EOBs saved after 2026-08-31 carry the latter |
+*Closed 2026-09-09 by M5, incidentally.* Pairing Jane's `t4-bill` with the saved **consolidated family** EOB
+(Matthew, Sarah, Emma) fired the guard from the library path: "This EOB is for someone else. The bill is for
+**Jane Q. Testpatient**, but this statement covers Matthew T., Sarah L., Emma R. Testpatient." Stored `patients`
+drove it, so the saved-EOB path warns identically to the upload path FAM4 covers.
+
 | **Same person, two valid EOBs** | Matthew + `family-eob` and Matthew + `matthew-eob` must agree. Nothing checks that a correct pair stays correct across statement formats |
 | **A child's bill under a parent's name** | Emma is a dependent; a provider may print the guarantor rather than the patient. `personOf` would then merge two people |
 | Deductible attribution per member | Related to FAM2, still blocked |
