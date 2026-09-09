@@ -68,7 +68,7 @@ the file and easy to miss.
 | IMG1 | 2026-08-29 | agent | 8 fixtures · HEIC refusal fixed, now covered by `test/browser` |
 | P1 | partial | agent | ✓ `cms-2025.pdf` — 5 pages, home health 60/yr, 13 cost shares. `cms-2019` and `cms-older` not run |
 | G1 | partial | agent | logic covered by 7 unit tests incl. the kill switch and reserve-before-call. Live flip needs the Firebase console — `meta/guard` denies client writes |
-| PAY1 | 2026-08-26 | agent | sandbox cycle verified; payments are still **on** |
+| PAY1 | dormant | — | **Unrunnable since 2026-09-07.** Payments were turned off and the letter put behind a flag, so there is no purchase to make and no paywall to exercise. Keep the plan — it matters again if payments return — but it asserts a flow the product no longer has |
 | REV1 | 2026-09-07 | agent | ✓ 0 pills on 1 page, 5 on cms-2025, pill 3 → "Page 3 of 5", tab switch resets to page 1, HTML and saved-EOB show no pages |
 | PHONE1 | 2026-08-29 | agent | 375px · 0 overflow, 0 controls under 16px, 44→2 short tap targets |
 | TAP1 | 2026-08-31 | agent | ✓ card and rows tappable whole, ✕ deletes without opening the audit |
@@ -94,17 +94,21 @@ keeping this list honest rather than short.
 | **Same person, two valid EOBs** | Matthew + `family-eob` and Matthew + `matthew-eob` must agree. Nothing checks that a correct pair stays correct across statement formats |
 | **A child's bill under a parent's name** | Emma is a dependent; a provider may print the guarantor rather than the patient. `personOf` would then merge two people |
 | Deductible attribution per member | Related to FAM2, still blocked |
+| **Two members whose names collide** | A Jr/Sr pair, or "M. Chung" beside "Matthew Chung". `personKey` normalisation could merge two people — FAM1's failure mode in reverse, and a household is exactly where it happens |
+| **FAM2 as a live run** | *No longer blocked (2026-09-09).* It was unassertable because the card rendered the chosen figure without naming it; the card now reads "Family target from your plan (SBC)", so the scope is finally visible to a test |
 
 **Images and scans** — every real document is an image now, so these are the main path
 
+*Three entries here were closed by the S-series on 2026-09-07 and removed on 2026-09-09:
+rasterised EOB (S2, both documents as PNGs), genuinely multi-page scan (S4, five pages with
+extraction spanning them) and rasterised SBC (S3, which found a real bug on its first run).*
+
 | Gap | Why it might matter |
 |---|---|
-| **Rasterised EOB** | S1 rasterises the *bill* only. An image EOB, and both documents as images, are untested |
-| **Genuinely multi-page scan** | `08-eob-page-*.png` exists as a fixture but no plan uploads it; every scan tested so far is one page |
 | **More than 20 pages** | S1's edge case says it rejects before billing a model call. Never run |
-| **Rasterised SBC** | P1 names it explicitly. Never run, and plan extraction is a different prompt and schema |
 | **Rasterised family EOB** | Both axes at once — a photo of the letter that came in the post, covering three people |
-| **EXIF-rotated JPEG** | IMG1 rotates *pixels*; a real phone photo is stored upright with an orientation tag instead |
+| **EXIF-rotated JPEG** | IMG1 rotates *pixels*; a real phone photo is stored upright with an orientation tag instead. This is the single most common real input and the least tested |
+| **A figure obscured by glare or shadow** | The realistic phone-photo failure. What matters is not whether it reads the number but whether it *invents* one — the false-positive direction, which is the one that costs someone money |
 
 **Neither family nor image**
 
