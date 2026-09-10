@@ -995,6 +995,24 @@ function renderReview() {
     img.alt = `Page ${reviewPage + 1} of ${pages.length}`;
     img.onload = () => { view.scrollTop = 0; };
     view.appendChild(img);
+    // A booklet that was narrowed says so. Otherwise the heading claims we send
+    // 135 pages while the server sees 18, and nothing on screen admits it.
+    const nb = $("narrowed-note");
+    if (nb) {
+      const n = docState.narrowed;
+      nb.hidden = !n;
+      if (n) {
+        const plans = [...new Set((n.sections || []).map((x) => x.plan).filter(Boolean))];
+        nb.innerHTML =
+          `Your plan document is <b>${n.total} pages</b>. We're sending the <b>${n.pages.length}</b> that ` +
+          `look like the benefits schedule` +
+          (plans.length > 1
+            ? ` — it covers <b>${plans.length} plans</b> (${plans.map(escapeHtml).join(", ")}), ` +
+              `and we'll work out which is yours from your EOB.`
+            : `.`);
+      }
+    }
+
     // Only worth a control when there is somewhere to go.
     pills.hidden = pages.length < 2;
     if (pages.length > 1) {
@@ -2026,6 +2044,7 @@ async function prepareSbc(input) {
       text: parts.map((p) => p.text).filter(Boolean).join("\n\n"),
       images: parts.flatMap((p) => p.images || []),
       previews: parts.flatMap((p) => p.previews || []),
+      narrowed: parts.find((p) => p.narrowed)?.narrowed ?? null,
       method: parts.some((p) => p.method === "image") ? "image" : parts[0].method,
       confidence: parts[0].confidence,
     };

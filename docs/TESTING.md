@@ -1623,6 +1623,44 @@ subsequently run on production against Vertex on 2026-08-26 — 2025-01-01 → 2
 
 **Cost:** 3 plan uploads, 0 audits.
 
+## Real plan documents
+
+Every SBC fixture is a 5–8 page government specimen of the same $500/$1,000 plan.
+A member's own UMR booklet, run 2026-09-10, broke three assumptions at once and
+is the reason `web/js/sections.js` exists.
+
+**135 pages, 351,420 characters, and three medical plans in one document** — EPO
+with no deductible, PPO at $500/$1,500, HDHP at $2,500/$5,000 — with nothing
+anywhere saying which one the member is enrolled in.
+
+| what broke | detail |
+|---|---|
+| Payload | 135 page images ≈ **18.6 MB** base64 against Firebase's **10 MB** callable limit. Died at the platform boundary as `internal`, which is correctly not surfaced — so the member saw "please try again", advice that can never work |
+| `MAX_PAGES` (20) | never reached. The server's own guard is unreachable for exactly the documents it was written for |
+| Review screen | rendered **135 page pills**, and claimed "This is what we send" over pages that were never sent |
+| Plan ambiguity | a scoring heuristic picked pages 13–24 — straddling **two different plans**. Had it been shipped it would have mixed PPO and HDHP figures |
+
+**Fixed:** the text layer now says *where* to look and images still say *what it
+says*, which does not contradict `extract.js`'s decision to send pages rather
+than text — a text layer is good enough to find a heading and not good enough to
+read a table. 135 pages → **18**, the three medical schedules exactly, ~1.9 MB.
+The review screen says how many pages of how many, and names the plans it found.
+
+**Still open — and now proven necessary rather than hypothetical.** Shown three
+plans and asked to fill a one-plan schema, the model returned an essentially
+empty plan (20,821 tokens in, **362** out, $0.017) and the E4 guard rejected it
+with "This doesn't look like a Summary of Benefits." That is the *safe* failure —
+the existing plan survived and no wrong figure was stored — but a real employer
+booklet currently extracts to nothing. The fix is to extract all plans as a list
+and resolve which is the member's from their EOB, which states it in words: the
+member's own EOB reads "This is a High Deductible Health Plan."
+
+Two smaller things the same document turned up: its schedules carry no coverage
+period (that lives in Plan Information, outside the selected pages), so even a
+single-plan booklet may extract with no plan year; and the HDHP section labels
+its rows "Single Coverage / Family Coverage" where the PPO section two pages
+earlier says "Per Person / Per Family".
+
 ## The cost ledger
 
 Every way a request can end, and what it charges. `functions/test/budget.test.js` is

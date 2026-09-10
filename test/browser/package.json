@@ -4,11 +4,12 @@
   "type": "module",
   "description": "Zero-audit browser checks. Kept out of the repo root so `firebase deploy` and functions/ are untouched.",
   "scripts": {
-    "test": "node --test drift.test.js ui.test.js messages.test.js",
+    "test": "node --test drift.test.js ui.test.js messages.test.js sections.test.js",
     "test:drift": "node --test drift.test.js",
     "test:ui": "node --test ui.test.js",
     "pretest": "node ../../test-fixtures/gen-by-plan.mjs",
-    "test:messages": "node --test messages.test.js"
+    "test:messages": "node --test messages.test.js",
+    "test:sections": "node --test sections.test.js"
   },
   "devDependencies": {
     "playwright": "^1.47.0"

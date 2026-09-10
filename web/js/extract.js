@@ -1,3 +1,5 @@
+import { findPlanSections, selectSchedulePages, pagesOf } from "./sections.js";
+
 // Getting a document ready to audit.
 //
 // A digital PDF carries its own text layer, so we read it directly: free,
@@ -46,13 +48,47 @@ async function renderPageToDataUrl(page, scale = 1.5) {
 // association, and an EOB is a table. It also removes the whole class of bug
 // where a page looks perfect and its text layer is garbage — invisible until
 // the audit comes back wrong.
+// The server takes 20 pages; a Firebase callable takes 10MB, which at ~106KB a
+// page runs out around 70. Neither was ever hit by a fixture, because every
+// fixture is a 5-8 page SBC. A member's real plan booklet is 135 pages, and it
+// failed with "please try again" — forever, since retrying sends it again.
+const PAGE_BUDGET = 20;
+
 async function extractFromPdf(file) {
   const pdf = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
-  const previews = [];
-  for (let i = 1; i <= pdf.numPages; i++) {
-    previews.push((await renderPageToDataUrl(await pdf.getPage(i))).toDataURL("image/jpeg", 0.85));
+
+  // Narrow BEFORE rendering. Rendering 135 pages to canvas first and discarding
+  // most of them is seconds of a frozen tab for nothing.
+  let wanted = null, sections = null;
+  if (pdf.numPages > PAGE_BUDGET) {
+    const text = [];
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const content = await (await pdf.getPage(i)).getTextContent();
+      // Group by vertical position so a heading stays one line: findPlanSections
+      // reads line shape, and a flat join makes every page a single line.
+      const lines = new Map();
+      for (const it of content.items) {
+        const y = Math.round(it.transform?.[5] ?? 0);
+        lines.set(y, (lines.get(y) || "") + (it.str || ""));
+      }
+      text.push([...lines.entries()].sort((a, b) => b[0] - a[0]).map(([, l]) => l).join("\n"));
+    }
+    sections = findPlanSections(text);
+    const picked = pagesOf(selectSchedulePages(sections, PAGE_BUDGET));
+    if (picked.length) wanted = picked;
   }
-  return { text: "", images: previews, method: "image", confidence: null, previews };
+
+  const pages = wanted ?? Array.from({ length: pdf.numPages }, (_, i) => i + 1);
+  const previews = [];
+  for (const n of pages) {
+    previews.push((await renderPageToDataUrl(await pdf.getPage(n))).toDataURL("image/jpeg", 0.85));
+  }
+  return {
+    text: "", images: previews, method: "image", confidence: null, previews,
+    // What the review screen needs to tell the truth about what is being sent.
+    // `narrowed` null means the whole document goes, as it always has.
+    narrowed: wanted && { pages: wanted, total: pdf.numPages, sections },
+  };
 }
 
 // Apple's camera default since iOS 11, and the likeliest thing someone
