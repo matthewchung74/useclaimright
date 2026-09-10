@@ -19,7 +19,7 @@ import { initializeAppCheck, ReCaptchaEnterpriseProvider } from "https://www.gst
 import { firebaseConfig, APP_CHECK_SITE_KEY } from "./firebase-config.js";
 import { extractText } from "./extract.js";
 import { pairFiles, classifyFile, uniqueDocs } from "./batch.js";
-import { planYearStartMonthFrom, mergeSbcTrackers, deductibleTarget, oopTarget, targetLabel } from "./plan.js";
+import { planYearStartMonthFrom, mergeSbcTrackers, deductibleTarget, oopTarget, targetLabel, planYearEndFrom } from "./plan.js";
 import { crossBillDuplicates, runningTotals, groupAuditsByProvider, splitJustAudited, billKeyOf } from "./crossbill.js";
 import { documentsRelated, wrongPatient } from "./eobmatch.js";
 import { personKey } from "./person.js";
@@ -1340,10 +1340,15 @@ function renderReport(data, { ocrLow, model, planApplied, planReason, pairUnrela
   const note = $("plan-note");
   if (planApplied === false && planReason) {
     note.hidden = false;
+    const planYearEnd = planYearEndFrom(activePlan?.structured).end;
     note.innerHTML = planReason === "no_plan"
-      ? `Not checked against your plan — add your Summary of Benefits under “Your coverage” on the bills page to enable plan checks.`
+      // Telling someone with a plan on file to add one sends them to do a thing
+      // they have already done, and costs a plan upload when they try.
+      ? activePlan?.structured
+        ? `Not checked against your plan — your plan document does not state a coverage period, so we cannot tell whether this bill falls inside it.`
+        : `Not checked against your plan — add your Summary of Benefits under “Your coverage” on the bills page to enable plan checks.`
       : planReason === "out_of_period"
-        ? `Not checked against your plan — this bill's service dates fall outside your plan year${activePlan?.structured?.planYearEnd ? ` (ended ${escapeHtml(activePlan.structured.planYearEnd)})` : ""}.`
+        ? `Not checked against your plan — this bill's service dates fall outside your plan year${planYearEnd ? ` (ended ${escapeHtml(planYearEnd)})` : ""}.`
         : `Not checked against your plan — no service dates could be read from this bill.`;
   } else { note.hidden = true; note.innerHTML = ""; }
 }
@@ -1995,10 +2000,13 @@ function renderPlanCard() {
   } else {
     // Plan on file: one quiet line — the numbers live on the deductible and
     // tracker cards; this line only identifies the plan and offers actions.
-    const expired = s.planYearEnd && todayISO() > s.planYearEnd;
+    // Expiry runs on the same window planApplies uses, inferred or printed —
+    // otherwise a plan with no printed end never expires and quietly checks
+    // next year's bills against this year's terms.
+    const expired = planYearEndFrom(s).end && todayISO() > planYearEndFrom(s).end;
     el.innerHTML = `<div class="usage-card plan-top plan-line">
       <b><span style="color:var(--good)">✓</span> Plan on file: ${escapeHtml(s.planName || "")}</b>
-      <span class="plan-period">${escapeHtml(s.planYearStart || "?")} → ${escapeHtml(s.planYearEnd || "?")}</span>
+      <span class="plan-period">${escapeHtml(s.planYearStart || "?")} → ${escapeHtml(planYearEndFrom(s).end || "?")}${planYearEndFrom(s).inferred ? " (assumed)" : ""}</span>
       <span class="pl-actions">
         <a href="#" id="plan-view">View</a>
         <a href="#" id="plan-replace">Replace</a>

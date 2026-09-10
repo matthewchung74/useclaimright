@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import Ajv from "ajv";
 import { FINDING_TYPES, findingsSchema } from "../schema.js";
-import { planApplies, mergeSbcTrackers, deductibleTarget, oopTarget, planYearStartMonthFrom, targetLabel } from "../../web/js/plan.js";
+import { planApplies, planYearEndFrom, mergeSbcTrackers, deductibleTarget, oopTarget, planYearStartMonthFrom, targetLabel } from "../../web/js/plan.js";
 import { planSchema, buildDigest, replaceDecision, planTermsBlock, applyPlanGate } from "../plan.js";
 
 const ajv = new Ajv({ allErrors: true });
@@ -47,7 +47,11 @@ test("planApplies: in-window date applies; all-out dates do not; no plan / no da
   // garbage date strings never apply
   assert.equal(planApplies(["not-a-date"], PLAN).applies, false);
   // a plan missing either bound cannot be applied
-  assert.deepEqual(planApplies(["2026-03-20"], { planYearStart: "2026-01-01", planYearEnd: null }), { applies: false, reason: "no_plan" });
+  // Was no_plan until 2026-09-10. An employer booklet prints the coverage period
+  // once, in Plan Information, not on each schedule — so a correctly extracted
+  // plan arrived with no end date and applied to nothing, while the report told
+  // the member to add the Summary of Benefits they had just added.
+  assert.deepEqual(planApplies(["2026-03-20"], { planYearStart: "2026-01-01", planYearEnd: null }), { applies: true, reason: null });
 });
 
 test("mergeSbcTrackers: creates new, updates sbc-sourced, never touches manual", () => {
@@ -390,4 +394,36 @@ test("deductibleTarget: a family target still wins over the individual one", () 
   const sbc = { deductible: { individual: 500, family: 1500 } };
   assert.deepEqual(deductibleTarget(sbc, { deductibleLimit: 1500, deductibleToDate: 640 }),
     { limit: 1500, source: "sbc", scope: "family", conflict: false, sbcLimit: 1500 });
+});
+
+// --- a plan year printed only as a start date -------------------------------
+
+test("planYearEndFrom: a printed end date is used as printed", () => {
+  assert.deepEqual(planYearEndFrom({ planYearStart: "2026-01-01", planYearEnd: "2026-06-30" }),
+    { end: "2026-06-30", inferred: false });
+});
+
+test("planYearEndFrom: a missing end becomes one year less a day, and says so", () => {
+  assert.deepEqual(planYearEndFrom({ planYearStart: "2026-01-01" }),
+    { end: "2026-12-31", inferred: true });
+  assert.deepEqual(planYearEndFrom({ planYearStart: "2025-07-01" }),
+    { end: "2026-06-30", inferred: true });
+});
+
+test("planYearEndFrom: a leap year does not shift the window", () => {
+  assert.deepEqual(planYearEndFrom({ planYearStart: "2024-01-01" }),
+    { end: "2024-12-31", inferred: true });
+});
+
+test("planYearEndFrom: no start date infers nothing", () => {
+  assert.deepEqual(planYearEndFrom({}), { end: null, inferred: false });
+  assert.deepEqual(planYearEndFrom({ planYearStart: "not a date" }), { end: null, inferred: false });
+});
+
+// The inferred window must still expire — a plan with a start and no end that
+// applied forever would check 2030 bills against 2026 terms.
+test("planApplies: an inferred year still runs out", () => {
+  const p = { planYearStart: "2026-01-01" };
+  assert.equal(planApplies(["2026-12-31"], p).applies, true);
+  assert.deepEqual(planApplies(["2027-01-01"], p), { applies: false, reason: "out_of_period" });
 });

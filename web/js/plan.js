@@ -1,13 +1,38 @@
 // Pure plan (SBC) logic. No DOM, no globals — unit-testable in Node.
 // All dates are ISO YYYY-MM-DD strings; lexical comparison is date comparison.
 
+// A plan year that is printed once, on a page we did not send.
+//
+// An employer booklet prints the coverage period in its Plan Information
+// section, not on each schedule of benefits — so a real booklet extracted with
+// planYearStart set and planYearEnd null. Requiring both meant the plan was on
+// file, named on the card, resolved from the member's own EOB, and then applied
+// to nothing: every audit reported "no_plan" and told them to add the Summary of
+// Benefits they had just added. Found on a member's real UMR booklet 2026-09-10.
+//
+// A plan year is a year. Inferring the end from the start is a smaller leap than
+// discarding a plan we correctly extracted — and the card says which end date is
+// being used, so an inference that is wrong is visible rather than silent.
+export function planYearEndFrom(structured) {
+  if (structured?.planYearEnd) return { end: structured.planYearEnd, inferred: false };
+  const start = structured?.planYearStart;
+  if (!start) return { end: null, inferred: false };
+  const d = new Date(`${start}T00:00:00Z`);
+  if (Number.isNaN(d.getTime())) return { end: null, inferred: false };
+  d.setUTCFullYear(d.getUTCFullYear() + 1);
+  d.setUTCDate(d.getUTCDate() - 1);
+  return { end: d.toISOString().slice(0, 10), inferred: true };
+}
+
 export function planApplies(serviceDates, structured) {
-  if (!structured || !structured.planYearStart || !structured.planYearEnd) {
+  if (!structured || !structured.planYearStart) {
     return { applies: false, reason: "no_plan" };
   }
+  const { end } = planYearEndFrom(structured);
+  if (!end) return { applies: false, reason: "no_plan" };
   const dates = (serviceDates || []).filter(Boolean);
   if (!dates.length) return { applies: false, reason: "no_dates" };
-  const inWin = dates.some((d) => d >= structured.planYearStart && d <= structured.planYearEnd);
+  const inWin = dates.some((d) => d >= structured.planYearStart && d <= end);
   return inWin ? { applies: true, reason: null } : { applies: false, reason: "out_of_period" };
 }
 
