@@ -16,6 +16,7 @@ import { planSchema, buildDigest, replaceDecision, applyPlanGate } from "./plan.
 import { validateFeedback } from "./feedback.js";
 import { reserveModelCall } from "./guard.js";
 import { claimDaily } from "./ratelimit.js";
+import { parkPlan, takePendingPlan } from "./pendingplan.js";
 
 initializeApp();
 const db = getFirestore();
@@ -496,6 +497,17 @@ export const analyze = onCall(
   }
 );
 
+// The plan document, written the same way whether the extraction just ran or
+// was parked by a confirm_older round trip.
+async function writePlan(ref, { structured, text, sourceName, sourceHash, tokens }) {
+  const digest = buildDigest(structured);
+  await ref.set({
+    structured, digest, text, sourceName, sourceHash,
+    model: MODEL_ID, tokens, createdAt: FieldValue.serverTimestamp(),
+  });
+  return { status: "stored", structured, digest };
+}
+
 export const extractPlan = onCall(
   {
     region: "us-central1",
@@ -520,6 +532,22 @@ export const extractPlan = onCall(
     if (sbcDoc.images.reduce((n, d) => n + d.length, 0) > MAX_IMAGE_BYTES) {
       throw new HttpsError("invalid-argument", "Those pages are too large. Try a lower-resolution scan.");
     }
+    const name = typeof sourceName === "string" ? sourceName.slice(0, 200) : "";
+    // Content fingerprint of the uploaded file, so the client can recognise a
+    // re-upload of the SAME document before spending an extraction on it. The
+    // text comparison it backs up cannot see a scan, which has no text until
+    // the model reads it — and by then the upload is already spent.
+    const hash = typeof sourceHash === "string" ? sourceHash.slice(0, 64) : "";
+    const planRef = db.doc(`users/${uid}/plan/active`);
+
+    // "Replace anyway" on the older-plan dialog. The model has already read this
+    // document and the member has already paid for it, so collect that rather
+    // than charging twice. A force with nothing parked falls through and pays.
+    if (force === true) {
+      const parked = await takePendingPlan(db, uid, hash);
+      if (parked) return writePlan(planRef, parked);
+    }
+
     const refundPlan = await checkPlanRateLimit(uid);
     let release;
     try {
@@ -572,9 +600,13 @@ export const extractPlan = onCall(
       throw new HttpsError("invalid-argument", "This doesn't look like a Summary of Benefits.");
     }
 
-    const ref = db.doc(`users/${uid}/plan/active`);
-    const existing = (await ref.get()).data()?.structured ?? null;
+    const plan = {
+      structured, text: sbcDoc.text || structured?.sourceText || "",
+      sourceName: name, sourceHash: hash, tokens: planUsage,
+    };
+    const existing = (await planRef.get()).data()?.structured ?? null;
     if (replaceDecision(existing, structured, force === true) === "confirm_older") {
+      await parkPlan(db, uid, plan);
       return {
         status: "confirm_older",
         existingPeriod: { start: existing.planYearStart, end: existing.planYearEnd },
@@ -582,17 +614,6 @@ export const extractPlan = onCall(
       };
     }
 
-    const digest = buildDigest(structured);
-    await ref.set({
-      structured, digest, text: sbcDoc.text || structured?.sourceText || "",
-      sourceName: typeof sourceName === "string" ? sourceName.slice(0, 200) : "",
-      // Content fingerprint of the uploaded file, so the client can recognise a
-      // re-upload of the SAME document before spending an extraction on it. The
-      // text comparison it backs up cannot see a scan, which has no text until
-      // the model reads it — and by then the upload is already spent.
-      sourceHash: typeof sourceHash === "string" ? sourceHash.slice(0, 64) : "",
-      model: MODEL_ID, tokens: planUsage, createdAt: FieldValue.serverTimestamp(),
-    });
-    return { status: "stored", structured, digest };
+    return writePlan(planRef, plan);
   }
 );

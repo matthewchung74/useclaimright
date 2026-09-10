@@ -335,7 +335,10 @@ $("reset-account").onclick = async () => {
     confirmLabel: "Erase everything", danger: true,
   })) return;
   const uid = auth.currentUser.uid;
-  const colls = ["audits", "eobs", "trackers"];
+  // The whole plan collection, not plan/active by name: extractPlan parks a
+  // pending extraction alongside it, and "erase everything" that leaves a copy
+  // of your plan behind is not what the dialog promised.
+  const colls = ["audits", "eobs", "trackers", "plan"];
   try {
     for (const coll of colls) {
       // Read from the server, not the cache: a stale or partial cache would
@@ -343,7 +346,6 @@ $("reset-account").onclick = async () => {
       const snap = await getDocsFromServer(collection(db, `users/${uid}/${coll}`));
       for (const d of snap.docs) await deleteDoc(d.ref);
     }
-    await deleteDoc(doc(db, `users/${uid}/plan/active`));
 
     // Verify before claiming success. "Erase all my data" must never reload
     // into a screen that still lists the data it promised to delete.
@@ -352,7 +354,6 @@ $("reset-account").onclick = async () => {
       const n = (await getDocsFromServer(collection(db, `users/${uid}/${coll}`))).size;
       if (n) left.push(`${n} ${coll}`);
     }
-    if ((await getDocFromServer(doc(db, `users/${uid}/plan/active`))).exists()) left.push("your plan");
     if (left.length) throw new Error(`${left.join(", ")} could not be deleted`);
 
     // "Treat it like a fresh account" includes the onboarding gate: without
