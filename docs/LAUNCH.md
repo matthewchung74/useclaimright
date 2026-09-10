@@ -92,47 +92,79 @@ note long after that happened, the video is already lying. The step timings in `
 ## LinkedIn post
 
 Different audience, opposite rules. HN punishes a post that opens on a competitor; LinkedIn rewards
-a timely structural take on news people are already reading about. So this one *does* lead with the
-Epic integration, keeps the product to a closing line, and stands up as an observation even for
-someone who never clicks.
+a structural take on news people are already reading about. So this one *does* lead with the Epic
+integration, keeps the product to a closing line, and stands up as an observation even for someone
+who never clicks.
 
-**Body:**
+**POSTED 2026-09-10.** This is the text as published — not a draft. Edit the record, not history,
+if it changes.
 
-> OpenAI connected ChatGPT to Epic last week. I tried it on my own records and it is genuinely good
-> — it read my history, my labs and my medications, and gave me a clearer summary than any portal
-> ever has.
+> OpenAI connected ChatGPT to Epic. It reads your clinical record — your history, your labs, your
+> medications — and I just used it to ask about my bloodwork. It's really good.
 >
-> Then I asked it about a bill.
+> But ask it about your medical bills. It has no access, and that gap isn't closing soon, because of
+> where the data lives.
 >
-> It has no access to one, and that gap is not closing soon, because of where the data lives.
+> I was really disappointed since I have spent countless hours verifying bills against Explanation
+> of Benefits ever since I caught a mistake 10 years ago.
 >
-> Your clinical record sits with your provider. Your Explanation of Benefits — the document that
-> says what your insurer actually allowed — arrives from your insurer, weeks later, in a separate
-> envelope. A billing error is not in either document on its own. It is in the difference between
-> them.
+> Here's why it can't help. Your clinical record sits with your provider. Your EOB comes from your
+> insurer, weeks later, in its own envelope. Two companies, two systems, and neither one has both
+> halves.
 >
-> The nearest thing in OpenAI's announcement is a CMS Coverage lookup: what Medicare covers, in
-> general. Genuinely useful. It cannot tell you whether your hospital charged you correctly.
+> That's the whole problem, because a billing error usually isn't visible in either document alone.
+> It's in the difference between them — a charge that shows up twice on the itemized bill but once
+> on the EOB, for example. That's easy to see the moment the two pages are side by side, which is
+> exactly the boring, fiddly work I've been doing by hand for a decade.
 >
-> Here is what that gap looks like in practice. On one $2,115 emergency-room bill: a lab test billed
-> twice at $145.50, $658.65 charged above what the plan allowed, and my favourite — the insurer's own
-> EOB did not add up. Its per-line amounts summed to $168.35 while the same page stated $186.35. An
-> $18 arithmetic error on the document you are supposed to trust.
+> So I built UseClaimRight to do it. You upload the bill and the letter from your insurance, and a
+> couple of minutes later you get a list of what's worth questioning — each one quoting the line it
+> came from, so you can check it yourself before you call anyone. If nothing's wrong, it tells you
+> that too.
 >
-> None of that is visible from the chart. All of it is visible the moment the two documents sit side
-> by side.
+> It's free. There's a sample audit on the site if you'd rather look before uploading anything.
+> Maybe you were overcharged like me. If you've got a bill you've been meaning to look at, try it
+> out and let me know how it goes. Also, this is focused on billing, it is not medical advice.
+> Analysis is done by Google's Gemini.
 >
-> That is the whole product: useclaimright.com — free, and you can see a sample audit without an
-> account.
+> 🔗 useclaimright.com
 
-### Before posting this
+### What changed from the draft, and why it matters
 
-- **Check the timing words.** "Last week" is only true for a few days. Say the date or drop it.
-- **Keep the claim narrow.** The Epic integration is read-only, clinical, and largely
-  clinician-facing. Do not say ChatGPT "cannot read documents" — it can, if you paste them. The
-  accurate claim is that the *integration* connects to records rather than to billing.
-- **The $18 finding is the hook.** It is specific, checkable, and surprising in a way "we find
-  errors" never is. Keep it concrete; drop the adjectives before you drop the number.
+**The specific findings came out.** An earlier draft opened the practical section with "On one
+$2,115 emergency-room bill: a lab test billed twice at $145.50, $658.65 charged above what the plan
+allowed" and an $18 arithmetic error in the insurer's own EOB. Every one of those numbers is from
+`test-fixtures/fake-bill.pdf` and `fake-eob.pdf` — patient "Jane Q. Testpatient", provider "St.
+Verification General Hospital". **We wrote them.**
+
+In a first-person post that opens "I just used it to ask about my bloodwork", they read as the
+author's own bill. They are not. If a commenter had asked to see the EOB there would have been
+nothing to show.
+
+The old note called the $18 finding "the hook — specific, checkable, and surprising in a way 'we
+find errors' never is." All true, and none of it survives the fact that it did not happen. **Do not
+reintroduce those numbers.** If a concrete example is wanted later, either attribute it to the
+sample audit on the site — which is honest and already public — or use a real finding from a real
+bill, once one exists.
+
+**"Last week" came out** rather than being dated. The argument is about where the data lives, which
+does not expire; the news timing does.
+
+**The disclaimer went in.** A post telling people to upload medical bills should say where the
+documents go before anyone asks.
+
+### What the post claims, and where each was verified
+
+Checked 2026-09-10 against the day's testing, so a future edit knows what is load-bearing:
+
+| claim | status |
+|---|---|
+| "a couple of minutes" | audits ran 30–40s |
+| "quoting the line it came from" | every finding carries verbatim evidence from both documents |
+| "if nothing's wrong, it tells you that too" | true, and the bill-only wording was fixed the same day |
+| "a sample audit on the site" | `/app?sample=1`, no sign-in and no model call, covered by a browser test |
+| "It's free" | payments off, deliberately |
+| "I caught a mistake 10 years ago" | the author's own, unverifiable here, and the strongest thing in the post |
 
 ## Why this framing
 

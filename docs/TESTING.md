@@ -1695,6 +1695,38 @@ single-plan booklet may extract with no plan year; and the HDHP section labels
 its rows "Single Coverage / Family Coverage" where the PPO section two pages
 earlier says "Per Person / Per Family".
 
+### What the real booklet found after multi-plan landed
+
+Three more, all on the same document, all invisible against fixtures:
+
+**The plan was on file and applied to nothing.** A booklet prints its coverage
+period once, in Plan Information, not on each schedule — so it extracted with
+`planYearStart` set and `planYearEnd` null, and `planApplies` required both.
+Every audit reported `no_plan` and the report told the member to add the Summary
+of Benefits they had just added, which would have cost another upload to obey.
+Fixed two ways: a missing end is inferred as a year from the start and the card
+prints it "(assumed)", and the copy no longer tells someone with a plan on file
+to add one.
+
+**The plan year itself was wrong.** Section detection sent the schedules and not
+the cover, so the model had neither half of the period — the shape lives in Plan
+Information ("Benefits begin on January 1 and end on the following December 31")
+and the year on the cover ("Revised 01-01-2026"). It produced 2025 for a 2026
+plan. Both pages are now selected and ranked above the schedules; verified
+2026-09-10, the year comes back **2026-01-01 → 2026-12-31**.
+
+**One stray EOB decided which plan the member was on.** Resolution read only the
+newest saved EOB. On re-upload a correctly resolved HDHP flipped to **PPO**
+because a test EOB happened to be newer — in the wild that is a spouse's EOB, or
+an old one from a previous employer. And the member's own correction was not
+sticky: re-extraction overwrote it with a fresh guess. `resolvePlan` now reads
+every recent EOB and requires the ones naming a plan type to agree, and
+`keepChoice` preserves an explicit choice for the same plan in the same position.
+
+**The pattern across all three:** each was a plan that looked correct on the card
+— named, resolved, figures right — and was wrong or useless underneath. A
+fixture cannot produce that, because a fixture is a plan we already understand.
+
 ## The cost ledger
 
 Every way a request can end, and what it charges. `functions/test/budget.test.js` is
