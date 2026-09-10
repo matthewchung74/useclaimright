@@ -67,7 +67,12 @@ export async function reserveModelCall(db, { kind = "audit", guard }) {
   const spent = await spentToday(db, day);
   if (spent >= g.dailyCalls) {
     console.error("global daily model-call ceiling reached", { day, spent, ceiling: g.dailyCalls });
-    throw new HttpsError("resource-exhausted", "We've hit today's limit across all users. Please try again tomorrow.");
+    // Marked so the client can tell this apart from a member's own daily cap.
+    // Both are resource-exhausted, and the cap has a dialog naming a number and
+    // a reset time that are simply untrue of a global ceiling. Running G1's
+    // ceiling leg on 2026-09-10 showed "That's today's 10 audits" to someone who
+    // had used eight.
+    throw new HttpsError("resource-exhausted", "We've hit today's limit across all users. Please try again tomorrow.", { scope: "global" });
   }
   await shardRef(db, day, i).set({ count: FieldValue.increment(1) }, { merge: true });
 

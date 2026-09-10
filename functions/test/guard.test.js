@@ -115,3 +115,20 @@ test("spend is scoped to the day, so yesterday does not bar today", async () => 
   const d = db({ counts });
   assert.equal(await spentToday(d), 0);
 });
+
+// The client shows a dialog naming the member's own cap and its reset time. That
+// dialog is a lie about a global ceiling, and both refusals carry the same code,
+// so the ceiling marks itself and the switches deliberately do not.
+test("only the global ceiling is marked global", async () => {
+  const day = new Date().toISOString().slice(0, 10);
+  const d = db({ counts: { [`meta/spend/${day}/shard-0`]: 10 } });
+  const on = { auditsEnabled: true, plansEnabled: true, dailyCalls: 10 };
+  await assert.rejects(
+    () => reserveModelCall(d, { kind: "audit", guard: on }),
+    (e) => e.details?.scope === "global",
+  );
+  await assert.rejects(
+    () => reserveModelCall(db(), { kind: "audit", guard: { ...on, auditsEnabled: false, dailyCalls: 10 } }),
+    (e) => e.details === undefined,
+  );
+});

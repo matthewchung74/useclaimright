@@ -157,6 +157,14 @@ const ocrConfidenceOf = (docs) => {
 const serverMessage = (e) =>
   e?.code === "functions/resource-exhausted" || e?.code === "functions/unavailable" ? e.message : null;
 
+// The member's own daily cap and the global spend ceiling both arrive as
+// resource-exhausted, and only the first is what showLimitDialog describes. The
+// server marks the global one; an older deploy sends no details at all, so this
+// keeps showing the dialog exactly as before rather than silently hiding it.
+const showLimitIfPersonal = (e, kind) => {
+  if (e?.code === "functions/resource-exhausted" && e?.details?.scope !== "global") showLimitDialog(kind);
+};
+
 function confirmAction({ title, body, confirmLabel = "Confirm", danger = false }) {
   const dlg = $("confirm-dialog");
   $("cd-title").textContent = title;
@@ -927,7 +935,7 @@ async function runBatch() {
     show("bills");
   } catch (e) {
     console.error(e);
-    if (e.code === "functions/resource-exhausted") showLimitDialog("audits");
+    showLimitIfPersonal(e, "audits");
     setError("upload-error",
       `Audit ${batchIndex + 1} of ${total} failed: ${serverMessage(e) ?? "analysis error — please try again."} The remaining documents are back below.`);
     show("upload");
@@ -1082,7 +1090,7 @@ $("confirm-review").onclick = async () => {
     renderReportUsage(data);
   } catch (e) {
     console.error(e);
-    if (e.code === "functions/resource-exhausted") showLimitDialog("audits");
+    showLimitIfPersonal(e, "audits");
     setError("upload-error", serverMessage(e) ?? "Analysis failed — please try again.");
     show("upload");
     batchBackToPanel();
@@ -2061,7 +2069,7 @@ async function runSbcExtraction(force = false) {
     $("plan-card").scrollIntoView({ behavior: "smooth" });
   } catch (e) {
     console.error(e);
-    if (e.code === "functions/resource-exhausted") showLimitDialog("plans");
+    showLimitIfPersonal(e, "plans");
     // invalid-argument is this path's own member-facing case — "This doesn't
     // look like a Summary of Benefits" (E4) — so it stays alongside the two
     // serverMessage covers.
