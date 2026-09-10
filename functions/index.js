@@ -15,6 +15,7 @@ import { runAudit, runPlanExtract } from "./providers/gemini.js";
 import { planSchema, buildDigest, replaceDecision, applyPlanGate } from "./plan.js";
 import { validateFeedback } from "./feedback.js";
 import { reserveModelCall } from "./guard.js";
+import { claimDaily } from "./ratelimit.js";
 
 initializeApp();
 const db = getFirestore();
@@ -60,19 +61,13 @@ const DAILY_LIMIT = 10;
 const ajv = new Ajv({ allErrors: true });
 const validate = ajv.compile(findingsSchema);
 
-async function checkRateLimit(uid) {
-  const day = new Date().toISOString().slice(0, 10);
-  const ref = db.doc(`users/${uid}/meta/usage`);
-  await db.runTransaction(async (tx) => {
-    const snap = await tx.get(ref);
-    const data = snap.exists ? snap.data() : {};
-    const count = data.day === day ? data.count || 0 : 0;
-    if (count >= DAILY_LIMIT) {
-      throw new HttpsError("resource-exhausted", `Daily limit of ${DAILY_LIMIT} audits reached.`);
-    }
-    tx.set(ref, { day, count: count + 1 }, { merge: true });
+const checkRateLimit = (uid) =>
+  claimDaily(db, uid, {
+    dayField: "day",
+    countField: "count",
+    limit: DAILY_LIMIT,
+    message: `Daily limit of ${DAILY_LIMIT} audits reached.`,
   });
-}
 
 const PLAN_DAILY_LIMIT = 3;
 const FEEDBACK_DAILY_LIMIT = 20;
@@ -283,19 +278,15 @@ export const stripeWebhook = onRequest(
   }
 );
 
-async function checkPlanRateLimit(uid) {
-  const day = new Date().toISOString().slice(0, 10);
-  const ref = db.doc(`users/${uid}/meta/usage`);
-  await db.runTransaction(async (tx) => {
-    const snap = await tx.get(ref);
-    const data = snap.exists ? snap.data() : {};
-    const count = data.planDay === day ? data.planCount || 0 : 0;
-    if (count >= PLAN_DAILY_LIMIT) {
-      throw new HttpsError("resource-exhausted", `Daily limit of ${PLAN_DAILY_LIMIT} plan uploads reached.`);
-    }
-    tx.set(ref, { ...data, planDay: day, planCount: count + 1 }, { merge: true });
+// S4 hit this for real on 2026-09-09: the extraction ran, the cap fired on the
+// save, and the upload was spent on a plan that never landed.
+const checkPlanRateLimit = (uid) =>
+  claimDaily(db, uid, {
+    dayField: "planDay",
+    countField: "planCount",
+    limit: PLAN_DAILY_LIMIT,
+    message: `Daily limit of ${PLAN_DAILY_LIMIT} plan uploads reached.`,
   });
-}
 
 export const analyze = onCall(
   {
@@ -336,8 +327,14 @@ export const analyze = onCall(
       throw new HttpsError("invalid-argument", "Those pages are too large. Try a lower-resolution scan.");
     }
 
-    await checkRateLimit(uid);
-    const release = await reserveModelCall(db, { kind: "audit" });
+    const refundAudit = await checkRateLimit(uid);
+    let release;
+    try {
+      release = await reserveModelCall(db, { kind: "audit" });
+    } catch (err) {
+      await refundAudit();
+      throw err;
+    }
 
     let plan = null;
     try {
@@ -523,8 +520,14 @@ export const extractPlan = onCall(
     if (sbcDoc.images.reduce((n, d) => n + d.length, 0) > MAX_IMAGE_BYTES) {
       throw new HttpsError("invalid-argument", "Those pages are too large. Try a lower-resolution scan.");
     }
-    await checkPlanRateLimit(uid);
-    const release = await reserveModelCall(db, { kind: "plan" });
+    const refundPlan = await checkPlanRateLimit(uid);
+    let release;
+    try {
+      release = await reserveModelCall(db, { kind: "plan" });
+    } catch (err) {
+      await refundPlan();
+      throw err;
+    }
 
     const opts = {
       modelId: MODEL_ID,
