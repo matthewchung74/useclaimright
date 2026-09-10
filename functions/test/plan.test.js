@@ -78,21 +78,21 @@ test("mergeSbcTrackers: creates new, updates sbc-sourced, never touches manual",
 });
 
 test("deductibleTarget: SBC owns the limit; EOB fills gaps; conflict when both differ > $1", () => {
-  assert.deepEqual(deductibleTarget(PLAN, null), { limit: 1500, source: "sbc", scope: "individual", conflict: false });
-  assert.deepEqual(deductibleTarget(null, { deductibleLimit: 1500 }), { limit: 1500, source: "eob", scope: null, conflict: false });
-  assert.deepEqual(deductibleTarget(PLAN, { deductibleLimit: 2000 }), { limit: 1500, source: "sbc", scope: "individual", conflict: true });
-  assert.deepEqual(deductibleTarget(PLAN, { deductibleLimit: 1500.5 }), { limit: 1500, source: "sbc", scope: "individual", conflict: false });
-  assert.deepEqual(deductibleTarget(null, null), { limit: null, source: null, scope: null, conflict: false });
+  assert.deepEqual(deductibleTarget(PLAN, null), { limit: 1500, source: "sbc", scope: "individual", conflict: false, sbcLimit: 1500 });
+  assert.deepEqual(deductibleTarget(null, { deductibleLimit: 1500 }), { limit: 1500, source: "eob", scope: null, conflict: false, sbcLimit: null });
+  assert.deepEqual(deductibleTarget(PLAN, { deductibleLimit: 2000 }), { limit: 1500, source: "sbc", scope: "individual", conflict: true, sbcLimit: 1500 });
+  assert.deepEqual(deductibleTarget(PLAN, { deductibleLimit: 1500.5 }), { limit: 1500, source: "sbc", scope: "individual", conflict: false, sbcLimit: 1500 });
+  assert.deepEqual(deductibleTarget(null, null), { limit: null, source: null, scope: null, conflict: false, sbcLimit: null });
   // family-only SBC deductible (individual null): individual target intentionally stays null/EOB-sourced
   assert.deepEqual(deductibleTarget({ deductible: { individual: null, family: 3000 } }, { deductibleLimit: 1500 }),
-    { limit: 1500, source: "eob", scope: null, conflict: false });
+    { limit: 1500, source: "eob", scope: null, conflict: false, sbcLimit: null });
 });
 
 test("oopTarget: SBC owns the limit, EOB fills gaps, conflicts flagged", () => {
-  assert.deepEqual(oopTarget({ oopMax: { individual: 6000, family: 12000 } }, null), { limit: 6000, source: "sbc", scope: "individual", conflict: false });
-  assert.deepEqual(oopTarget(null, { oopLimit: 6000 }), { limit: 6000, source: "eob", scope: null, conflict: false });
-  assert.deepEqual(oopTarget({ oopMax: { individual: 6000 } }, { oopLimit: 8150 }), { limit: 6000, source: "sbc", scope: "individual", conflict: true });
-  assert.deepEqual(oopTarget(null, null), { limit: null, source: null, scope: null, conflict: false });
+  assert.deepEqual(oopTarget({ oopMax: { individual: 6000, family: 12000 } }, null), { limit: 6000, source: "sbc", scope: "individual", conflict: false, sbcLimit: 6000 });
+  assert.deepEqual(oopTarget(null, { oopLimit: 6000 }), { limit: 6000, source: "eob", scope: null, conflict: false, sbcLimit: null });
+  assert.deepEqual(oopTarget({ oopMax: { individual: 6000 } }, { oopLimit: 8150 }), { limit: 6000, source: "sbc", scope: "individual", conflict: true, sbcLimit: 6000 });
+  assert.deepEqual(oopTarget(null, null), { limit: null, source: null, scope: null, conflict: false, sbcLimit: null });
 });
 
 test("planYearStartMonthFrom: extracts month, defaults to 1", () => {
@@ -357,4 +357,37 @@ test("targetLabel composes with the target it describes", () => {
 
   const eobOnly = deductibleTarget(null, { deductibleLimit: 1500 });
   assert.equal(targetLabel(eobOnly.scope), "Target");
+});
+
+// A card cannot say "$5,000.00 of $500.00". Found with a member's real EOB
+// sitting against a plan extracted from a different document: the amount
+// accrued came from the insurer, the limit came from the SBC, and the two
+// belonged to different plans. A note explained it; the headline still read
+// 1000% and made every other number on the page look wrong.
+test("deductibleTarget: the insurer's running total cannot exceed the limit it counts toward", () => {
+  const sbc = { deductible: { individual: 500, family: 1500 } };
+  const eob = { deductibleLimit: 5000, deductibleToDate: 5000 };
+  assert.deepEqual(deductibleTarget(sbc, eob),
+    { limit: 5000, source: "eob", scope: null, conflict: true, sbcLimit: 500 });
+});
+
+test("oopTarget: the same, for out-of-pocket", () => {
+  const sbc = { oopMax: { individual: 2500, family: 5000 } };
+  assert.deepEqual(oopTarget(sbc, { oopLimit: 9000, oopToDate: 6000 }),
+    { limit: 9000, source: "eob", scope: null, conflict: true, sbcLimit: 2500 });
+});
+
+// Only when the data contradicts the SBC. A disagreement the member has not yet
+// spent past is still the SBC's to own, with the existing note.
+test("deductibleTarget: a disagreement below the limit keeps the SBC and flags it", () => {
+  const sbc = { deductible: { individual: 500, family: 1500 } };
+  assert.deepEqual(deductibleTarget(sbc, { deductibleLimit: 5000, deductibleToDate: 200 }),
+    { limit: 500, source: "sbc", scope: "individual", conflict: true, sbcLimit: 500 });
+});
+
+// FAM2's family target must survive: matching the family figure is not a conflict.
+test("deductibleTarget: a family target still wins over the individual one", () => {
+  const sbc = { deductible: { individual: 500, family: 1500 } };
+  assert.deepEqual(deductibleTarget(sbc, { deductibleLimit: 1500, deductibleToDate: 640 }),
+    { limit: 1500, source: "sbc", scope: "family", conflict: false, sbcLimit: 1500 });
 });

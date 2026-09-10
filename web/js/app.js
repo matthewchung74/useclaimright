@@ -60,6 +60,7 @@ const analyzeFn = httpsCallable(functions, "analyze", { timeout: 300_000 });
 const extractPlanFn = httpsCallable(functions, "extractPlan", { timeout: 300_000 });
 const submitFeedbackFn = httpsCallable(functions, "submitFeedback", { timeout: 30_000 });
 const generateLetterFn = httpsCallable(functions, "generateLetter", { timeout: 30_000 });
+const choosePlanFn = httpsCallable(functions, "choosePlan", { timeout: 30_000 });
 const createCheckoutSessionFn = httpsCallable(functions, "createCheckoutSession", { timeout: 30_000 });
 // App Check attests that a request came from this app, not a script holding a
 // minted account. Skipped when no site key is set — the Functions must stay on
@@ -1916,9 +1917,74 @@ async function loadPlan() {
   renderPlanCard();
 }
 
+// The plan chooser, for a document that describes several.
+//
+// The member's booklet holds three plans and never says which is theirs. We
+// resolve it from their EOB, but a plan chosen on someone's behalf that they
+// cannot see or correct is silent wrongness in a nicer wrapper — so the choice
+// is always shown, always changeable, and the reason is always given.
+//
+// Lead with the numbers, not the acronyms. Nobody remembers "EPO", but "no
+// deductible" versus "$500 then the plan pays" is recognisable.
+function planChoices(plan) {
+  const list = plan?.candidates ?? [];
+  if (list.length < 2) return "";
+  const money = (n) => (typeof n === "number" ? fmt(n) : null);
+  const describe = (p) => {
+    const ind = money(p?.deductible?.individual), fam = money(p?.deductible?.family);
+    if (ind === null && fam === null) return "Deductible not stated";
+    if (p.deductible.individual === 0) return "No deductible";
+    return [ind && `${ind} per person`, fam && `${fam} per family`].filter(Boolean).join(" · ");
+  };
+  const rows = list.map((p, i) => `
+    <label class="plan-choice${i === plan.resolvedIndex ? " chosen" : ""}">
+      <input type="radio" name="plan-choice" value="${i}"${i === plan.resolvedIndex ? " checked" : ""}>
+      <b>${escapeHtml(describe(p))}</b>
+      <span class="muted">${escapeHtml(p?.planName || `Plan ${i + 1}`)}</span>
+    </label>`).join("");
+  const head = plan.resolvedIndex === null
+    ? `<b>Which plan are you on?</b> ${escapeHtml(plan.resolvedWhy || "")} Until you say, bills are not checked against plan terms.`
+    : `Using the plan below. ${escapeHtml(plan.resolvedWhy || "")}`;
+  return `<div class="usage-card" id="plan-choices">
+    <div class="muted" style="margin-bottom:8px">${head}</div>${rows}</div>`;
+}
+
+// Choosing writes the plan straight to Firestore. Rules allow the owner to
+// delete their plan doc but not create or update it — extractPlan owns writes —
+// so this goes through a callable rather than the client SDK.
+async function wirePlanChoices() {
+  const box = $("plan-choices");
+  if (!box) return;
+  for (const input of box.querySelectorAll('input[name="plan-choice"]')) {
+    input.onchange = async () => {
+      const index = Number(input.value);
+      box.querySelectorAll("input").forEach((i) => { i.disabled = true; });
+      try {
+        await choosePlanFn({ index });
+        await loadPlan();
+        await applySbcConfiguration();
+        renderPlanCard();
+        renderUsage();
+      } catch (e) {
+        console.error(e);
+        setError("bills-error", docMessage(e) ?? "Could not switch plans — please try again.");
+        box.querySelectorAll("input").forEach((i) => { i.disabled = false; });
+      }
+    };
+  }
+}
+
 function renderPlanCard() {
   const el = $("plan-card");
   const s = activePlan?.structured;
+  const choices = planChoices(activePlan);
+  if (!s && choices) {
+    // Several plans, none resolved. Not "no plan on file" — we have their
+    // document and are one answer away.
+    el.innerHTML = choices;
+    wirePlanChoices();
+    return;
+  }
   if (!s) {
     // Empty slot, not a warning: dashed border echoes the dropzone grammar.
     el.innerHTML = `<div class="usage-card plan-line" style="border:1px dashed var(--line)">
@@ -1939,7 +2005,9 @@ function renderPlanCard() {
         <a href="#" id="plan-remove" style="color:var(--bad)">Remove</a>
       </span>
     </div>
-    ${expired ? `<div class="banner">Your plan year ended ${escapeHtml(s.planYearEnd)} — upload your new SBC.</div>` : ""}`;
+    ${expired ? `<div class="banner">Your plan year ended ${escapeHtml(s.planYearEnd)} — upload your new SBC.</div>` : ""}
+    ${choices}`;
+    wirePlanChoices();
     $("plan-view").onclick = (e) => {
       e.preventDefault();
       const full = $("plan-full");
@@ -2219,7 +2287,9 @@ function renderUsage() {
     dc.innerHTML = `<div class="usage-card">
       <div class="usage-head"><b>Deductible</b><span class="usage-count">${fmt(applied)}${lim}</span></div>
       ${target.limit !== null ? `<div class="progress"><div class="bar" style="width:${Math.min(100, (applied / target.limit) * 100)}%"></div></div>` : ""}
-      <div class="muted">${sourcing}${disagreement ? ` Note: your EOBs' per-claim amounts sum to ${fmt(summedApplied)} — the insurer's running total disagrees; worth a look.` : ""}${target.conflict ? ` Note: your EOB states a different annual deductible (${fmt(snapshot.deductibleLimit)}) than your SBC (${fmt(target.limit)}) — worth a look.` : ""}
+      <div class="muted">${sourcing}${disagreement ? ` Note: your EOBs' per-claim amounts sum to ${fmt(summedApplied)} — the insurer's running total disagrees; worth a look.` : ""}${!target.conflict ? "" : target.source === "eob"
+        ? ` Note: measured against your insurer's ${fmt(snapshot.deductibleLimit)} — your claims have already passed the ${fmt(target.sbcLimit)} on your SBC, so that may not be the plan you are on.`
+        : ` Note: your EOB states a different annual deductible (${fmt(snapshot.deductibleLimit)}) than your SBC (${fmt(target.limit)}) — worth a look.`}
         ${target.limit !== null && applied < target.limit ? `<span style="float:right">${fmt(target.limit - applied)} to go</span>` : ""}</div>
     </div>`;
   } else {
@@ -2237,7 +2307,7 @@ function renderUsage() {
       <div class="usage-head"><b>Out-of-pocket maximum</b>
         <span class="usage-count">${fmt(oopPaid ?? 0)}${oop.limit !== null ? ` of ${fmt(oop.limit)}` : ""}${pct !== null ? ` · ${pct}%` : ""}</span></div>
       ${oop.limit !== null ? `<div class="progress"><div class="bar" style="width:${pct}%"></div></div>` : ""}
-      ${oop.source === "sbc" ? `<div class="muted">${targetLabel(oop.scope)} from your plan (SBC).${oop.conflict ? ` Note: your EOB states a different out-of-pocket limit (${fmt(snapshot.oopLimit)}) than your SBC (${fmt(oop.limit)}) — worth a look.` : ""}</div>` : ""}
+      ${oop.source === "sbc" ? `<div class="muted">${targetLabel(oop.scope)} from your plan (SBC).${!oop.conflict ? "" : oop.source === "eob" ? "" : ` Note: your EOB states a different out-of-pocket limit (${fmt(snapshot.oopLimit)}) than your SBC (${fmt(oop.limit)}) — worth a look.`}</div>` : ""}
     </div>`;
   } else {
     oc.innerHTML = "";

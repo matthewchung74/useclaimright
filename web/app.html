@@ -335,6 +335,11 @@
        #go-signup and #verify-signout are the recovery action on their screen —
        the one thing a stuck person needs to hit — so they get the band, and
        their own line (via <br>) to spend it in without overlapping the prose. */
+    .plan-choice{display:flex;align-items:baseline;gap:8px;padding:8px 4px;cursor:pointer;
+      border-top:1px solid var(--line)}
+    .plan-choice b{font-weight:600}
+    .plan-choice .muted{font-size:13px}
+    .plan-choice.chosen b{color:var(--brand)}
     #toggle-signup,#forgot-password,#skip-onboarding,
     #go-signup,#verify-signout,#see-sample{display:inline-block;padding:14px 6px}
   }

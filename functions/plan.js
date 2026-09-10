@@ -53,6 +53,20 @@ export const planSchema = {
   },
 };
 
+// An employer booklet describes every plan the employer offers, and the member's
+// is not marked. Extracting one plan from three meant the model either picked
+// silently or — as it did on a real booklet — returned nulls and the whole
+// document was rejected. So ask for all of them, and resolve later from the EOB.
+export const plansSchema = {
+  type: "object",
+  additionalProperties: false,
+  required: ["plans"],
+  properties: {
+    sourceText: { type: "string" },
+    plans: { type: "array", items: planSchema },
+  },
+};
+
 export const PLAN_EXTRACT_INSTRUCTIONS = `You are reading the text of a Summary of
 Benefits and Coverage (SBC) — the standardized ACA document with an "Important Questions" table
 and a "Common Medical Events" cost-share grid. When the SBC is given as page images rather
@@ -74,6 +88,51 @@ Extract, verbatim from the document, NEVER inferred or guessed:
 
 If the document has no Coverage Period AND no Important Questions numbers, it is not an SBC:
 return every field null/empty rather than guessing.`;
+
+// The booklet version.
+//
+// The first attempt inherited "also return what you read in sourceText" from the
+// single-plan prompt and the model obliged — 6,858 tokens of page text in
+// sourceText and `plans: []`. Schema-valid, and completely useless. So the array
+// is stated first, stated as the point, and stated as never-empty.
+export const PLANS_EXTRACT_INSTRUCTIONS = `Return a JSON object with a \`plans\` array.
+
+A plan document may describe SEVERAL plans. An employer booklet usually carries a separate
+schedule of benefits per plan it offers — "(EPO Plan)", "(PPO Plan)", "(HDHP Plans)" — each
+with its own deductible, out-of-pocket maximum and copays.
+
+RETURN ONE ENTRY IN \`plans\` PER PLAN, in the order they appear. A document describing a
+single plan returns an array of one. \`plans\` must NOT be empty for any document containing
+a benefits schedule, an "Important Questions" table, or a deductible figure — if you can see
+a deductible anywhere, that is a plan and it belongs in the array.
+
+Do NOT merge plans and do NOT choose between them. Nothing in the document says which plan
+the reader is enrolled in, and guessing measures their bills against terms they are not on.
+Returning all of them is the correct answer.
+
+For EACH entry, extract verbatim from the document, NEVER inferred or guessed:
+- planName: how the document distinguishes this plan, including the type in parentheses when
+  printed — "MEDICAL SCHEDULE OF BENEFITS (HDHP Plans)".
+- planYearStart / planYearEnd: the Coverage Period dates, ISO YYYY-MM-DD (null if absent —
+  a booklet often prints these once, away from the schedules; null is correct then).
+- deductible.individual / .family and oopMax.individual / .family: the printed dollar numbers.
+  Where a schedule shows in-network and out-of-network columns, use the IN-NETWORK column.
+  Rows may be labelled "Per Person / Per Family" or "Single Coverage / Family Coverage" —
+  both mean individual / family. null unless printed as a number.
+- limits: every service with a printed visit/day/session-per-year maximum. label = the service
+  name as printed; visitsPerYear = the printed number; codesHint = the CPT codes that most
+  commonly bill that service, from your medical coding knowledge (this is the ONLY field where
+  your knowledge is allowed — everything else must appear in the document).
+- costShares: one row per cost-share line for outpatient/office/therapy/emergency/imaging/lab
+  care. category = the row label as printed; verbatim = the full row text word-for-word;
+  copay / coinsurancePct = printed numbers or null; deductibleApplies = true/false only when
+  the row states it, else null.
+
+Only if the document was given as page images, ALSO set the top-level sourceText to the text
+you read. Never let sourceText substitute for \`plans\`.
+
+If the document contains no benefits schedule and no deductible figures anywhere, return
+\`plans: []\`.`;
 
 // Deterministic digest for the audit prompt: key numbers + verbatim rows, hard-capped.
 export function buildDigest(structured) {

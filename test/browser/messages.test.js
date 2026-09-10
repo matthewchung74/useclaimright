@@ -58,6 +58,7 @@ const MATRIX = [
   ["invalid-argument", "Too many pages (", "member"],
   ["invalid-argument", "Too many pages; the limit is", "member"],
   ["invalid-argument", "This doesn't look like a Summary of Benefits.", "member"],
+  ["invalid-argument", "That is not one of the plans in your document.", "member"],
   // Malformed requests and schema errors: our bugs, not their reading.
   ["invalid-argument", "Which audit?", "generic"],
   ["invalid-argument", "<computed>", "generic"], // feedback validation, ajv error text
@@ -72,6 +73,10 @@ const MATRIX = [
   ["unauthenticated", "Sign in to send feedback.", "generic"],
   ["unauthenticated", "Sign in to generate a letter.", "generic"],
   ["unauthenticated", "Sign in first.", "generic"],
+  ["unauthenticated", "Sign in to choose your plan.", "generic"],
+  // A state bug, not something the member did. The chooser cannot be shown
+  // without candidates, so reaching this means our own data is wrong.
+  ["failed-precondition", "There is no plan document to choose from.", "generic"],
   ["not-found", "That audit no longer exists.", "generic"],
   ["permission-denied", "This letter needs to be purchased first.", "generic"],
   ["failed-precondition", "Payments are not switched on.", "generic"],
@@ -118,8 +123,8 @@ test("both document paths surface the errors a member can act on", () => {
   const decl = app.indexOf("const docMessage");
   const body = app.slice(0, decl) + app.slice(app.indexOf("\n\n", decl));
   const sites = [...body.matchAll(/(serverMessage|docMessage)\(e\)/g)].map((m) => m[1]);
-  assert.equal(sites.filter((s) => s === "docMessage").length, 3,
-    "analyze (single and batch) and extractPlan must all use docMessage");
+  assert.equal(sites.filter((s) => s === "docMessage").length, 4,
+    "analyze (single and batch), extractPlan and the plan chooser must all use docMessage");
   assert.equal(sites.filter((s) => s === "serverMessage").length, 1,
     "only submitFeedback stays on serverMessage — its invalid-argument is ajv text");
   assert.match(app, /const docMessage[\s\S]{0,200}functions\/invalid-argument/,

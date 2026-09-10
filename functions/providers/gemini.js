@@ -1,7 +1,7 @@
 import { GoogleGenAI } from "@google/genai";
 
 import { findingsSchema } from "../schema.js";
-import { planSchema, PLAN_EXTRACT_INSTRUCTIONS, planTermsBlock } from "../plan.js";
+import { plansSchema, PLANS_EXTRACT_INSTRUCTIONS, planTermsBlock } from "../plan.js";
 
 const AUDIT_INSTRUCTIONS = `You are a medical billing auditor. You receive the text of a patient's
 itemized medical bill and the matching insurance Explanation of Benefits (EOB), as printed —
@@ -209,17 +209,17 @@ export async function runPlanExtract(sbc, opts) {
   const images = sbc.images || [];
   const parts = images.length
     ? [
-        { text: `${PLAN_EXTRACT_INSTRUCTIONS}\n\nThe SBC is attached as ${images.length} page image(s). Read them, and return the text you read in sourceText.` },
+        { text: `${PLANS_EXTRACT_INSTRUCTIONS}\n\nThe plan document is attached as ${images.length} page image(s). Read them, and return the text you read in sourceText.` },
         ...images.map((data) => ({ inlineData: { mimeType: "image/jpeg", data } })),
       ]
-    : [{ text: `${PLAN_EXTRACT_INSTRUCTIONS}\n\n===== SUMMARY OF BENEFITS =====\n${sbc.text}` }];
+    : [{ text: `${PLANS_EXTRACT_INSTRUCTIONS}\n\n===== PLAN DOCUMENT =====\n${sbc.text}` }];
 
   const response = await ai.models.generateContent({
     model: modelId,
     contents: [{ role: "user", parts }],
     config: {
       responseMimeType: "application/json",
-      responseJsonSchema: planSchema,
+      responseJsonSchema: plansSchema,
       temperature: 0,
       maxOutputTokens: outputCeiling(images.length),
     },

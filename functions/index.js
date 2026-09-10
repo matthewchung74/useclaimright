@@ -12,7 +12,8 @@ import {
 } from "./payments.js";
 import { addUsage, estimateCostUsd } from "./cost.js";
 import { runAudit, runPlanExtract } from "./providers/gemini.js";
-import { planSchema, buildDigest, replaceDecision, applyPlanGate } from "./plan.js";
+import { plansSchema, buildDigest, replaceDecision, applyPlanGate } from "./plan.js";
+import { resolvePlan } from "./resolveplan.js";
 import { validateFeedback } from "./feedback.js";
 import { openBudget, AUDIT, PLAN } from "./budget.js";
 import { parkPlan, takePendingPlan } from "./pendingplan.js";
@@ -66,7 +67,7 @@ const validate = ajv.compile(findingsSchema);
 // was spent on a plan that never landed.
 const PLAN_DAILY_LIMIT = 3;
 const FEEDBACK_DAILY_LIMIT = 20;
-const validatePlan = ajv.compile(planSchema);
+const validatePlan = ajv.compile(plansSchema);
 
 async function checkFeedbackRateLimit(uid) {
   const day = new Date().toISOString().slice(0, 10);
@@ -294,6 +295,31 @@ export const stripeWebhook = onRequest(
   }
 );
 
+// Switching between the plans in a booklet. No model call: the candidates were
+// extracted and paid for already, so correcting a resolution must be free —
+// otherwise the member is charged for our uncertainty about which plan is theirs.
+export const choosePlan = onCall(
+  { region: "us-central1", memory: "256MiB", timeoutSeconds: 30, enforceAppCheck: ENFORCE_APP_CHECK },
+  async (request) => {
+    if (!request.auth) throw new HttpsError("unauthenticated", "Sign in to choose your plan.");
+    const uid = request.auth.uid;
+    const index = request.data?.index;
+    const ref = db.doc(`users/${uid}/plan/active`);
+    const cur = (await ref.get()).data();
+    const candidates = cur?.candidates ?? [];
+    if (!candidates.length) throw new HttpsError("failed-precondition", "There is no plan document to choose from.");
+    if (!Number.isInteger(index) || index < 0 || index >= candidates.length) {
+      throw new HttpsError("invalid-argument", "That is not one of the plans in your document.");
+    }
+    const structured = candidates[index];
+    await ref.set({
+      structured, digest: buildDigest(structured),
+      resolvedIndex: index, resolvedWhy: "You chose this plan.",
+    }, { merge: true });
+    return { status: "stored", structured };
+  }
+);
+
 export const analyze = onCall(
   {
     region: "us-central1",
@@ -381,7 +407,14 @@ export const analyze = onCall(
     } catch (err) {
       await budget.refund();
       if (err instanceof HttpsError) throw err;
-      console.error("runAudit failed", { uid, model: MODEL_ID, message: err.message, terminal: !!err.terminal });
+      // MODEL_CALL_FAILED, structured like FEEDBACK_RECEIVED, so an alert can put
+      // the reason in the email. Nobody files feedback about a spinner that
+      // never ends — the first person whose real audit breaks tells us nothing
+      // unless we are told directly.
+      console.error(JSON.stringify({
+        marker: "MODEL_CALL_FAILED", kind: "audit", uid,
+        model: MODEL_ID, reason: err.message ?? "", terminal: String(!!err.terminal),
+      }));
       if (err.terminal) {
         throw new HttpsError("resource-exhausted", "This document produced more output than we can handle. Try auditing fewer pages at once.");
       }
@@ -499,13 +532,19 @@ export const analyze = onCall(
 
 // The plan document, written the same way whether the extraction just ran or
 // was parked by a confirm_older round trip.
-async function writePlan(ref, { structured, text, sourceName, sourceHash, tokens }) {
-  const digest = buildDigest(structured);
+async function writePlan(ref, plan) {
+  const { structured, candidates = [], resolvedIndex = null, resolvedWhy = "",
+    text, sourceName, sourceHash, tokens } = plan;
+  // null digest when unresolved, so the audit prompt carries no plan terms at
+  // all rather than one plan's terms guessed from three. That is a path the app
+  // already handles and E2 verified: fewer findings, all of them trustworthy.
+  const digest = structured ? buildDigest(structured) : null;
   await ref.set({
-    structured, digest, text, sourceName, sourceHash,
+    structured, digest, candidates, resolvedIndex, resolvedWhy,
+    text, sourceName, sourceHash,
     model: MODEL_ID, tokens, createdAt: FieldValue.serverTimestamp(),
   });
-  return { status: "stored", structured, digest };
+  return { status: "stored", structured, digest, candidates, resolvedIndex, resolvedWhy };
 }
 
 export const extractPlan = onCall(
@@ -560,20 +599,29 @@ export const extractPlan = onCall(
       backend: GEMINI_BACKEND,
       location: VERTEX_LOCATION,
     };
-    let structured, planUsage = null;
+    let extracted, planUsage = null;
     try {
       const first = await runPlanExtract(sbcDoc, opts);
       planUsage = addUsage(null, first.usage);
-      structured = first.data;
-      if (!validatePlan(structured)) {
+      extracted = first.data;
+      if (!validatePlan(extracted)) {
         const errText = ajv.errorsText(validatePlan.errors);
+        console.warn(JSON.stringify({ marker: "PLAN_SCHEMA_RETRY", uid, errors: errText.slice(0, 400) }));
         const retry = await runPlanExtract(
           { ...sbcDoc, text: `${sbcDoc.text}\n\n[SYSTEM NOTE: your previous response failed schema validation: ${errText}. Return valid JSON matching the schema exactly.]` },
           opts
         );
         planUsage = addUsage(planUsage, retry.usage);
-        structured = retry.data;
-        if (!validatePlan(structured)) {
+        extracted = retry.data;
+        if (!validatePlan(extracted)) {
+          // A schema failure used to leave NO trace: the HttpsError is rethrown
+          // above the MODEL_CALL_FAILED line, so "produced invalid output"
+          // reached the member and nothing reached us. Log before throwing.
+          console.error(JSON.stringify({
+            marker: "MODEL_CALL_FAILED", kind: "plan", uid, model: MODEL_ID,
+            reason: `schema: ${ajv.errorsText(validatePlan.errors).slice(0, 400)}`,
+            terminal: "false",
+          }));
           throw new HttpsError("internal", "Plan extraction produced invalid output. Please try again.");
         }
       }
@@ -581,26 +629,58 @@ export const extractPlan = onCall(
     } catch (err) {
       await budget.refund();
       if (err instanceof HttpsError) throw err;
-      console.error("runPlanExtract failed", { uid, model: MODEL_ID, message: err.message, terminal: !!err.terminal });
+      console.error(JSON.stringify({
+        marker: "MODEL_CALL_FAILED", kind: "plan", uid,
+        model: MODEL_ID, reason: err.message ?? "", terminal: String(!!err.terminal),
+      }));
       if (err.terminal) {
         throw new HttpsError("resource-exhausted", "This document produced more output than we can handle. Try auditing fewer pages at once.");
       }
       throw new HttpsError("internal", "Plan extraction failed. Please try again.");
     }
 
-    // Not an SBC: no coverage period AND no Important-Questions numbers.
-    const hasNumbers = [structured.deductible?.individual, structured.deductible?.family,
-      structured.oopMax?.individual, structured.oopMax?.family].some((n) => typeof n === "number");
-    if (!structured.planYearStart && !hasNumbers) {
+    // Not a plan document: no coverage period AND no Important-Questions numbers,
+    // in ANY of the plans it describes.
+    const candidates = Array.isArray(extracted.plans) ? extracted.plans : [];
+    const usable = candidates.filter((p) =>
+      p.planYearStart ||
+      [p.deductible?.individual, p.deductible?.family, p.oopMax?.individual, p.oopMax?.family]
+        .some((n) => typeof n === "number"));
+    // What came back, per plan. Kept because "plan candidates []" is what
+    // identified an empty array dressed up as 6,858 tokens of sourceText — the
+    // failure looked like "not an SBC" from every other angle.
+    console.log("plan candidates", JSON.stringify(candidates.map((p) => ({
+      name: (p?.planName ?? "").slice(0, 60),
+      ded: [p?.deductible?.individual ?? null, p?.deductible?.family ?? null],
+      rows: (p?.costShares ?? []).length,
+    }))));
+    if (!usable.length) {
       throw new HttpsError("invalid-argument", "This doesn't look like a Summary of Benefits.");
     }
 
+    // Which one is theirs? The EOB is written by the insurer about the plan they
+    // are actually on; the booklet never says. Unresolved is a real answer, and
+    // it is better than a coin flip that then measures every bill they upload
+    // against terms they are not on.
+    const eobs = await db.collection(`users/${uid}/eobs`)
+      .orderBy("createdAt", "desc").limit(3).get().catch(() => ({ docs: [] }));
+    const signals = eobs.docs.map((d) => d.data()).find((e) => e?.text || e?.accumulators) ?? {};
+    const { index, why } = resolvePlan(usable, {
+      text: signals.text ?? "",
+      deductibleLimit: signals.accumulators?.deductibleLimit,
+      oopLimit: signals.accumulators?.oopLimit,
+    });
+    const structured = index === null ? null : usable[index];
+
     const plan = {
-      structured, text: sbcDoc.text || structured?.sourceText || "",
+      structured, candidates: usable, resolvedIndex: index, resolvedWhy: why,
+      text: sbcDoc.text || extracted?.sourceText || "",
       sourceName: name, sourceHash: hash, tokens: planUsage,
     };
     const existing = (await planRef.get()).data()?.structured ?? null;
-    if (replaceDecision(existing, structured, force === true) === "confirm_older") {
+    // Compare against whichever plan we resolved; with none resolved there is
+    // nothing to be older THAN, so the replace question does not arise.
+    if (structured && replaceDecision(existing, structured, force === true) === "confirm_older") {
       await parkPlan(db, uid, plan);
       return {
         status: "confirm_older",

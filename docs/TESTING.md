@@ -1646,7 +1646,41 @@ than text — a text layer is good enough to find a heading and not good enough 
 read a table. 135 pages → **18**, the three medical schedules exactly, ~1.9 MB.
 The review screen says how many pages of how many, and names the plans it found.
 
-**Still open — and now proven necessary rather than hypothetical.** Shown three
+**Closed 2026-09-10.** Extraction now asks for every plan the document describes
+and is told explicitly not to choose; `resolveplan.js` picks the member's from
+their EOB. Verified end to end on the real booklet:
+
+| plan | deductible | out-of-pocket | rows |
+|---|---|---|---|
+| EPO | $0 / $0 | $750 / $1,500 | 10 |
+| PPO | $500 / $1,500 | $5,000 / $10,000 | 11 |
+| **HDHP** | **$2,500 / $5,000** | $2,500 / $5,000 | 10 |
+
+All three match the document. `resolvedIndex: 2`, `resolvedWhy: "Your EOB says
+this is a HDHP plan."` — from the sentence the insurer prints, "This is a High
+Deductible Health Plan." Nobody was asked anything, all three are offered as a
+choice in case it is wrong, and the deductible card measures against **$5,000**
+instead of another plan's $500.
+
+**It took four attempts, and each failed differently** — worth recording,
+because three of the four were invisible from the outside:
+
+1. `plans: []` with 6,858 tokens of page text in `sourceText`. The prompt
+   inherited "also return what you read in sourceText" from the single-plan
+   version and the model obliged, then skipped the actual job. Schema-valid and
+   useless. It presented as "This doesn't look like a Summary of Benefits."
+2. Schema validation failed twice → "produced invalid output", **with no log at
+   all**: the `HttpsError` is rethrown above the `MODEL_CALL_FAILED` line, so the
+   member got a message and we got nothing. Fixed by logging before the throw.
+3. A Vertex **429**. Cost nothing — `budget.refund()` credited both counters,
+   which is the model-failure ledger row working in anger for the first time.
+   The MODEL_CALL_FAILED alert fired with the reason in it.
+4. Worked, after the prompt was rewritten to state the array first, state it as
+   the point, and state that it is never empty for a document with a deductible.
+
+**The earlier note below is kept as written, because it was true when written.**
+
+**Was open until then:** Shown three
 plans and asked to fill a one-plan schema, the model returned an essentially
 empty plan (20,821 tokens in, **362** out, $0.017) and the E4 guard rejected it
 with "This doesn't look like a Summary of Benefits." That is the *safe* failure —

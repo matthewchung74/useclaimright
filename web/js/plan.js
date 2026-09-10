@@ -63,30 +63,43 @@ export function mergeSbcTrackers(existing, limits, planYearStartMonth) {
 // This read `.individual` unconditionally, so a family plan measured progress
 // toward $1,000 against a $500 target and reported the EOB's correct family
 // figure as a conflict. Reproduces with any file in test-fixtures/real-sbc/.
-function limitTarget(sbcIndividual, sbcFamily, eobLimit) {
+function limitTarget(sbcIndividual, sbcFamily, eobLimit, toDate) {
   const near = (a, b) => typeof a === "number" && typeof b === "number" && Math.abs(a - b) <= 1;
 
   if (near(sbcFamily, eobLimit) && !near(sbcIndividual, eobLimit)) {
-    return { limit: sbcFamily, source: "sbc", scope: "family", conflict: false };
+    return { limit: sbcFamily, source: "sbc", scope: "family", conflict: false, sbcLimit: sbcFamily };
+  }
+  // You cannot have accrued more than the limit you are accruing toward. When
+  // the insurer's running total exceeds the SBC's figure, the SBC is not the
+  // plan this member is on, and measuring against it printed "$5,000.00 of
+  // $500.00" — a card claiming 1000% progress, which reads as broken even
+  // though a note underneath explained it. Found with a member's real EOB
+  // against a plan from a different document, 2026-09-10.
+  if (typeof toDate === "number" && typeof sbcIndividual === "number" &&
+      toDate > sbcIndividual && typeof eobLimit === "number" && eobLimit >= toDate) {
+    return { limit: eobLimit, source: "eob", scope: null, conflict: true, sbcLimit: sbcIndividual };
   }
   if (typeof sbcIndividual === "number") {
     return {
       limit: sbcIndividual, source: "sbc", scope: "individual",
       conflict: typeof eobLimit === "number" && !near(sbcIndividual, eobLimit),
+      sbcLimit: sbcIndividual,
     };
   }
-  if (typeof eobLimit === "number") return { limit: eobLimit, source: "eob", scope: null, conflict: false };
-  return { limit: null, source: null, scope: null, conflict: false };
+  if (typeof eobLimit === "number") return { limit: eobLimit, source: "eob", scope: null, conflict: false, sbcLimit: null };
+  return { limit: null, source: null, scope: null, conflict: false, sbcLimit: null };
 }
 
 export function deductibleTarget(structured, snapshot) {
-  return limitTarget(structured?.deductible?.individual, structured?.deductible?.family, snapshot?.deductibleLimit);
+  return limitTarget(structured?.deductible?.individual, structured?.deductible?.family,
+    snapshot?.deductibleLimit, snapshot?.deductibleToDate);
 }
 
 // Out-of-pocket max: same precedence, and the reason the OOP card can finally
 // render — oopToDate/oopLimit have been extracted since v2 but never shown.
 export function oopTarget(structured, snapshot) {
-  return limitTarget(structured?.oopMax?.individual, structured?.oopMax?.family, snapshot?.oopLimit);
+  return limitTarget(structured?.oopMax?.individual, structured?.oopMax?.family,
+    snapshot?.oopLimit, snapshot?.oopToDate);
 }
 
 // Which of the plan's two numbers a card is measured against.
