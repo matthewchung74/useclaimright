@@ -143,6 +143,20 @@ const ocrConfidenceOf = (docs) => {
 // itself beyond one line, cannot mark which button is the dangerous one — and it
 // freezes the renderer, so every destructive path was untestable by automation.
 // Returns a promise so call sites read the same as they did.
+// The server sends two kinds of failure. Most are diagnostics — an internal
+// error, a dropped connection — and a member gets nothing from their wording.
+// Two are copy, written to be read: resource-exhausted carries the daily
+// allowance message, and unavailable carries the spend guard's "paused right
+// now", which is the only thing that explains why retrying immediately will
+// fail again too.
+//
+// Only resource-exhausted was ever surfaced. Flipping the guard off left every
+// path saying "please try again", which is advice that cannot work and hides a
+// deliberate, temporary pause behind what reads like a bug. Found by running G1
+// on 2026-09-10; the guard itself was returning the right message all along.
+const serverMessage = (e) =>
+  e?.code === "functions/resource-exhausted" || e?.code === "functions/unavailable" ? e.message : null;
+
 function confirmAction({ title, body, confirmLabel = "Confirm", danger = false }) {
   const dlg = $("confirm-dialog");
   $("cd-title").textContent = title;
@@ -915,7 +929,7 @@ async function runBatch() {
     console.error(e);
     if (e.code === "functions/resource-exhausted") showLimitDialog("audits");
     setError("upload-error",
-      `Audit ${batchIndex + 1} of ${total} failed: ${e.code === "functions/resource-exhausted" ? e.message : "analysis error — please try again."} The remaining documents are back below.`);
+      `Audit ${batchIndex + 1} of ${total} failed: ${serverMessage(e) ?? "analysis error — please try again."} The remaining documents are back below.`);
     show("upload");
     batchBackToPanel();
     batchDocs = null;
@@ -1069,8 +1083,7 @@ $("confirm-review").onclick = async () => {
   } catch (e) {
     console.error(e);
     if (e.code === "functions/resource-exhausted") showLimitDialog("audits");
-    setError("upload-error",
-      e.code === "functions/resource-exhausted" ? e.message : "Analysis failed — please try again.");
+    setError("upload-error", serverMessage(e) ?? "Analysis failed — please try again.");
     show("upload");
     batchBackToPanel();
   }
@@ -1162,7 +1175,7 @@ $("fb-send").onclick = async () => {
     setTimeout(() => { $("fb-card").hidden = true; $("fb-status").textContent = ""; $("fb-send").disabled = false; }, 1200);
   } catch (e) {
     console.error(e);
-    $("fb-status").textContent = e.code === "functions/resource-exhausted" ? e.message : "Couldn't send — try again.";
+    $("fb-status").textContent = serverMessage(e) ?? "Couldn't send — try again.";
     $("fb-send").disabled = false;
   }
 };
@@ -2049,8 +2062,11 @@ async function runSbcExtraction(force = false) {
   } catch (e) {
     console.error(e);
     if (e.code === "functions/resource-exhausted") showLimitDialog("plans");
-    setError(sbcErrTarget(), e.code === "functions/resource-exhausted" || e.code === "functions/invalid-argument"
-      ? e.message : "Plan extraction failed — please try again.");
+    // invalid-argument is this path's own member-facing case — "This doesn't
+    // look like a Summary of Benefits" (E4) — so it stays alongside the two
+    // serverMessage covers.
+    setError(sbcErrTarget(), serverMessage(e)
+      ?? (e.code === "functions/invalid-argument" ? e.message : "Plan extraction failed — please try again."));
     show(state.sbcOrigin); setBatchLabels(null);
   }
 }
