@@ -22,8 +22,8 @@ itself: no provider, no signup, no phone number.
    `labelExtractors`, which is what puts the actual message in the email. An
    alert saying only "a log matched" leaves you clicking through to Cloud
    Logging, which is the looking-it-up this exists to end.
-3. It notifies two channels: `the owner's address` and
-   `the owner's address`. Neither needed verifying.
+3. It notifies **`the owner's address`** only. Neither channel needed
+   verifying; the Gmail one was removed 2026-09-10 on request.
 
 Verified end to end 2026-09-10: feedback sent from the bubble arrived at Proton
 carrying `category: bug`, `from:`, and the full message text.
@@ -46,12 +46,32 @@ This is also why an email can appear to be broken when it is not: two test
 submissions inside one five-minute window produced exactly one email, and the
 missing one looked like a delivery failure for a while.
 
+## A member's audit failed
+
+The second policy. `analyze` and `extractPlan` log `marker: MODEL_CALL_FAILED`
+with the kind, model, reason and terminal flag; the alert puts the reason in the
+email. Nobody files feedback about a spinner that never ends, so this is the only
+way we hear about it.
+
+Verified in anger 2026-09-10 rather than by simulation: a real Vertex 429 fired
+it, and the email carried the full error. The member was not charged —
+`budget.refund()` credits both their daily allowance and the shared ceiling on
+that path, confirmed by the counter not moving.
+
+**A transient failure should not reach this alert at all now.** `retry.js`
+retries once, after 1.5s, for the classes that can succeed on a second attempt —
+429, 5xx, dropped sockets — and not for a 400 (the request is wrong; sending it
+again is a second bill) or a truncated response (the identical oversized request
+truncates identically). A second failure propagates untouched, so the refund and
+this alert behave exactly as before. Retries are logged as `MODEL_RETRY`, which
+is worth watching: a rising count is capacity trouble before it becomes visible
+to anyone.
+
 ## Not covered
 
-**Audit failures are still silent.** A member's first real audit erroring is a
-`console.error` in Cloud Logging that nobody watches. Same policy shape, and
-arguably worth more than feedback on a launch day — nobody files feedback about
-a spinner that never ends.
+Nothing tells you a member **succeeded**. There is no signal for "the first real
+person outside this project ran an audit", which on a launch day is the thing
+worth knowing.
 
 ## Changing it
 

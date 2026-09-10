@@ -2,6 +2,7 @@ import { GoogleGenAI } from "@google/genai";
 
 import { findingsSchema } from "../schema.js";
 import { plansSchema, PLANS_EXTRACT_INSTRUCTIONS, planTermsBlock } from "../plan.js";
+import { withRetry } from "../retry.js";
 
 const AUDIT_INSTRUCTIONS = `You are a medical billing auditor. You receive the text of a patient's
 itemized medical bill and the matching insurance Explanation of Benefits (EOB), as printed —
@@ -189,7 +190,7 @@ export async function runAudit(bill, eob, opts, planDigest = null) {
 
   const parts = buildAuditParts(bill, eob, instructions);
 
-  const response = await ai.models.generateContent({
+  const response = await withRetry("audit", () => ai.models.generateContent({
     model: modelId,
     contents: [{ role: "user", parts }],
     config: {
@@ -198,7 +199,7 @@ export async function runAudit(bill, eob, opts, planDigest = null) {
       responseMimeType: "application/json",
       responseJsonSchema: findingsSchema,
     },
-  });
+  }));
   assertComplete(response);
   return { data: JSON.parse(response.text), usage: usageOf(response) };
 }
@@ -214,7 +215,7 @@ export async function runPlanExtract(sbc, opts) {
       ]
     : [{ text: `${PLANS_EXTRACT_INSTRUCTIONS}\n\n===== PLAN DOCUMENT =====\n${sbc.text}` }];
 
-  const response = await ai.models.generateContent({
+  const response = await withRetry("plan", () => ai.models.generateContent({
     model: modelId,
     contents: [{ role: "user", parts }],
     config: {
@@ -223,7 +224,7 @@ export async function runPlanExtract(sbc, opts) {
       temperature: 0,
       maxOutputTokens: outputCeiling(images.length),
     },
-  });
+  }));
   assertComplete(response);
   return { data: JSON.parse(response.text), usage: usageOf(response) };
 }
