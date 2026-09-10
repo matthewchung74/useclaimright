@@ -98,6 +98,27 @@ export const submitFeedback = onCall(
       platform: "web",
       createdAt: FieldValue.serverTimestamp(),
     });
+
+    // Feedback used to land in Firestore and stop there — the collection is
+    // closed to clients, so the console was the only way to know it existed. The
+    // person most worth hearing from is the one who hit a broken edge and is not
+    // coming back, so waiting until someone remembers to look is the wrong way
+    // round. Logged at ERROR because that is what a Cloud Monitoring alert can
+    // reach; there is no SMTP anywhere in this project and this needs none.
+    // The marker is what the alert policy matches on — changing it silently
+    // turns the emails off.
+    // One JSON object, so Cloud Run parses it into jsonPayload fields rather
+    // than a flat string. That is what lets the alert put the actual message in
+    // the email — an alert saying only "a log matched" leaves you clicking
+    // through to Cloud Logging, which is the looking-it-up this exists to end.
+    console.error(JSON.stringify({
+      marker: "FEEDBACK_RECEIVED",
+      category: v.value.category ?? "",
+      screen: v.value.screen ?? "",
+      auditId: v.value.auditId ?? "",
+      from: request.auth.token?.email ?? "",
+      message: (v.value.message ?? "").slice(0, 500),
+    }));
     return { ok: true };
   }
 );
