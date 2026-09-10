@@ -55,7 +55,7 @@ const ENFORCE_APP_CHECK = process.env.APP_CHECK === "on";
 const MAX_DOC_CHARS = 60_000;
 // Page images are billed per page and arrive base64-encoded in the callable
 // payload, so both count. Generous for a real bill, bounded against abuse.
-const MAX_PAGES = 20;
+const MAX_PAGES = 25;
 const MAX_IMAGE_BYTES = 12_000_000;
 const DAILY_LIMIT = 10;
 // Our own accounts, so a day of testing does not drown the one alert that says

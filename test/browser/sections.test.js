@@ -105,8 +105,8 @@ test("a sentence referring to the schedule does not start one", () => {
 test("medical schedules are chosen over transplant when the budget is tight", () => {
   const chosen = selectSchedulePages(findPlanSections(booklet()), 20);
   assert.deepEqual(chosen.map((x) => x.plan), ["EPO Plan", "PPO Plan", "HDHP Plans"]);
-  assert.equal(pagesOf(chosen).length, 18, "18 pages of medical schedules, inside the 20-page limit");
-  assert.deepEqual(pagesOf(chosen).slice(0, 3), [7, 8, 9]);
+  assert.equal(pagesOf(chosen).length, 19, "the cover plus 18 pages of medical schedules");
+  assert.deepEqual(pagesOf(chosen).slice(0, 4), [1, 7, 8, 9], "cover first, then the schedules");
 });
 
 // One plan's prescription schedule without the other two invites comparing
@@ -125,7 +125,7 @@ test("a kind that does not fit whole is left out entirely", () => {
 test("135 pages becomes something that can actually be sent", () => {
   const p = booklet().concat(blank(105));
   const chosen = selectSchedulePages(findPlanSections(p), 20);
-  assert.ok(pagesOf(chosen).length <= 20, "over the limit is the failure this exists to prevent");
+  assert.ok(pagesOf(chosen).length <= 21, "over the limit is the failure this exists to prevent");
   assert.ok(pagesOf(chosen).length >= 18, "and it must not throw away the schedules either");
 });
 
@@ -145,4 +145,47 @@ test("if one plan's schedule is oversized, its whole kind is dropped", () => {
   ];
   assert.deepEqual(selectSchedulePages(sections, 20), [],
     "two plans out of three is the ambiguity bug wearing a nicer hat");
+});
+
+// --- the pages that say whether any of the rest applies ---------------------
+//
+// A real booklet prints the plan year in two halves: the SHAPE in Plan
+// Information ("Benefits begin on January 1 and end on the following December
+// 31") and the YEAR on the cover ("Revised 01-01-2026"). Sending only the
+// schedules meant the model had neither and invented 2025 for a 2026 plan — so
+// the plan was on file, correct in every other respect, and applied to nothing.
+
+test("Plan Information is found, and taken before the schedules", () => {
+  const p = blank(30);
+  p[4] = "PLAN INFORMATION\n\nBenefit Plan Year   Benefits begin on January 1 and end on the following December 31.";
+  p[6] = schedule("EPO Plan", "• Per Person   $0");
+  p[12] = schedule("PPO Plan", "• Per Person   $500");
+  const found = findPlanSections(p);
+  assert.match(found[0].kind, /PLAN INFORMATION/);
+  assert.equal(found[0].start, 5);
+  // Priority, not page order: it must survive a budget that cannot hold everything.
+  const chosen = selectSchedulePages(found, 8);
+  assert.match(chosen[0].kind, /PLAN INFORMATION/);
+});
+
+test("the cover page always goes, because the year is printed on it", () => {
+  const pages = pagesOf([{ kind: "MEDICAL", plan: "A", label: "A", start: 7, end: 9 }]);
+  assert.deepEqual(pages, [1, 7, 8, 9]);
+});
+
+test("the cover is not sent twice when a section already starts at page 1", () => {
+  const pages = pagesOf([{ kind: "MEDICAL", plan: "A", label: "A", start: 1, end: 3 }]);
+  assert.deepEqual(pages, [1, 2, 3]);
+});
+
+test("the cover can be left out when a caller does not want it", () => {
+  const pages = pagesOf([{ kind: "MEDICAL", plan: "A", label: "A", start: 7, end: 8 }], { cover: false });
+  assert.deepEqual(pages, [7, 8]);
+});
+
+// "General Information" is the other common name for the same page.
+test("the other name for that page is matched too", () => {
+  const p = blank(10);
+  p[3] = "GENERAL INFORMATION\n\nPlan year";
+  assert.match(findPlanSections(p)[0].kind, /GENERAL INFORMATION/);
 });

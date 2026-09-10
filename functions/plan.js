@@ -113,8 +113,13 @@ Returning all of them is the correct answer.
 For EACH entry, extract verbatim from the document, NEVER inferred or guessed:
 - planName: how the document distinguishes this plan, including the type in parentheses when
   printed — "MEDICAL SCHEDULE OF BENEFITS (HDHP Plans)".
-- planYearStart / planYearEnd: the Coverage Period dates, ISO YYYY-MM-DD (null if absent —
-  a booklet often prints these once, away from the schedules; null is correct then).
+- planYearStart / planYearEnd: the plan year, ISO YYYY-MM-DD. A booklet rarely prints this
+  on a schedule of benefits — look at the cover and any "Plan Information" page, which may
+  give the SHAPE of the year in words ("Benefits begin on January 1 and end on the following
+  December 31") and the YEAR separately as an effective or revision date ("Revised
+  01-01-2026"). Combine them: that example is 2026-01-01 to 2026-12-31. Use the same dates
+  for every plan in the document — one booklet, one plan year. Null only when neither the
+  shape nor the year appears anywhere.
 - deductible.individual / .family and oopMax.individual / .family: the printed dollar numbers.
   Where a schedule shows in-network and out-of-network columns, use the IN-NETWORK column.
   Rows may be labelled "Per Person / Per Family" or "Single Coverage / Family Coverage" —

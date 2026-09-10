@@ -52,7 +52,7 @@ async function renderPageToDataUrl(page, scale = 1.5) {
 // page runs out around 70. Neither was ever hit by a fixture, because every
 // fixture is a 5-8 page SBC. A member's real plan booklet is 135 pages, and it
 // failed with "please try again" — forever, since retrying sends it again.
-const PAGE_BUDGET = 20;
+const PAGE_BUDGET = 24;
 
 async function extractFromPdf(file) {
   const pdf = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;

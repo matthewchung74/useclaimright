@@ -20,7 +20,13 @@
 // merely mentions benefits.
 const HEADING = new RegExp(
   "(?:medical|transplant|dental|vision|pharmacy|prescription)?\\s*" +
-  "(?:schedule of benefits|benefit summary|summary of coverage|summary of benefits|benefits at a glance|what you pay)",
+  "(?:schedule of benefits|benefit summary|summary of coverage|summary of benefits|benefits at a glance|what you pay)" +
+  // The coverage period is not printed on a schedule of benefits. In a real
+  // booklet it lives in "PLAN INFORMATION", which said "Benefits begin on
+  // January 1 and ends on the following December 31" — the shape of the year,
+  // with the year itself on the cover ("Revised 01-01-2026"). Sending only the
+  // schedules meant the model had neither, and invented 2025 for a 2026 plan.
+  "|(?:plan|general) information",
   "i"
 );
 
@@ -87,7 +93,9 @@ export function findPlanSections(pages) {
 // The cost of that rule: one oversized schedule drops every plan of its kind
 // and this returns nothing. Callers must handle an empty result as "we could
 // not narrow this down" and ask, not as "there is nothing here".
-const PRIORITY = ["medical", "prescription", "pharmacy", "transplant", "dental", "vision"];
+// Information first: two pages that decide whether every other page applies at
+// all. A plan whose year we cannot read is a plan that checks nothing.
+const PRIORITY = ["information", "medical", "prescription", "pharmacy", "transplant", "dental", "vision"];
 const rankOf = (kind) => {
   const i = PRIORITY.findIndex((p) => new RegExp(p, "i").test(kind || ""));
   return i === -1 ? PRIORITY.length : i;
@@ -113,6 +121,14 @@ export function selectSchedulePages(sections, maxPages) {
   return chosen.sort((a, b) => a.start - b.start);
 }
 
-// The 1-based page numbers those sections cover.
-export const pagesOf = (sections) =>
-  sections.flatMap((s) => Array.from({ length: s.end - s.start + 1 }, (_, i) => s.start + i));
+// The 1-based page numbers those sections cover, with the cover page.
+//
+// The cover carries the date the booklet takes effect — "Revised 01-01-2026" —
+// and nothing else in the document pins the plan year to a year. It is one page
+// and it decides whether the other twenty mean anything.
+export const pagesOf = (sections, { cover = true } = {}) => {
+  const pages = sections.flatMap((s) =>
+    Array.from({ length: s.end - s.start + 1 }, (_, i) => s.start + i));
+  if (cover && !pages.includes(1)) pages.unshift(1);
+  return pages;
+};
