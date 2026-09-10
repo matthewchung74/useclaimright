@@ -1623,6 +1623,49 @@ subsequently run on production against Vertex on 2026-08-26 — 2025-01-01 → 2
 
 **Cost:** 3 plan uploads, 0 audits.
 
+## The cost ledger
+
+Every way a request can end, and what it charges. `functions/test/budget.test.js` is
+this table; a new failure path needs a row before it can be merged.
+
+| outcome | member's daily count | shared spend ceiling |
+|---|---|---|
+| the model ran and answered | +1 | +1 |
+| audits or plans paused (kill switch) | 0 | 0 |
+| global ceiling reached | 0 | 0 |
+| the model failed, or returned invalid output | 0 | 0 |
+| duplicate plan (caught before the model) | 0 | 0 |
+| not an SBC (E4 — the model ran and said so) | +1 | +1 |
+| "Replace anyway" on an older plan | +1 total | +1 total |
+
+**Three defects in one day were each a missing unwind at one call site while the
+others were right** — a paused audit charged the member, a paused plan upload
+charged the member, "Replace anyway" charged twice. A fourth was found by writing
+this table rather than by running anything: on a model failure the code credited
+the *shared* budget and left the member charged, then said "Analysis failed.
+Please try again." — inviting the retry that charged them again. We refunded
+ourselves and billed them for the same failure.
+
+The accounting now has one owner, `functions/budget.js`, because the pattern in
+all four was hand-rolled unwinding repeated at each site.
+
+## The message matrix
+
+`test/browser/messages.test.js` lists every `HttpsError` the server throws and
+whether the member reads it or a fallback. Adding a throw without classifying it
+fails the suite.
+
+**The same seam produced three defects.** One path matched too few codes and hid
+the kill switch behind "please try again" (G1). One matched too many and told a
+member with eight audits used that they had hit ten (G1's ceiling leg). And three
+`invalid-argument` messages on the audit path — bill required, too many pages,
+pages too large — were dropped entirely, so someone with an oversized scan was
+told to retry, which cannot work. Found by writing the matrix.
+
+Codes alone are too coarse to check: before the fix the plan path surfaced
+`invalid-argument` and the audit paths did not, and a whole-file check would have
+seen the code somewhere and passed. The test names the helper each path must use.
+
 ## G1 — The spend guard stops model calls without a deploy
 **Use case:** every other limit is per-uid, and accounts are free to mint. This is the only
 thing bounding the bill.

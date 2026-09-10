@@ -14,8 +14,7 @@ import { addUsage, estimateCostUsd } from "./cost.js";
 import { runAudit, runPlanExtract } from "./providers/gemini.js";
 import { planSchema, buildDigest, replaceDecision, applyPlanGate } from "./plan.js";
 import { validateFeedback } from "./feedback.js";
-import { reserveModelCall } from "./guard.js";
-import { claimDaily } from "./ratelimit.js";
+import { openBudget, AUDIT, PLAN } from "./budget.js";
 import { parkPlan, takePendingPlan } from "./pendingplan.js";
 
 initializeApp();
@@ -62,14 +61,9 @@ const DAILY_LIMIT = 10;
 const ajv = new Ajv({ allErrors: true });
 const validate = ajv.compile(findingsSchema);
 
-const checkRateLimit = (uid) =>
-  claimDaily(db, uid, {
-    dayField: "day",
-    countField: "count",
-    limit: DAILY_LIMIT,
-    message: `Daily limit of ${DAILY_LIMIT} audits reached.`,
-  });
-
+// Smaller than the audit cap because one plan lasts a year. S4 hit it for real
+// on 2026-09-09: the extraction ran, the cap fired on the save, and the upload
+// was spent on a plan that never landed.
 const PLAN_DAILY_LIMIT = 3;
 const FEEDBACK_DAILY_LIMIT = 20;
 const validatePlan = ajv.compile(planSchema);
@@ -279,16 +273,6 @@ export const stripeWebhook = onRequest(
   }
 );
 
-// S4 hit this for real on 2026-09-09: the extraction ran, the cap fired on the
-// save, and the upload was spent on a plan that never landed.
-const checkPlanRateLimit = (uid) =>
-  claimDaily(db, uid, {
-    dayField: "planDay",
-    countField: "planCount",
-    limit: PLAN_DAILY_LIMIT,
-    message: `Daily limit of ${PLAN_DAILY_LIMIT} plan uploads reached.`,
-  });
-
 export const analyze = onCall(
   {
     region: "us-central1",
@@ -328,14 +312,9 @@ export const analyze = onCall(
       throw new HttpsError("invalid-argument", "Those pages are too large. Try a lower-resolution scan.");
     }
 
-    const refundAudit = await checkRateLimit(uid);
-    let release;
-    try {
-      release = await reserveModelCall(db, { kind: "audit" });
-    } catch (err) {
-      await refundAudit();
-      throw err;
-    }
+    const budget = await openBudget(db, uid, AUDIT, {
+      limit: DAILY_LIMIT, message: `Daily limit of ${DAILY_LIMIT} audits reached.`,
+    });
 
     let plan = null;
     try {
@@ -379,7 +358,7 @@ export const analyze = onCall(
         }
       }
     } catch (err) {
-      await release();
+      await budget.refund();
       if (err instanceof HttpsError) throw err;
       console.error("runAudit failed", { uid, model: MODEL_ID, message: err.message, terminal: !!err.terminal });
       if (err.terminal) {
@@ -548,14 +527,9 @@ export const extractPlan = onCall(
       if (parked) return writePlan(planRef, parked);
     }
 
-    const refundPlan = await checkPlanRateLimit(uid);
-    let release;
-    try {
-      release = await reserveModelCall(db, { kind: "plan" });
-    } catch (err) {
-      await refundPlan();
-      throw err;
-    }
+    const budget = await openBudget(db, uid, PLAN, {
+      limit: PLAN_DAILY_LIMIT, message: `Daily limit of ${PLAN_DAILY_LIMIT} plan uploads reached.`,
+    });
 
     const opts = {
       modelId: MODEL_ID,
@@ -584,7 +558,7 @@ export const extractPlan = onCall(
       }
       console.log("plan usage", { uid, model: MODEL_ID, ...planUsage, costUsd: estimateCostUsd(planUsage, MODEL_ID) });
     } catch (err) {
-      await release();
+      await budget.refund();
       if (err instanceof HttpsError) throw err;
       console.error("runPlanExtract failed", { uid, model: MODEL_ID, message: err.message, terminal: !!err.terminal });
       if (err.terminal) {

@@ -161,6 +161,15 @@ const serverMessage = (e) =>
 // resource-exhausted, and only the first is what showLimitDialog describes. The
 // server marks the global one; an older deploy sends no details at all, so this
 // keeps showing the dialog exactly as before rather than silently hiding it.
+// The document paths — analyze and extractPlan — throw invalid-argument only for
+// things a member can act on: a missing document, too many pages, pages too
+// large, "this isn't a Summary of Benefits". Dropping those for a generic
+// "please try again" hands someone with a 15MB scan advice that cannot work.
+// submitFeedback also throws invalid-argument, but with schema errors that are
+// ours to fix rather than theirs to read, so it stays on serverMessage alone.
+const docMessage = (e) =>
+  serverMessage(e) ?? (e?.code === "functions/invalid-argument" ? e.message : null);
+
 const showLimitIfPersonal = (e, kind) => {
   if (e?.code === "functions/resource-exhausted" && e?.details?.scope !== "global") showLimitDialog(kind);
 };
@@ -938,7 +947,7 @@ async function runBatch() {
     console.error(e);
     showLimitIfPersonal(e, "audits");
     setError("upload-error",
-      `Audit ${batchIndex + 1} of ${total} failed: ${serverMessage(e) ?? "analysis error — please try again."} The remaining documents are back below.`);
+      `Audit ${batchIndex + 1} of ${total} failed: ${docMessage(e) ?? "analysis error — please try again."} The remaining documents are back below.`);
     show("upload");
     batchBackToPanel();
     batchDocs = null;
@@ -1092,7 +1101,7 @@ $("confirm-review").onclick = async () => {
   } catch (e) {
     console.error(e);
     showLimitIfPersonal(e, "audits");
-    setError("upload-error", serverMessage(e) ?? "Analysis failed — please try again.");
+    setError("upload-error", docMessage(e) ?? "Analysis failed — please try again.");
     show("upload");
     batchBackToPanel();
   }
@@ -2071,11 +2080,7 @@ async function runSbcExtraction(force = false) {
   } catch (e) {
     console.error(e);
     showLimitIfPersonal(e, "plans");
-    // invalid-argument is this path's own member-facing case — "This doesn't
-    // look like a Summary of Benefits" (E4) — so it stays alongside the two
-    // serverMessage covers.
-    setError(sbcErrTarget(), serverMessage(e)
-      ?? (e.code === "functions/invalid-argument" ? e.message : "Plan extraction failed — please try again."));
+    setError(sbcErrTarget(), docMessage(e) ?? "Plan extraction failed — please try again.");
     show(state.sbcOrigin); setBatchLabels(null);
   }
 }

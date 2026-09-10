@@ -358,6 +358,46 @@ test("verify screen warns about spam without needing a resend first", async () =
   assert.match(m.text, /spam/, "someone who checks an empty inbox must be told where else to look");
 });
 
+// PROXIMITY — a hint belongs to the thing it explains
+//
+// The spam hint on the verify screen was present, correct, and visible, so the
+// test above passed. It sat 24px below the sentence it explained and 0px above
+// the "Send it again" button, which reads as a caption for the button. Presence
+// is not placement, and nothing measured placement.
+//
+// Stated generally: a hint between a sentence and a control belongs to the
+// sentence, so it must not be nearer the control.
+// ---------------------------------------------------------------------------
+test("phone: a hint sits with the sentence it explains, not the button below it", async () => {
+  const offenders = [];
+  for (const id of await sectionIds()) {
+    await showSection(id);
+    const bad = await page.evaluate(() => {
+      const shown = (el) => el && (typeof el.checkVisibility === "function" ? el.checkVisibility() : el.offsetParent !== null);
+      const SAYS = "P, H1, H2, H3, .lead";
+      const DOES = "BUTTON, INPUT, SELECT, A";
+      const out = [];
+      for (const hint of document.querySelectorAll(".muted")) {
+        if (!shown(hint) || !hint.textContent.trim()) continue;
+        const above = hint.previousElementSibling, below = hint.nextElementSibling;
+        // Only the sandwich this rule can speak about: explained by what is
+        // above, followed by something that acts.
+        if (!shown(above) || !shown(below)) continue;
+        if (!above.matches(SAYS) || !below.matches(DOES)) continue;
+        const gapAbove = hint.getBoundingClientRect().top - above.getBoundingClientRect().bottom;
+        const gapBelow = below.getBoundingClientRect().top - hint.getBoundingClientRect().bottom;
+        if (gapAbove > gapBelow) {
+          out.push(`"${hint.textContent.trim().slice(0, 40)}…" is ${Math.round(gapAbove)}px from what it explains ` +
+            `and ${Math.round(gapBelow)}px from the ${below.tagName.toLowerCase()} below it`);
+        }
+      }
+      return out;
+    });
+    offenders.push(...bad.map((b) => `#${id}: ${b}`));
+  }
+  assert.deepEqual(offenders, [], `a hint reads as belonging to the control below it:\n${offenders.join("\n")}`);
+});
+
 test("phone: the deductible card names its scope and keeps the 'to go' inside the card", async () => {
   const src = await readFile(join(WEB, "js", "app.js"), "utf8");
   const between = (a, b) => {
