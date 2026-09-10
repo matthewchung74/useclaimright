@@ -13,7 +13,7 @@ import {
 import { addUsage, estimateCostUsd } from "./cost.js";
 import { runAudit, runPlanExtract } from "./providers/gemini.js";
 import { plansSchema, buildDigest, replaceDecision, applyPlanGate } from "./plan.js";
-import { resolvePlan } from "./resolveplan.js";
+import { resolvePlan, keepChoice, CHOSE_IT } from "./resolveplan.js";
 import { validateFeedback } from "./feedback.js";
 import { openBudget, AUDIT, PLAN } from "./budget.js";
 import { parkPlan, takePendingPlan } from "./pendingplan.js";
@@ -319,7 +319,7 @@ export const choosePlan = onCall(
     const structured = candidates[index];
     await ref.set({
       structured, digest: buildDigest(structured),
-      resolvedIndex: index, resolvedWhy: "You chose this plan.",
+      resolvedIndex: index, resolvedWhy: CHOSE_IT,
     }, { merge: true });
     return { status: "stored", structured };
   }
@@ -689,12 +689,19 @@ export const extractPlan = onCall(
     // against terms they are not on.
     const eobs = await db.collection(`users/${uid}/eobs`)
       .orderBy("createdAt", "desc").limit(3).get().catch(() => ({ docs: [] }));
-    const signals = eobs.docs.map((d) => d.data()).find((e) => e?.text || e?.accumulators) ?? {};
-    const { index, why } = resolvePlan(usable, {
-      text: signals.text ?? "",
-      deductibleLimit: signals.accumulators?.deductibleLimit,
-      oopLimit: signals.accumulators?.oopLimit,
-    });
+    // All of them, not just the newest — one stray EOB should not decide.
+    const signals = eobs.docs.map((d) => d.data())
+      .filter((e) => e?.text || e?.accumulators)
+      .map((e) => ({
+        text: e.text ?? "",
+        deductibleLimit: e.accumulators?.deductibleLimit,
+        oopLimit: e.accumulators?.oopLimit,
+      }));
+    let { index, why } = resolvePlan(usable, signals);
+
+    const prior = (await planRef.get()).data();
+    ({ index, why } = keepChoice(prior, usable, { index, why }));
+
     const structured = index === null ? null : usable[index];
 
     const plan = {

@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { resolvePlan } from "../resolveplan.js";
+import { resolvePlan, keepChoice, CHOSE_IT } from "../resolveplan.js";
 
 // The three plans in a member's real UMR booklet, with their real figures.
 const BOOKLET = [
@@ -54,4 +54,83 @@ test("a plan type the booklet does not offer resolves to nothing", () => {
 
 test("no candidates is not a crash", () => {
   assert.deepEqual(resolvePlan(null, { text: "x" }), { index: null, why: "" });
+});
+
+// --- several EOBs, because one stray document should not decide --------------
+//
+// Resolution read only the newest EOB, so a spouse's, or an old one from a
+// previous employer's PPO, won by being most recent. Seen for real on
+// 2026-09-10 when a test EOB flipped a member from HDHP to PPO on re-upload.
+
+test("EOBs that agree still resolve", () => {
+  const r = resolvePlan(BOOKLET, [
+    { text: "This is a High Deductible Health Plan." },
+    { text: "processed at the in-network level. This is a High Deductible Health Plan." },
+  ]);
+  assert.equal(r.index, 2);
+});
+
+test("EOBs that disagree resolve to nothing, and say what to do", () => {
+  const r = resolvePlan(BOOKLET, [
+    { text: "This is a High Deductible Health Plan." },
+    { text: "Your PPO plan paid this claim." },
+  ]);
+  assert.equal(r.index, null);
+  assert.match(r.why, /disagree/i);
+  assert.match(r.why, /HDHP and PPO|PPO and HDHP/);
+});
+
+test("an EOB that names no plan type does not veto one that does", () => {
+  const r = resolvePlan(BOOKLET, [
+    { text: "Explanation of benefits. Claim processed." },
+    { text: "This is a High Deductible Health Plan." },
+  ]);
+  assert.equal(r.index, 2);
+});
+
+test("deductible limits that disagree are not used either", () => {
+  const r = resolvePlan(BOOKLET, [
+    { text: "EOB", deductibleLimit: 5000 },
+    { text: "EOB", deductibleLimit: 1500 },
+  ]);
+  assert.equal(r.index, null, "two different limits cannot both be this member's");
+});
+
+// The single-object form the caller used before must keep working.
+test("a lone EOB object is still accepted", () => {
+  assert.equal(resolvePlan(BOOKLET, { text: "This is a High Deductible Health Plan." }).index, 2);
+});
+
+// --- a choice the member made must outlive the next extraction ---------------
+
+const chose = (i) => ({ resolvedIndex: i, resolvedWhy: CHOSE_IT, candidates: BOOKLET });
+const guessed = { index: 1, why: "Your EOB says this is a PPO plan." };
+
+test("re-extraction does not overwrite a plan the member chose", () => {
+  assert.deepEqual(keepChoice(chose(2), BOOKLET, guessed), { index: 2, why: CHOSE_IT });
+});
+
+test("a guess we made before is replaced by the new one", () => {
+  const priorGuess = { resolvedIndex: 2, resolvedWhy: "Your EOB says this is a HDHP plan.", candidates: BOOKLET };
+  assert.deepEqual(keepChoice(priorGuess, BOOKLET, guessed), guessed);
+});
+
+// New candidates are a new question. Answering it with a stale index would put
+// the member on whichever plan happens to sit in that slot now.
+test("a choice does not carry over to a different document", () => {
+  const other = [
+    { planName: "SCHEDULE OF BENEFITS (Bronze)", deductible: { individual: 7000, family: 14000 }, oopMax: {} },
+    { planName: "SCHEDULE OF BENEFITS (Gold)", deductible: { individual: 1000, family: 2000 }, oopMax: {} },
+    { planName: "SCHEDULE OF BENEFITS (Platinum)", deductible: { individual: 0, family: 0 }, oopMax: {} },
+  ];
+  assert.deepEqual(keepChoice(chose(2), other, guessed), guessed);
+});
+
+test("a choice pointing past the end of the new list is dropped", () => {
+  assert.deepEqual(keepChoice(chose(2), BOOKLET.slice(0, 2), guessed), guessed);
+});
+
+test("no prior plan means nothing to keep", () => {
+  assert.deepEqual(keepChoice(undefined, BOOKLET, guessed), guessed);
+  assert.deepEqual(keepChoice({}, BOOKLET, guessed), guessed);
 });

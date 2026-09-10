@@ -2013,7 +2013,7 @@ function renderPlanCard() {
         <a href="#" id="plan-remove" style="color:var(--bad)">Remove</a>
       </span>
     </div>
-    ${expired ? `<div class="banner">Your plan year ended ${escapeHtml(s.planYearEnd)} — upload your new SBC.</div>` : ""}
+    ${expired ? `<div class="banner">Your plan year ended ${escapeHtml(planYearEndFrom(s).end)}${planYearEndFrom(s).inferred ? " (assumed — your plan document does not state one)" : ""} — upload your new SBC.</div>` : ""}
     ${choices}`;
     wirePlanChoices();
     $("plan-view").onclick = (e) => {
