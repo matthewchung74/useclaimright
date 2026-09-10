@@ -358,6 +358,38 @@ test("verify screen warns about spam without needing a resend first", async () =
   assert.match(m.text, /spam/, "someone who checks an empty inbox must be told where else to look");
 });
 
+// A1 step 1 — the sign-up form must not offer to reset a password that does not
+// exist yet. Verified by hand on 2026-09-09 for the landing screen and the
+// gating; this checkpoint was the one nobody looked at, and it needs no account
+// to check, so it should never have depended on someone remembering to look.
+// ---------------------------------------------------------------------------
+test("sign-up mode hides 'Forgot password?' and asks for a new password", async () => {
+  await showSection("signin");
+  const read = () => page.evaluate(() => ({
+    submit: document.getElementById("password-signin").textContent.trim(),
+    toggle: document.getElementById("toggle-signup").textContent.trim(),
+    forgotHidden: document.getElementById("forgot-password").hidden,
+    autocomplete: document.getElementById("password-input").getAttribute("autocomplete"),
+  }));
+
+  const signIn = await read();
+  assert.equal(signIn.submit, "Sign in");
+  assert.equal(signIn.toggle, "Create an account");
+  assert.equal(signIn.forgotHidden, false, "an existing account must be able to reset");
+
+  await page.click("#toggle-signup");
+  const signUp = await read();
+  assert.equal(signUp.submit, "Create account", "the button carries the verb");
+  assert.equal(signUp.toggle, "I already have an account");
+  assert.equal(signUp.forgotHidden, true, "there is no password yet to forget");
+  assert.equal(signUp.autocomplete, "new-password",
+    "otherwise the password manager offers the existing password for a new account");
+
+  // Toggling back must restore it, or the reset path is lost until reload.
+  await page.click("#toggle-signup");
+  assert.deepEqual(await read(), signIn);
+});
+
 // PROXIMITY — a hint belongs to the thing it explains
 //
 // The spam hint on the verify screen was present, correct, and visible, so the
