@@ -67,11 +67,41 @@ this alert behave exactly as before. Retries are logged as `MODEL_RETRY`, which
 is worth watching: a rising count is capacity trouble before it becomes visible
 to anyone.
 
+## Someone completed an audit
+
+The only alert here that is not a failure. `analyze` logs `marker:
+AUDIT_COMPLETED` after the audit is stored, and on a launch day this is the one
+worth seeing — its absence is itself the finding.
+
+**It excludes us.** `OWNER_UIDS` in `functions/.env` lists our own accounts;
+without it a day of testing drowns the signal. Errors still alert for every
+account, ours included.
+
+`functions/.env` is gitignored, so that list lives only on the deploying
+machine and in the running service — a fresh clone deploys with it empty and
+starts alerting on our own audits. The deployed value also survives a deploy
+that omits the file, the same trap PAYMENTS documents in that file: removing
+the line does not unset it.
+
+**It carries no medical detail** — no provider, no codes, no patient name, no
+document text. All of it is readable in Firestore. An alert email is a different
+surface: it lands in a mailbox, gets forwarded, sits in search history. Counts
+and the headline figure say the thing worked, and nothing else needs to leave
+the system to say that.
+
+Verified in both directions 2026-09-10, because a success alert that never fires
+is silently useless and looks identical to a quiet day:
+
+- An owner's successful audit logged **nothing**.
+- With `OWNER_UIDS` temporarily emptied, the same account produced
+  `findings: 1 · atStake: 55 · withEob: true · withPlan: false`, and the list was
+  restored immediately afterwards.
+
 ## Not covered
 
-Nothing tells you a member **succeeded**. There is no signal for "the first real
-person outside this project ran an audit", which on a launch day is the thing
-worth knowing.
+Nothing distinguishes a member's **first** audit from their tenth. On a launch
+day "someone new arrived" and "someone is still here" are different facts, and
+this reports them identically.
 
 ## Changing it
 

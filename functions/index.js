@@ -58,6 +58,11 @@ const MAX_DOC_CHARS = 60_000;
 const MAX_PAGES = 20;
 const MAX_IMAGE_BYTES = 12_000_000;
 const DAILY_LIMIT = 10;
+// Our own accounts, so a day of testing does not drown the one alert that says
+// a stranger got value out of this. Comma-separated uids in functions/.env.
+const OWNER_UIDS = new Set(
+  (process.env.OWNER_UIDS || "").split(",").map((u) => u.trim()).filter(Boolean)
+);
 
 const ajv = new Ajv({ allErrors: true });
 const validate = ajv.compile(findingsSchema);
@@ -521,6 +526,26 @@ export const analyze = onCall(
       droppedUnverified: verified.dropped.length,
       createdAt: FieldValue.serverTimestamp(),
     });
+
+    // Someone outside this project used the thing and it worked. Every other
+    // signal we have is a failure, so on a launch day this is the one worth
+    // seeing — and its absence is itself the finding.
+    //
+    // NOT in this log: provider, codes, patient name, or any document text. The
+    // owner can already read all of it in Firestore; an alert email is a
+    // different surface — it lands in a mailbox, gets forwarded, sits in search
+    // history. Counts and the headline figure say it worked. Nothing else needs
+    // to leave the system to say that.
+    if (!OWNER_UIDS.has(uid)) {
+      console.log(JSON.stringify({
+        marker: "AUDIT_COMPLETED",
+        findings: String(result.findings?.length ?? 0),
+        atStake: String(result.totals?.totalAtStake ?? 0),
+        withEob: String(Boolean(eobDoc.text?.trim() || eobDoc.images.length)),
+        withPlan: String(planApplied),
+        uid,
+      }));
+    }
 
     // billStore/eobStore go back too. They are the ONLY text the client has —
     // pages are sent, nothing is read from the file in the browser — and the
