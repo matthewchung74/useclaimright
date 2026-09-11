@@ -141,8 +141,11 @@
   /* On the dark CTA panel a link must stay in the panel's own palette —
      default blue reads as an error. Underlined, because here it IS the
      invitation to go and check, not a quiet aside like the header link. */
-  .cta .fine a{color:#fff;text-decoration:underline;text-underline-offset:2px}
-  .cta .fine a:hover{color:#fff;text-decoration-thickness:2px}
+  /* Same link, inverted for the dark panel. Larger than the header's because
+     here it is the point of the section rather than a quiet aside. */
+  .source-link.on-dark{color:#cfeae8;font-size:15px;margin-top:22px}
+  .source-link.on-dark:hover{color:#fff}
+  .source-link.on-dark svg{width:18px;height:18px}
 
   /* Footer */
   footer{background:var(--ink);color:#9fb8bf;padding:40px 0;font-size:14px}
@@ -171,8 +174,6 @@
   <div class="wrap nav">
     <div class="logo"><span class="mark">✓</span>UseClaimRight</div>
     <div style="display:flex;gap:10px;align-items:center">
-      <a href="https://github.com/matthewchung74/useclaimright" class="source-link signin-link"
-         title="Read the source on GitHub"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>Source</a>
       <a href="/app" class="signin-link" style="font-weight:700;font-size:14px">Sign in</a>
       <a href="/app" class="btn">Audit my bill</a>
     </div>
@@ -303,16 +304,14 @@
 
 <section class="cta" id="start">
   <div class="wrap">
-    <h2>See what your bill actually says</h2>
-    <p>Most people never check. The ones who do are often glad they did.</p>
-    <a href="/app" class="btn lg">Audit my bill — free</a>
-    <!-- Was three claims, two of which repeated the hero trust row word for word.
-         This is the last thing read before uploading a medical bill, so it answers
-         the question actually being asked at that moment — and states what open
-         source buys you rather than the label, which is how every consumer
-         privacy product that does this well words it. -->
-    <div class="fine"><a href="https://github.com/matthewchung74/useclaimright">Open source</a> — you can read
-      exactly what happens to your documents. We never sell your data.</div>
+    <!-- This used to be a third call to action, with the same button as the one
+         directly above it in Pricing. Nobody needs asking three times. The last
+         panel before the footer now answers the question a person actually has
+         at that point, which no amount of repeating the button addresses. -->
+    <h2>You can check what this does with your documents</h2>
+    <p>All of it is open source, including exactly what gets sent to Google's Gemini
+      models and when. We never sell your data.</p>
+    <a class="source-link on-dark" href="https://github.com/matthewchung74/useclaimright"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>Read the source on GitHub</a>
   </div>
 </section>
 
