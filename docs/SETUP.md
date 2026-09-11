@@ -15,6 +15,21 @@
 Everything in the codebase is done; these are the steps that need your accounts/consoles,
 in order. Items marked ☐ are yours; ▶ are commands I (or you) can run once the step above is done.
 
+## 0. What is NOT in this repo
+
+`functions/.env` is gitignored, so a fresh clone deploys **without** the settings below. They
+live only on the running service, and a deployed env var survives a deploy that omits the file
+— so removing a line does not unset it. Set them explicitly.
+
+| variable | effect if unset |
+|---|---|
+| `APP_CHECK=on` | **App Check enforcement is OFF.** Callables accept requests with no token. Turned on for production 2026-09-11 and verified on a live audit; a clone starts unenforced. |
+| `OWNER_UIDS=<uid,uid>` | Your own audits trigger the "someone completed an audit" alert, so your testing drowns the one signal that says a stranger used it. See `docs/ALERTS.md`. |
+| `PAYMENTS=off` | Stays off unless set to the exact string `on`. Deliberate: the letter is free. |
+| `GEMINI_BACKEND` | Defaults to `vertex` **in source**, not in the env file — precisely so a fresh clone cannot silently fall back to the AI Studio key and quietly falsify what the privacy page says. |
+
+`GEMINI_API_KEY` is a Secret Manager secret, not an env var, and is never in the repo.
+
 ## 1. Firebase project link (blocked on login)
 - ☐ `firebase login` (must complete the browser flow — last attempt left an invalid token)
 - ▶ `firebase use --add` → pick the claimright project, alias `default` (writes `.firebaserc`)
@@ -44,7 +59,7 @@ in order. Items marked ☐ are yours; ▶ are commands I (or you) can run once t
 ## 6. Deploy
 - ▶ `firebase deploy` (hosting + functions + firestore rules)
 
-## 7. App Check — step 1 DONE 2026-08-26, step 2 deliberately NOT done
+## 7. App Check — DONE. Step 1 2026-08-26, step 2 2026-09-11
 **Order matters — reversing these two steps takes the app down for everyone.**
 
 - ☑ **reCAPTCHA ENTERPRISE key created and registered**, not classic v3. Enterprise keys can be
