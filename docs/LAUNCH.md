@@ -38,9 +38,11 @@ product; "audit" reads as accounting software.)*
 >
 > Every finding quotes the line it came from. That's enforced, not encouraged: if the quote isn't verbatim in your document, the finding gets dropped before you see it. Doesn't make the model right, but you can check any claim in about two seconds.
 >
-> On ChatGPT + Epic, since that landed last week: it reads the clinical chart. A billing error isn't in the chart — it's in the gap between your provider's bill and your insurer's EOB, and neither party holds both.
+> On ChatGPT + Epic: it reads the clinical chart. A billing error isn't in the chart — it's in the gap between your provider's bill and your insurer's EOB, and neither party holds both.
 >
-> Free, 10 a day, since I am covering LLM calls myself. There's a sample audit you can read without signing up.
+> Free, 10 a day. An audit costs me about $0.008 in model calls, the two-document comparison included, so free here is arithmetic rather than a growth tactic. I mention it because the other tools I've found price per document — which makes bill-plus-EOB two documents — and they sell the dispute letter. Mine's free too. That's also the reason this can tell you nothing is wrong: I'm not paid either way.
+>
+> There's a sample audit you can read without signing up.
 >
 > Your documents go to Gemini on Vertex AI with your name still on them. No on-device redaction — I tried, the model I used silently passed everything through, and a privacy feature that doesn't work is worse than none. It says so on the upload screen before anything is sent.
 >
@@ -48,7 +50,24 @@ product; "audit" reads as accounting software.)*
 >
 > Thanks for your time!
 
-*Author's wording, with a family-plan paragraph added 2026-09-08. 2,519 chars.
+*Author's wording, with a family-plan paragraph added 2026-09-08 and the economics
+paragraph added 2026-09-11.
+
+**On the economics paragraph.** The figure is measured, not estimated: audits logged
+2026-09-10 cost $0.0073–$0.0136 each, and a plan extraction $0.017–$0.042 once per person
+per year. A member running ten bills a year costs about eleven cents. Keep the number
+honest if models get dearer — it survives a 5x rise and still makes the point.
+
+The competitive claim is checked. As of 2026-09-11, medicalbillingreview.com charges
+$12.99/document and pitches its 3-document pack for "multiple bills **or a bill + EOB**";
+ismybillwrong.com is $49–$99; medbillai.health is $9 one-time or $19/month; billbodyguard.com
+sells a $9 dispute pack. Several do compare against the EOB — that is table stakes, not a
+differentiator, and an earlier draft of this file wrongly assumed otherwise. What none of them
+appear to do is check against the member's own Summary of Benefits, or keep history without a
+subscription.
+
+Frame it as "here is my cost model", never as "they are ripping you off". HN punishes a post
+that attacks competitors, and the arithmetic makes the point without help.
 
 That paragraph does three jobs at once, which is why it earns its length. It follows
 from the opener — a kiddo's bill means a family plan — so the hardest case in the
@@ -165,6 +184,64 @@ Checked 2026-09-10 against the day's testing, so a future edit knows what is loa
 | "a sample audit on the site" | `/app?sample=1`, no sign-in and no model call, covered by a browser test |
 | "It's free" | payments off, deliberately |
 | "I caught a mistake 10 years ago" | the author's own, unverifiable here, and the strongest thing in the post |
+
+## Product Hunt
+
+**Temper expectations before writing anything.** PH's audience is builders and early adopters,
+not people currently holding a medical bill. Expect signups from people who will never upload
+one, and a number that looks like traction and is not. It is worth doing for the backlink and
+the badge; it is not worth reading the result as a signal about demand.
+
+**Name:** UseClaimRight
+**Tagline (60 char limit):** `Check a medical bill against what your insurer allowed`
+**Topics:** Health, Artificial Intelligence, Personal Finance
+
+**Description:**
+
+> Your medical bill comes from the provider. The Explanation of Benefits that would prove an
+> error arrives weeks later from your insurer, in a different envelope. A billing error usually
+> isn't in either document — it's in the difference between them.
+>
+> Upload both and UseClaimRight tells you what disagrees: a line billed twice, a charge above
+> what your plan allowed, something on the bill your insurer never processed, or the EOB's own
+> numbers not adding up. Add your Summary of Benefits once and it also checks the bill against
+> what your plan actually promised — your copay, your deductible, your visit limits.
+>
+> Every finding quotes the line it came from, so you can check it in two seconds before calling
+> anyone. If nothing's wrong, it says so.
+>
+> Free, including the dispute letter.
+
+**Maker's first comment** — the part that actually matters on PH, and where the honest version
+of the economics belongs:
+
+> I got overcharged on my kid's medical bill years ago and have checked my own claims line by
+> line ever since. It is slow, boring work, and the reason almost nobody does it is that the two
+> documents you need are never in the same place.
+>
+> On free: an audit costs me about eight tenths of a cent to run, so this is arithmetic rather
+> than a trial that expires. It also means I have no reason to find something that isn't there —
+> most tools in this space charge per document and sell you the dispute letter, so they are paid
+> when they find a problem. Mine tells you when nothing is wrong, and that costs me nothing to
+> say.
+>
+> What I'd most like: someone runs a real bill through it and tells me it got something wrong.
+> It has been tested against a lot of documents I wrote myself and very few I didn't, and that
+> gap is the thing I actually worry about.
+>
+> Your documents go to Google's Gemini models with your name still on them — no on-device
+> redaction, I tried and the model I used silently passed everything through. The upload screen
+> says so before anything is sent.
+
+### Before posting this
+
+- **The tagline is at the 60-char limit.** Count it again if you edit — PH truncates silently.
+- **Do not claim HIPAA compliance.** Several competitors do. We do not, and the privacy page is
+  explicit about why. Being the honest one is only worth something if it stays true.
+- **Have the "why free" answer ready as a reply, not just in the post.** It will be the first
+  question, and the cost figure is the whole answer.
+- **The n=1 admission is deliberate.** PH and HN both reward a maker naming the real weakness,
+  and it is the thing a launch can actually fix.
 
 ## Why this framing
 
