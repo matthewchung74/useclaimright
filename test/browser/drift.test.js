@@ -255,3 +255,13 @@ test("the sample fixture only uses finding types the schema still defines", () =
   assert.deepEqual(unknown, [],
     `web/sample-audit.json uses finding types functions/schema.js no longer defines: ${unknown.join(", ")}`);
 });
+
+// A placeholder in a footer link ships silently: the page renders, the link is
+// blue, and it 404s for everyone. Nothing else in the suite looks at hrefs.
+test("no placeholder URLs in the landing page", () => {
+  const html = readFileSync(join(ROOT, "web", "index.html"), "utf8");
+  const bad = [...html.matchAll(/href="([^"]*(?:YOUR-|TODO|EXAMPLE|xxx|placeholder)[^"]*)"/gi)]
+    .map((m) => m[1]);
+  assert.deepEqual(bad, [],
+    "set the real URL before this ships — a placeholder link is a 404 with a nice colour");
+});

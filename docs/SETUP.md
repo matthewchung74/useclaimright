@@ -1,7 +1,7 @@
 # UseClaimRight — setup & verification checklist
 
 > **Status 2026-08-03:** Steps 1, 2, 4, 6 DONE. New project `useclaimright` under
-> the owner's address; billing linked to the existing "Firebase Payment" account;
+> the owner's Google account; billing linked to the existing "Firebase Payment" account;
 > $25/mo budget with 50/90/100% alerts; GEMINI_API_KEY secret set (validated,
 > `gemini-3.6-flash` confirmed live); hosting + rules + analyze Function deployed to
 > https://useclaimright.web.app with public invoker + in-function auth verified.

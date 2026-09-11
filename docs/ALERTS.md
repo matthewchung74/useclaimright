@@ -22,7 +22,8 @@ itself: no provider, no signup, no phone number.
    `labelExtractors`, which is what puts the actual message in the email. An
    alert saying only "a log matched" leaves you clicking through to Cloud
    Logging, which is the looking-it-up this exists to end.
-3. It notifies **`the owner's address`** only. Neither channel needed
+3. It notifies **one address, the owner's** — set as a Cloud Monitoring channel,
+   not in this repo. Neither channel needed
    verifying; the Gmail one was removed 2026-09-10 on request.
 
 Verified end to end 2026-09-10: feedback sent from the bubble arrived at Proton

@@ -5,7 +5,7 @@
 > real and still affects anyone loading these ONNX variants through
 > transformers.js. The findings below stand as filed.
 
-**FILED:** https://github.com/huggingface/transformers.js/issues/1749 (2026-08-16, as matthewchung74)
+**FILED:** https://github.com/huggingface/transformers.js/issues/1749 (2026-08-16)
 
 Filed against the library repo rather than the model's Hugging Face discussions —
 these are conversion-tooling defects, and #1707 there is a near-identical report
