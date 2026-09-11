@@ -138,6 +138,11 @@
   .cta .btn{background:#fff;color:var(--brand-dark);box-shadow:0 2px 0 #b9d9d9}
   .cta .btn:hover{background:#eafafa;color:var(--brand-dark)}
   .cta .fine{color:#9fd4d4;font-size:13px;margin-top:16px}
+  /* On the dark CTA panel a link must stay in the panel's own palette —
+     default blue reads as an error. Underlined, because here it IS the
+     invitation to go and check, not a quiet aside like the header link. */
+  .cta .fine a{color:#fff;text-decoration:underline;text-underline-offset:2px}
+  .cta .fine a:hover{color:#fff;text-decoration-thickness:2px}
 
   /* Footer */
   footer{background:var(--ink);color:#9fb8bf;padding:40px 0;font-size:14px}
@@ -301,7 +306,13 @@
     <h2>See what your bill actually says</h2>
     <p>Most people never check. The ones who do are often glad they did.</p>
     <a href="/app" class="btn lg">Audit my bill — free</a>
-    <div class="fine">Evidence you can check · We never sell your data · Delete your audits anytime</div>
+    <!-- Was three claims, two of which repeated the hero trust row word for word.
+         This is the last thing read before uploading a medical bill, so it answers
+         the question actually being asked at that moment — and states what open
+         source buys you rather than the label, which is how every consumer
+         privacy product that does this well words it. -->
+    <div class="fine"><a href="https://github.com/matthewchung74/useclaimright">Open source</a> — you can read
+      exactly what happens to your documents. We never sell your data.</div>
   </div>
 </section>
 
