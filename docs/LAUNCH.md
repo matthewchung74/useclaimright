@@ -46,6 +46,8 @@ product; "audit" reads as accounting software.)*
 >
 > Your documents go to Gemini on Vertex AI with your name still on them. No on-device redaction — I tried, the model I used silently passed everything through, and a privacy feature that doesn't work is worse than none. It says so on the upload screen before anything is sent.
 >
+> It's open source, so you can check that rather than take my word for it: https://github.com/matthewchung74/useclaimright
+>
 > I'd most like to hear from anyone who runs a real bill through it and gets a wrong answer or anyone who runs a bill through it and it is helpful.
 >
 > Thanks for your time!
@@ -68,6 +70,15 @@ subscription.
 
 Frame it as "here is my cost model", never as "they are ripping you off". HN punishes a post
 that attacks competitors, and the arithmetic makes the point without help.
+
+**On the repo link.** It goes immediately after the Gemini disclosure on purpose. The sentence
+before it admits documents are sent unredacted with names on them; the link is what turns that
+from a thing to be believed into a thing to be checked. Placed anywhere else it is a badge.
+Added 2026-09-11, when the repo went public.
+
+HN is also the one audience that will actually read the code, which cuts both ways: the
+commit messages and `docs/TESTING.md` name real defects and unverified gaps. That is the
+point — but do not link it expecting nobody to look.
 
 That paragraph does three jobs at once, which is why it earns its length. It follows
 from the opener — a kiddo's bill means a family plan — so the hardest case in the
@@ -231,7 +242,8 @@ of the economics belongs:
 >
 > Your documents go to Google's Gemini models with your name still on them — no on-device
 > redaction, I tried and the model I used silently passed everything through. The upload screen
-> says so before anything is sent.
+> says so before anything is sent, and the whole thing is open source so you can check it:
+> https://github.com/matthewchung74/useclaimright
 
 ### Before posting this
 

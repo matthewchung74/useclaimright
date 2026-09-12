@@ -1,7 +1,7 @@
 # Design System — UseClaimRight
 
 ## Product Context
-- **What this is:** A free, self-serve web app that audits medical bills against EOBs (and soon SBCs) with AI, redacting PHI on-device before anything is sent.
+- **What this is:** A free, self-serve web app that cross-checks a medical bill against the insurer's EOB (and the member's SBC) with AI, and quotes the line behind every finding.
 - **Who it's for:** US healthcare consumers who suspect a bill is wrong and want to verify it themselves instead of hiring an advocate.
 - **Space/industry:** Consumer health-fintech; peers are Goodbill, Resolve, HealthLock, mediloop — all paid advocate services with warm-trust or fear-based design.
 - **Project type:** Web app (vanilla HTML/JS + Firebase) with a marketing landing page.
@@ -44,19 +44,20 @@
 - **Border radius:** sm 8px (controls, rows) · md 10-12px (inputs, notes) · lg 16px (cards/"clipped sheets") · full 9999px (progress bars). Radius is hierarchy — do not flatten to one value.
 
 ## Motion
-- **Approach:** Minimal-mechanical. Scan lines during redaction, snapping alignment, an evidence-highlight sweep when a finding renders. Nothing floats, nothing ambient.
+- **Approach:** Minimal-mechanical. Snapping alignment, an evidence-highlight sweep when a finding renders. Nothing floats, nothing ambient.
 - **Easing:** enter(ease-out) exit(ease-in) move(ease-in-out)
 - **Duration:** micro(50-100ms) short(150-250ms) medium(250-400ms) long(400-700ms)
 
 ## Signature Patterns
 - **Evidence quote:** mono type, narrow teal left rule, source label (Bill/EOB/SBC); every conclusion visibly points to its source. Never show a dollar result without where it came from.
-- **Redaction as visible behavior:** PHI chips and the review gate are the privacy story — shown happening ("Removed on this device"), never reduced to a shield icon.
-- **The receipt:** the audit summary is styled as a perforated thermal receipt — mono figures, "WORTH DISPUTING" total, "PHI REDACTED ON-DEVICE" stamp — built to be screenshotted.
+- **The review gate is the privacy story:** every page is shown before it is sent — "This is what we send" — so a member sees the documents leave rather than being told they did. The other half of that story is that the source is public, so the claim is checkable rather than asserted. Never reduce either to a shield icon.
+- **The receipt:** the audit summary is styled as a perforated thermal receipt — mono figures, "WORTH DISPUTING" total — built to be screenshotted.
 - **Plan card ("Your plan"):** styled like the benefits card in a wallet — mono values (deductible, OOP max, copays); plan-mismatch findings draw the cross-reference explicitly ("Your SBC says $60 copay → this bill applies $175").
 
 ## Decisions Log
 | Date | Decision | Rationale |
 |------|----------|-----------|
+| 2026-09-11 | On-device redaction removed from the system | It had been the stated privacy story in three places here — the product summary, the motion notes, the receipt stamp — for a feature deleted on 2026-08-23 because it silently did not work (`docs/upstream-bug-openmed-onnx.md`: the model returned near-chance logits while appearing to redact). A design system describing a feature that does not exist sends whoever reads it next to build toward it, and the repo is public now, so that is a real person. The privacy story is the review gate plus a readable codebase. |
 | 2026-08-08 | Initial design system created | /design-consultation: deep research (7 sites) + Codex "Evidence Desk" + Claude subagent "Receipt Printer" outside voices; both independently converged on evidence-first layout, mono money, and a highlighter-yellow found-money marker. Foundation evolves existing teal rather than rebranding. |
 | 2026-08-28 | Form controls are **16px on phones** (≤560px), not the 14px control size | iOS Safari zooms the whole page whenever a focused control is under 16px, shifting the layout mid-typing with no way to pinch back. It fired on the first tap of the sign-in screen. This is a platform floor, not a type choice; the 14px control size still holds everywhere above 560px. |
 | 2026-08-28 | On phones, "Worth disputing" renders **first** among the four totals | The cards stack in a single column below 560px, which put the hero figure fourth — off the bottom of an iPhone SE. "The Memorable Thing" is that number; burying it contradicts the stated principle that every decision serves the moment a finding appears. CSS `order` only, so the desktop reading order is unchanged. |
