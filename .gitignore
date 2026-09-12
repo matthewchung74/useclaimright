@@ -18,3 +18,8 @@ test/browser/node_modules/
 # Derived from the canonical fixtures — rebuild with:
 #   node test-fixtures/gen-by-plan.mjs
 test-fixtures/by-plan/
+
+# Real carrier documents — insurer copyright, not ours to redistribute, and the
+# repo is public. Rebuild with:
+#   test-fixtures/carrier/fetch.sh
+test-fixtures/carrier/*.pdf

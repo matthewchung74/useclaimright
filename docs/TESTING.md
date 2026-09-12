@@ -1610,6 +1610,22 @@ on our own assumptions. These are genuine CMS publications in the ACA-mandated f
   that defeats text-adjacency parsing, and the model returned $500 / $1,000 anyway. Real
   variation in plan structure still needs a real member's SBC.
 
+  **Wrong, and corrected 2026-09-12.** An SBC describes a plan, not a person —
+  no personal data, and carriers must publish one for every plan they sell. Five
+  real ones are now in `test-fixtures/carrier/`: Kaiser CalPERS at **$0**
+  deductible, Blue Shield PPO and BCBS Kansas Plan A at $1,000, a Kansas exchange
+  plan at $2,000, BCBS Kansas Plan C at **$2,750**. Five carriers, five layouts,
+  7–14 pages each — all of which pass under the 24-page budget without section
+  detection engaging, so the 135-page booklet was the outlier and not the norm.
+
+  Not committed (carrier copyright, public repo); rebuild with
+  `test-fixtures/carrier/fetch.sh`. **Not yet run through extraction** — that
+  costs plan uploads, 3/day.
+
+  The gap that is genuinely still open is the other half: a real patient-facing
+  **itemized bill**. Those are specific to one patient, nobody publishes them,
+  and every bill we test against is one we wrote.
+
 **Verified on production 2026-08-25** with `cms-2019.pdf`: extracted cleanly, plan on file as
 "Insurance Company 1: Plan Option 1", 2022-01-01 to 2022-12-31, deductible $500 / $1,000.
 Trackers were auto-created from its limits ("Children's eye exam 0/1", "Home health care

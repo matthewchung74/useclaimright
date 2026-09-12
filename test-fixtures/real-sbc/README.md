@@ -39,3 +39,13 @@ text-adjacency parsing and the model handled it.
 So the "no real variation in plan structure" gap is **not** closed by these files, and cannot
 be closed by any government specimen — every published sample uses the same numbers. Only a
 real member's SBC will do it.
+
+**Corrected 2026-09-12 — that conclusion was wrong.** It assumed the only
+alternative to a government specimen was one member's private document. But an
+SBC describes a *plan*, not a person: it carries no personal information, and
+carriers are required by law to publish one for every plan they sell. Real SBCs
+for real plans are freely downloadable, and five of them — $0 through $2,750
+deductible, five carriers, five layouts — now sit in `../carrier/`, fetched by
+`../carrier/fetch.sh`.
+
+The claim held for months because nobody tested it. It took one search.
