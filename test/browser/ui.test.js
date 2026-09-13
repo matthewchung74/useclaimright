@@ -514,7 +514,15 @@ test("app.js loads clean and binds every control it wires", async () => {
     assert.deepEqual(state.unbound, [], `controls with no handler — app.js threw before reaching them: ${state.unbound.join(", ")}`);
     // App Check runs reCAPTCHA Enterprise against registered origins only, so
     // 127.0.0.1 always fails it. That one is expected; anything else is not.
-    const real = errors.filter((e) => !/app-?check|recaptcha/i.test(e));
+    //
+    // So is a DNS failure. app.js loads Firebase and pdf.js from CDNs, and this
+    // test asserts the MODULE is clean — a transient ERR_NAME_NOT_RESOLVED says
+    // the machine's resolver blinked, not that anything here is broken. It went
+    // red roughly one run in ten on exactly that, which is worse than useless:
+    // a suite that cries wolf gets its failures waved through, and this is the
+    // test that would otherwise catch a control losing its handler.
+    const flaky = /app-?check|recaptcha|ERR_NAME_NOT_RESOLVED|ERR_INTERNET_DISCONNECTED|ERR_NETWORK_CHANGED/i;
+    const real = errors.filter((e) => !flaky.test(e));
     assert.deepEqual(real, [], `errors on load:\n${real.join("\n")}`);
   } finally {
     await p.close();

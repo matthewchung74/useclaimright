@@ -31,11 +31,17 @@ run one.** A plan with no date has never been executed against the current build
 prose under it says — the per-plan notes that used to serve this purpose were scattered through
 the file and easy to miss.
 
+**Counter resets.** C1-C3 (2026-09-12) used 5 plan uploads against a cap of 3/day, with one
+reset of `planCount` to 0 between C2 and C3. The account was snapshotted before and restored
+after (`ROUND TRIP: EXACT`) — note that `restore` is create-or-update and does **not** delete
+documents created since the snapshot, so the two trackers the carrier SBCs added had to be
+removed by hand before verify came back clean.
+
 | Plan | Last run | By | Result |
 |---|---|---|---|
-| C1 | | | |
-| C2 | | | |
-| C3 | | | |
+| C1 | 2026-09-12 | agent | ✓ **KAISER PERMANENTE : CalPERS TRADITIONAL HMO**, 2026-01-01 → 2026-12-31, deductible **$0**, out-of-pocket **$1,500** individual. Both right, and the OOP is the harder half: that line reads "$1,500 Individual / $3,000 Family. **$8,650 Individual / $17,300 Family for prescription drugs**" — two limits on one line and it took the medical one. **The $0 path works and had never run**: the card measured against the insurer's $1,500 from the EOB and said "your claims have already passed the $0.00 on your SBC, so that may not be the plan you are on". No NaN, no "$0 of $0", no full bar. The three-column coverage examples on pages 12-14 did **not** leak in as benefits |
+| C2 | 2026-09-12 | agent | ✓ **State Employee Health Plan: Plan C**, deductible **$2,750**, out-of-pocket **$4,500**, both correct. But the plan's premise was wrong — this document's network and non-network EE-only figures are identical, so it cannot fail the way it was written to. Corrected above; the real split is C3's Blue Shield. **Found the stale-View defect here**: with the panel open, replacing the plan left Kaiser's text ("$0 deductible") on screen under "Plan C". Fixed in `renderPlanCard` |
+| C3 | 2026-09-12 | agent | ✓ all three. **Full PPO Combined Deductible Value 10-1000 90/70** $1,000 / **$4,000** — the network split, and it took the participating-provider figure, not the $6,000 non-participating one. **State Employee Health Plan: A (PPO)** $1,000 / $5,250. **Kansas City : Blue KC Standard Gold BlueSelect EPO** $2,000 / $8,200. Five carriers, five layouts, 5/5 on plan name, plan year, deductible and out-of-pocket. **Found the tracker-carryover defect**: after three replaces the coverage list still held UMR's "Private Duty Nursing 0/14" and "Developmental Delays 1/20", badged "from your plan (SBC)". Fixed in `mergeSbcTrackers` |
 | E1 | 2026-09-09 | agent | ✓ re-run on the clean account E7 produced. $2,115.00 / $841.75 / $186.35 / **$822.15** — exact, with 145.50 + 658.65 + 18.00 = 822.15. `cost_share_error` spelled out its own arithmetic ($8.24 + $4.55 + $124.00 + $27.70 + $3.86 = $168.35 against a stated $186.35). **Honest footer present**: "Not checked against your plan — add your Summary of Benefits… to enable plan checks." Occurrence table showed 80053 with count 2 |
 | E1b | 2026-09-09 | agent | ✓ dropzone copy, all three step headings visible on arrival with step 2's inputs collapsed, "Add your bill above and this opens up", no dashboard headings on the form, the EOB explainer under step 2, and the disclosure summary still carrying "including your name and everything else printed on them". Account menu: full email, Sign out, then "Reset account — erase all my data" below a divider **in red**. Reveal animation **verified**: `#upload` measured 876.3px collapsed, **1190.7px at 120ms**, 1294.6px open — mid-transition height sits between the two, so it eases rather than jumping |
 | M1 | 2026-09-07 | agent | ✓ plan on file, both trackers auto-created 0/20 and 0/6, deductible target from SBC |
@@ -1173,13 +1179,18 @@ in-network beside out-of-network, employee-only beside employee-plus-family — 
 member cares about is one cell of it. Picking the wrong cell is silent and wrong in the
 expensive direction.
 
-**Data:** `test-fixtures/carrier/bcbsks-plan-c-2026.pdf`. Its deductible row reads
-**"Non Network: EE Only $2,750"**, and the in-network figure sits elsewhere on the same row.
-$2,750 is also the highest deductible in the corpus, so it doubles as the top of the range.
+**Data:** `test-fixtures/carrier/bcbsks-plan-c-2026.pdf`, whose deductible row reads
+"Network EE Only $2,750; EE + Family: Individual $3,400 / Family $5,500. Non Network: EE Only
+$2,750; …".
 
-**Assert:** the extracted deductible is the **in-network** figure, and the review screen shows
-the member which one it took before anything is saved. If it takes the non-network $2,750, every
-"you have met your deductible" conclusion afterwards is wrong by design.
+**This document does not actually test what the plan says it does.** Its network and non-network
+EE-only figures are **the same $2,750**, and its out-of-pocket limits are both $4,500 — so
+picking the wrong column gives the right answer and the assertion cannot fail. Run it for the
+grid *layout*, and read the real disambiguation off C3's Blue Shield document, where the two
+columns differ.
+
+**Assert:** deductible $2,750 individual, out-of-pocket $4,500 individual, plan named
+"State Employee Health Plan: Plan C".
 
 ## C3 — Three more carrier layouts, same plan, same questions (3 plan uploads)
 **Use case:** C1 and C2 are the two ends of the range. These are the middle, and their only job
@@ -1192,14 +1203,21 @@ carrier printing the same number), `qhp-ks-2026.pdf` ($2,000, an exchange plan).
 `test/browser/carrier.test.js` reads out of the text layer, the plan year is the 2026 one printed
 on the document, and the plan name is the carrier's, not a paraphrase.
 
+**Blue Shield carries the network split C2 was written for**, and it is the sharper test of the
+two. Its out-of-pocket row reads "$4,000 per individual / $8,000 per family for **participating**
+providers; $6,000 per individual / $12,000 per family for **non-participating** providers." Two
+columns, different numbers, and taking the wrong one overstates what a member owes by $2,000.
+Assert **$4,000**.
+
 **Budget note:** C1-C3 are 5 plan uploads against a cap of 3/day. Two days, or a counter reset
 recorded in the run log.
 
-**They replace the plan on file, and there is no Cancel.** `runSbcExtraction` saves server-side
-and then reloads; the only dialog on the path is the *older-plan* guard, and these are all
-2026 documents, so it never fires. Whatever plan is on file is gone, along with the trackers it
-created and any "You chose this plan" choice. Snapshot with `scripts/account-snapshot.py save`
-first, or be holding the document you will restore from.
+**They replace the plan on file, and the only Cancel is before the model runs.** The review
+screen ("This is what we send") comes first and "Start over" there costs nothing. Past it,
+`runSbcExtraction` saves server-side and reloads — the only dialog after that is the *older-plan*
+guard, and these are all 2026 documents, so it never fires. Whatever plan is on file is then
+gone, along with the trackers it created and any "You chose this plan" choice. Snapshot with
+`scripts/account-snapshot.py save` first, or be holding the document you will restore from.
 
 ### The free half — already automated, no uploads
 
