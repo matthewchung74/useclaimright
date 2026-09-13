@@ -14,15 +14,67 @@ step 1; the EOB dropzone appears once a bill is staged (E1b step 1). Any plan th
 both" or "add all three" still works, but the bill has to land first — there is no EOB zone to
 drop into before that.
 
-**Session setup:** open https://useclaimright.web.app/app, hard-refresh, sign in. Two ways in — Google, or email + password — see **A1**. A fresh account starts empty with full daily limits (**10 audits, 3 plan uploads**).
+**Session setup:** open https://useclaimright.web.app/app, hard-refresh, sign in. Two ways in — Google, or email + password — see **A1**. An agent runs tier 2 as an already-signed-in account; it does not sign in and does not create one. A fresh account starts empty with full daily limits (**10 audits, 3 plan uploads**).
 
 **Budget — the full suite does NOT fit in one day.** Core plans (E1, M1–M6, D1, E2, E4–E7) cost **10 audits + 3 plan uploads**, exactly the daily ceiling, leaving no room for the rate-limit check. Optional **M7** adds 3 more. Run it as:
 
 - **Day 1 (core):** E1 → **E1b** → M1 → M2 → M3 → M4 → M5 → M6 → D1, then the zero-cost plans (E3, E5*, R1, F1, R2). *E5 needs a plan upload.
   **E1b is not optional and not movable:** it costs no audits, but it starts from E1's report and ends by clearing the files M1 needs gone, so it only works in that slot.
 - **Day 2 (edges):** M7, E2, E4, E6, E7, and the rate-limit check in Always-on.
-- **Day 3 (auth, family, scans, real documents):** A1 (0 audits) → FAM1 (2 audits) → FAM2 (0, reads FAM1's) → FAM3 (0) → S1 (1 audit) → P1 (3 plan uploads) → G1 (0). Total **3 audits + 3 plan uploads**, so it fits comfortably and can be folded into Day 2 if Day 2 ran light.
+- **Day 3 (family, scans, real documents):** FAM1 (2 audits) → FAM2 (0, reads FAM1's) → FAM3 (0) → S1 (1 audit) → P1 (3 plan uploads) → G1 (0). Total **3 audits + 3 plan uploads**, so it fits comfortably and can be folded into Day 2 if Day 2 ran light. **A1 is not in this list** — it is tier 3, needs a person, and is optional; see "Who runs what" below.
 - Or use **☰ → Reset account** between passes: it clears data and returns you to onboarding, but **daily counters intentionally survive**, so it does not buy more audits.
+
+## Who runs what, and what "optional" means here
+
+Three tiers. A plan belongs to exactly one, and the tier is a fact about *what the plan needs*,
+not about how important it is.
+
+### 1 — Automated. Every `npm test`, no browser session, no audits, no model
+
+`npm --prefix test/browser test` and `npm --prefix functions test`. Layout, copy drift, the
+message matrix, section detection, and everything the real carrier documents and the member
+booklet can be asked without a model. **PHONE1** and **TAP1** live here rather than in tier 2 for
+a mechanical reason: Chrome's window will not go below ~1232px of viewport, so a 375px phone
+layout cannot be driven in a real browser session at all — `ui.test.js` does it at 375×844.
+
+Run this tier first, always. It is free and it fails faster than you can click.
+
+### 2 — Agent-runnable. Claude in Chrome, against production, with screenshots
+
+**The default tier, and everything not named in tier 1 or tier 3 is in it.** Signed in as the
+existing account, driving the real site. Established 2026-09-12/13:
+
+- **Modal dialogs are fully drivable.** `confirmAction` renders a `<dialog>`, and it
+  screenshots, `find` locates the buttons *inside* it by name, and clicking them works. Verified
+  on the "Stop tracking this limit?" dialog: opened it, screenshotted it, clicked **Cancel** by
+  reference, and `account-snapshot.py verify` came back `ROUND TRIP: EXACT` — the tracker
+  survived. So X1, E3, E5 and E7 need no special tooling and no clicking from remembered
+  coordinates.
+- **File uploads work** without touching a native file picker — `find` the input, then
+  `file_upload` with the path. C1-C3 went through this way.
+- **Destructive plans are safe to run** because `scripts/account-snapshot.py` round-trips the
+  account. Save, run, restore, verify.
+
+**Take a screenshot at every ✓ that is visual**, and at every step whose result you are about to
+write into the run log. Not as decoration: the four defects found on 2026-09-12 were all things
+you *see* — a stale document under the wrong plan name, a limit card showing another plan's
+benefits. A run log row that says "✓ correct" with nothing behind it is the kind of claim this
+file exists to stop.
+
+### 3 — Needs a person. Optional, and the suite is not "incomplete" without them
+
+These are blocked on something an agent must not do, not on effort. Skip them and say so; do not
+leave them looking un-run.
+
+| Plan | Why | What an agent CAN still do |
+|---|---|---|
+| **A1** | Creates an account and types a password | Nothing. Run it yourself, or leave it |
+| **R2**, step 1 only | Signs out and back in, which needs the password | Steps 2-4 — they read whatever audits exist |
+| **PAY1**, card steps only | Types card numbers into Stripe, even test ones | Step 1, the paywall gate: it needs no card, and it is the step that matters most (no letter text anywhere on the page before payment) |
+
+Everything else in this file is tier 2. If a plan looks un-runnable for a tooling reason, check
+that reason before believing it — two of them ("a modal blocks the extension", "only a real
+member's SBC has plan variation") turned out to be wrong, and both cost days.
 
 ## Run log — what has actually been executed
 
@@ -958,7 +1010,7 @@ and therefore outside the Firestore snapshot.
 
 **Cost:** 0 audits.
 
-## R2 — Home routing, the short "Worth disputing" label, and the pairing summary
+## R2 — Home routing, the short "Worth disputing" label, and the pairing summary (step 1 needs a person)
 **Use case:** the bills list is the app's home, the found-money card says one thing, and the pairing summary names the EOB a run would actually use.
 **Data:** none — run against whatever audits already exist. Needs a saved EOB in the library (any pass after M4).
 
@@ -1021,7 +1073,7 @@ there is one to attach.
 
 # Auth
 
-## A1 — Three ways in, and the failures a real person hits
+## A1 — Three ways in, and the failures a real person hits (OPTIONAL — needs a person)
 **Use case:** the two ways into the app. Password sign-in was added 2026-08-25; the email
 link was removed 2026-08-26 (see step 4).
 Most of this plan is the failure paths, because those are what a member sees when something
@@ -2138,7 +2190,7 @@ reproduced its documented figures**, with two exceptions noted below — neither
 E1b, E3, E5, M6, D1, R2, F1, X1, E7, A1's password paths, FAM2, FAM3, G1. Their existing
 verification blocks stand.
 
-## PAY1 — Buying an appeal letter (sandbox only)
+## PAY1 — Buying an appeal letter (sandbox only — card steps need a person)
 
 **Use case:** the one paid thing in the product. Audits are free; the letter is $4.99.
 **Prerequisite:** `PAYMENTS=on` in `functions/.env` and a redeploy, plus sandbox

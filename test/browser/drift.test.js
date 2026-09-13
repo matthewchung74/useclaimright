@@ -265,3 +265,24 @@ test("no placeholder URLs in the landing page", () => {
   assert.deepEqual(bad, [],
     "set the real URL before this ships — a placeholder link is a 404 with a nice colour");
 });
+
+// The tier table and the plan headings are two lists of the same fact — which
+// plans an agent must not run — and two lists of the same fact drift. That is
+// the whole premise of this file: a plan marked optional in one place and not
+// the other reads as un-run rather than deliberately skipped, which is how a
+// suite starts looking incomplete forever.
+test("the plans marked as needing a person match the tier-3 table", () => {
+  const tier3 = TESTING.slice(
+    TESTING.indexOf("### 3 — Needs a person"),
+    TESTING.indexOf("## Run log"));
+  // "| **A1** |" and "| **R2**, step 1 only |" — the bolded id in the first cell.
+  const listed = new Set([...tier3.matchAll(/^\|\s*\*\*([A-Z]+[0-9]*)\*\*/gm)].map((m) => m[1]));
+
+  const marked = new Set([...TESTING.matchAll(
+    /^## ([A-Z]+[0-9]*[a-z]?) —[^\n]*(?:OPTIONAL|needs? a person)/gm)].map((m) => m[1]));
+
+  assert.deepEqual([...marked].sort(), [...listed].sort(),
+    `headings marked as needing a person: ${[...marked].sort()}; ` +
+    `rows in the tier-3 table: ${[...listed].sort()}`);
+  assert.ok(listed.size > 0, "the tier-3 table has no rows — did the section move?");
+});
