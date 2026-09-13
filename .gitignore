@@ -23,3 +23,10 @@ test-fixtures/by-plan/
 # repo is public. Rebuild with:
 #   test-fixtures/carrier/fetch.sh
 test-fixtures/carrier/*.pdf
+
+# Documents a member supplied: their own plan booklet, their own EOB. No script
+# can rebuild these — there is no public URL — so unlike carrier/ they are gone
+# for anyone who does not have them, and every test that uses them skips.
+# NOTHING in here is ever committed, including notes about what is in them.
+test-fixtures/private/*
+!test-fixtures/private/README.md

@@ -117,7 +117,7 @@ extraction spanning them) and rasterised SBC (S3, which found a real bug on its 
 
 | Gap | Why it might matter |
 |---|---|
-| **More than 20 pages** | S1's edge case says it rejects before billing a model call. Never run |
+| **More than 20 pages** | S1's edge case says it rejects before billing a model call. Never run *(the client half is now covered: `test/browser/booklet.test.js` narrows a real 135-page booklet to 24 pages. What is still untested is a document that survives narrowing and is STILL over the limit)* |
 | **Rasterised family EOB** | Both axes at once — a photo of the letter that came in the post, covering three people |
 | **EXIF-rotated JPEG** | IMG1 rotates *pixels*; a real phone photo is stored upright with an orientation tag instead. This is the single most common real input and the least tested |
 | **A figure obscured by glare or shadow** | The realistic phone-photo failure. What matters is not whether it reads the number but whether it *invents* one — the false-positive direction, which is the one that costs someone money |
@@ -1220,6 +1220,29 @@ screen ("This is what we send") comes first and "Start over" there costs nothing
 guard, and these are all 2026 documents, so it never fires. Whatever plan is on file is then
 gone, along with the trackers it created and any "You chose this plan" choice. Snapshot with
 `scripts/account-snapshot.py save` first, or be holding the document you will restore from.
+
+### The narrowing path, and the only document that exercises it
+
+`findPlanSections` exists for a 135-page employer booklet holding three medical plans. Until
+2026-09-12 it had been tested against `sections.test.js`'s hand-written `booklet()` — a 30-page
+array typed out by someone who already knew what the code looked for — and nothing else. The
+carrier SBCs cannot stand in: all five return `[]`, because they are 7-14 pages holding one plan
+and sit under the page budget, so narrowing never runs on them.
+
+A member's real booklet now does, in `test/browser/booklet.test.js`. It lives in
+`test-fixtures/private/`, which is gitignored with no `fetch.sh` and cannot have one — a booklet
+belongs to an employer's plan and is published nowhere. The tests skip without it.
+
+**Measured 2026-09-12 on the real document:** 135 pages, 391,978 characters, **10 sections**
+found — PLAN INFORMATION, then medical, transplant and prescription schedules for each of EPO,
+PPO and HDHP. Narrowed to **24 pages**: the cover, PLAN INFORMATION, all three medical schedules
+whole, all three transplant schedules whole.
+
+**Prescription is dropped, all three plans of it.** Medical (18) + plan information (2) +
+transplant (3) + cover = 24, exactly the budget; prescription needs 19 more. That is the
+intended all-or-nothing behaviour and still a real cost — a member asking about drug coverage
+gets none of it. The lever is `PAGE_BUDGET`, and the 286 KB/page figure above says how much room
+there is to raise it: 24 pages is ~6.9 MB of a 10 MB callable, so there is not much.
 
 ### The free half — already automated, no uploads
 
