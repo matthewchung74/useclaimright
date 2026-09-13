@@ -61,14 +61,14 @@ test("mergeSbcTrackers: creates new, updates sbc-sourced, never touches manual",
   assert.deepEqual(fresh.create[0], { label: "Outpatient mental health", codes: ["90832", "90834", "90837"], limit: 6, planYearStartMonth: 1, source: "sbc" });
   // manual tracker with overlapping codes blocks creation
   const manual = [{ id: "m1", label: "Therapy", codes: ["90837"], limit: 6 }];
-  assert.deepEqual(mergeSbcTrackers(manual, limits, 1), { create: [], update: [] });
+  assert.deepEqual(mergeSbcTrackers(manual, limits, 1), { create: [], update: [], remove: [] });
   // sbc-sourced tracker with overlapping codes gets updated in place
   const sbcOwned = [{ id: "s1", label: "Old label", codes: ["90837"], limit: 5, source: "sbc" }];
   const upd = mergeSbcTrackers(sbcOwned, limits, 1);
   assert.equal(upd.create.length, 0);
   assert.deepEqual(upd.update, [{ id: "s1", changes: { label: "Outpatient mental health", codes: ["90832", "90834", "90837"], limit: 6 } }]);
   // a limit without visitsPerYear or codes creates nothing
-  assert.deepEqual(mergeSbcTrackers([], [{ label: "X", codesHint: [], visitsPerYear: null }], 1), { create: [], update: [] });
+  assert.deepEqual(mergeSbcTrackers([], [{ label: "X", codesHint: [], visitsPerYear: null }], 1), { create: [], update: [], remove: [] });
   // two SBC rows sharing a code must not create two overlapping trackers
   const twoRows = mergeSbcTrackers([], [
     { label: "Mental health", codesHint: ["90837"], visitsPerYear: 6 },
@@ -78,7 +78,42 @@ test("mergeSbcTrackers: creates new, updates sbc-sourced, never touches manual",
   // code matching is case/whitespace-insensitive
   const ci = mergeSbcTrackers([{ id: "m1", label: "T", codes: [" 90837 "], limit: 6 }],
     [{ label: "MH", codesHint: ["90837"], visitsPerYear: 6 }], 1);
-  assert.deepEqual(ci, { create: [], update: [] });
+  assert.deepEqual(ci, { create: [], update: [], remove: [] });
+});
+
+// Found on production 2026-09-12, running C1 then C2 back to back: a UMR
+// booklet replaced by Kaiser CalPERS and then by BCBS Kansas left the coverage
+// list showing "Private Duty Nursing 0/14" and "Developmental Delays 1/20" —
+// UMR's benefits, on a Kansas plan, badged "from your plan (SBC)". Replace
+// created and updated and never removed, so a member who changes insurer
+// accumulates every plan they have ever uploaded.
+test("mergeSbcTrackers: replacing a plan drops the old plan's limits, keeps the member's", () => {
+  const existing = [
+    { id: "s1", label: "Outpatient mental health", codes: ["90837"], limit: 6, source: "sbc" },
+    { id: "s2", label: "Private duty nursing", codes: ["99504"], limit: 14, source: "sbc" },
+    { id: "m1", label: "My own limit", codes: ["97110"], limit: 20 },
+    { id: "r1", label: "From an EOB remark", codes: ["70450"], limit: 3, source: "remark" },
+  ];
+  // The new plan names only the mental-health row.
+  const { create, update, remove } = mergeSbcTrackers(existing,
+    [{ label: "Mental health visits", codesHint: ["90837"], visitsPerYear: 12 }], 1);
+
+  assert.deepEqual(create, []);
+  assert.deepEqual(update, [{ id: "s1", changes: { label: "Mental health visits", codes: ["90837"], limit: 12 } }]);
+  // s2 is the old plan's and goes. m1 and r1 are the member's and stay — the
+  // same line Remove draws, in the same words.
+  assert.deepEqual(remove, ["s2"]);
+});
+
+// A plan with no limits at all is still a plan. If it swept the board it would
+// be indistinguishable from Remove, which it is not.
+test("mergeSbcTrackers: a plan stating no limits still clears the previous plan's", () => {
+  const existing = [
+    { id: "s1", label: "Acupuncture", codes: ["97810"], limit: 20, source: "sbc" },
+    { id: "m1", label: "Mine", codes: ["97110"], limit: 20 },
+  ];
+  const { create, update, remove } = mergeSbcTrackers(existing, [], 1);
+  assert.deepEqual({ create, update, remove }, { create: [], update: [], remove: ["s1"] });
 });
 
 test("deductibleTarget: SBC owns the limit; EOB fills gaps; conflict when both differ > $1", () => {

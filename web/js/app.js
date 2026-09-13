@@ -1983,6 +1983,14 @@ function renderPlanCard() {
   const el = $("plan-card");
   const s = activePlan?.structured;
   const choices = planChoices(activePlan);
+  // #plan-full sits OUTSIDE this card, so rewriting the card does not touch it
+  // and View fills it only on click. Replace your plan with the panel open and
+  // the old document's text stays on screen under the new plan's name —
+  // verified on production 2026-09-12, reading Kaiser's "$0 deductible" beneath
+  // "State Employee Health Plan: Plan C". Close it: the card is re-rendering
+  // because the plan changed, so whatever is in there is about to be wrong.
+  const full = $("plan-full");
+  if (full) { full.hidden = true; full.querySelector("pre").textContent = ""; }
   if (!s && choices) {
     // Several plans, none resolved. Not "no plan on file" — we have their
     // document and are one answer away.
@@ -2185,7 +2193,7 @@ async function applySbcConfiguration() {
   const s = activePlan?.structured;
   if (!s) return;
   const month = planYearStartMonthFrom(s.planYearStart);
-  const { create, update } = mergeSbcTrackers(allTrackers, s.limits || [], month);
+  const { create, update, remove } = mergeSbcTrackers(allTrackers, s.limits || [], month);
   const uid = auth.currentUser.uid;
   for (const t of create) {
     await addDoc(collection(db, `users/${uid}/trackers`), { ...t, createdAt: serverTimestamp() });
@@ -2193,7 +2201,13 @@ async function applySbcConfiguration() {
   for (const u of update) {
     await updateDoc(doc(db, `users/${uid}/trackers/${u.id}`), u.changes);
   }
-  if (create.length || update.length) { await loadTrackers(); }
+  // The limits of the plan that just left. Nothing is really lost: counts are
+  // derived from audits, so re-uploading the old SBC brings its limits back
+  // with their progress intact — the same argument Remove makes.
+  for (const id of remove) {
+    await deleteDoc(doc(db, `users/${uid}/trackers/${id}`));
+  }
+  if (create.length || update.length || remove.length) { await loadTrackers(); }
   renderUsage();
 }
 

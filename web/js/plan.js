@@ -41,8 +41,19 @@ const norm = (c) => String(c).trim().toUpperCase();
 // SBC-derived limits become trackers, but never at a manual tracker's expense:
 // overlap with a manual tracker blocks creation; overlap with an sbc-sourced
 // tracker updates it in place (re-uploads refresh their own trackers only).
+// Returns { create, update, remove }. `remove` is the half that was missing:
+// an SBC tracker belongs to the plan that created it, which is why removing the
+// plan removes them — but REPLACING the plan only ever added.
+//
+// Found on production 2026-09-12 running C1 then C2. After replacing a UMR
+// booklet with Kaiser CalPERS and then with BCBS Kansas, the coverage list held
+// "Private Duty Nursing 0/14", "Developmental Delays 1/20" and "Refractions
+// 0/1" — UMR's benefits, on a Kansas plan, each badged "from your plan (SBC)".
+// A member who changes insurer accumulates limits from every plan they have
+// ever uploaded, presented as their current coverage, and the whole point of
+// the card is telling them what is left of it.
 export function mergeSbcTrackers(existing, limits, planYearStartMonth) {
-  const create = [], update = [];
+  const create = [], update = [], kept = new Set();
   const pendingCodes = new Set(); // codes already claimed by a create/update this run
   for (const lim of limits || []) {
     const codes = (lim.codesHint || []).filter(Boolean);
@@ -69,11 +80,16 @@ export function mergeSbcTrackers(existing, limits, planYearStartMonth) {
         ? { label: lim.label, limit: lim.visitsPerYear }
         : { label: lim.label, codes, limit: lim.visitsPerYear };
       update.push({ id: sbcHit.id, changes });
+      kept.add(sbcHit.id);
     } else {
       create.push({ label: lim.label, codes, limit: lim.visitsPerYear, planYearStartMonth, source: "sbc" });
     }
   }
-  return { create, update };
+  // Everything the incoming plan did not claim. Only source "sbc": limits the
+  // member added themselves, or accepted from an EOB remark, are theirs and
+  // survive — the same line Remove draws, and the same words it uses.
+  const remove = existing.filter((t) => t.source === "sbc" && !kept.has(t.id)).map((t) => t.id);
+  return { create, update, remove };
 }
 
 // The SBC owns the LIMIT; the EOB owns progress. When both state a limit and
