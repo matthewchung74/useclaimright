@@ -113,6 +113,18 @@ const NO_FILES = {
   "PHONE1-phone-layout": "no uploads; drive the app at 375px",
 };
 
+// Plans whose documents DO exist but are not ours to commit: real carrier SBCs,
+// gitignored because this repo is public and they are the carriers' copyright.
+// Distinct from NO_FILES — "not here" is not the same statement as "uploads
+// nothing", and a reader who cannot tell them apart goes looking for the wrong
+// thing. The free half of these plans needs no document at all and runs in
+// test/browser/carrier.test.js.
+const NOT_COMMITTED = {
+  "C1-no-deductible": ["kaiser-calpers-2026.pdf"],
+  "C2-network-split": ["bcbsks-plan-c-2026.pdf"],
+  "C3-more-layouts": ["blueshield-ppo-2026.pdf", "bcbsks-plan-a-2026.pdf", "qhp-ks-2026.pdf"],
+};
+
 rmSync(OUT, { recursive: true, force: true });
 mkdirSync(OUT, { recursive: true });
 
@@ -150,5 +162,13 @@ for (const [plan, why] of Object.entries(NO_FILES)) {
   writeFileSync(join(OUT, plan, "NO-FILES.txt"), `${why}\n`);
 }
 
+for (const [plan, files] of Object.entries(NOT_COMMITTED)) {
+  mkdirSync(join(OUT, plan), { recursive: true });
+  writeFileSync(join(OUT, plan, "NOT-COMMITTED.txt"),
+    `${files.join("\n")}\n\nlive in test-fixtures/carrier/, which is gitignored. Rebuild with:\n` +
+    `    test-fixtures/carrier/fetch.sh\n`);
+}
+
 console.log(`by-plan/: ${Object.keys(PLANS).length} plans with files, ${copied} copied, ` +
-  `${pages} scanned page(s) for S1, ${Object.keys(NO_FILES).length} upload-nothing plans`);
+  `${pages} scanned page(s) for S1, ${Object.keys(NO_FILES).length} upload-nothing plans, ` +
+  `${Object.keys(NOT_COMMITTED).length} with gitignored carrier documents`);

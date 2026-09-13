@@ -43,8 +43,6 @@ get "https://bkcdocs.blob.core.windows.net/qhp/SBC_2026_94248KS0560019-01.pdf" \
 # test the format and not the mess.
 get "https://www.trinetaetna.com/pdfs/Sample_Medical_EOB.pdf" \
     eob-aetna-sample.pdf "Aetna layout"
-get "https://member.aetna.com/memberSecure/assets/pdfs/EOB%20Guide.pdf" \
-    eob-aetna-guide.pdf "Aetna, annotated"
 get "https://www.cigna.com/static/www-cigna-com/docs/846894-eob-v1.pdf" \
     eob-cigna-sample.pdf "Cigna layout — amount billed \$189.00"
 

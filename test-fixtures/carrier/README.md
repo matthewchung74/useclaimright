@@ -39,6 +39,12 @@ its URL in the script.
 member education. Cleaner than a real EOB: one tidy claim, no consolidated
 family statement. They test the *format*, not the mess.
 
+There were meant to be three. Aetna's "EOB Guide" URL returns 200 and serves
+the plain sample, so `eob-aetna-guide.pdf` was the same bytes under another
+name and this file described a layout that was never here. `curl -f` catches a
+404; it cannot catch a 200 serving the wrong document. The check that does is
+in `test/browser/carrier.test.js`.
+
 **Claim forms** — a CMS-1500 or UB-04 is what a provider sends an insurer, not
 what a patient receives. The product audits the patient-facing itemized bill,
 so these test a document it does not take. Two carry figures; two are blank

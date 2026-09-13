@@ -33,6 +33,9 @@ the file and easy to miss.
 
 | Plan | Last run | By | Result |
 |---|---|---|---|
+| C1 | | | |
+| C2 | | | |
+| C3 | | | |
 | E1 | 2026-09-09 | agent | ✓ re-run on the clean account E7 produced. $2,115.00 / $841.75 / $186.35 / **$822.15** — exact, with 145.50 + 658.65 + 18.00 = 822.15. `cost_share_error` spelled out its own arithmetic ($8.24 + $4.55 + $124.00 + $27.70 + $3.86 = $168.35 against a stated $186.35). **Honest footer present**: "Not checked against your plan — add your Summary of Benefits… to enable plan checks." Occurrence table showed 80053 with count 2 |
 | E1b | 2026-09-09 | agent | ✓ dropzone copy, all three step headings visible on arrival with step 2's inputs collapsed, "Add your bill above and this opens up", no dashboard headings on the form, the EOB explainer under step 2, and the disclosure summary still carrying "including your name and everything else printed on them". Account menu: full email, Sign out, then "Reset account — erase all my data" below a divider **in red**. Reveal animation **verified**: `#upload` measured 876.3px collapsed, **1190.7px at 120ms**, 1294.6px open — mid-transition height sits between the two, so it eases rather than jumping |
 | M1 | 2026-09-07 | agent | ✓ plan on file, both trackers auto-created 0/20 and 0/6, deductible target from SBC |
@@ -1136,6 +1139,61 @@ state it did not start in. While the provider is off, every password account is 
 Google sign-in is unaffected, which is what makes this safe to do at all.
 
 # Family, scans, and real documents
+
+## C1 — A plan with no deductible at all (1 plan upload)
+**Use case:** every plan the app has ever extracted has a deductible. `fake-sbc.pdf` says
+$1,500/$3,000; all five government specimens in `real-sbc/` say $500/$1,000. So the whole
+deductible story — the limit card, `limitTarget`, the "$X of $Y met" bar, the SBC-derived
+tracker — has only ever been exercised against a non-zero number, and nothing says what
+happens at zero.
+
+**Data:** `test-fixtures/carrier/kaiser-calpers-2026.pdf` (run
+`test-fixtures/carrier/fetch.sh` first — it is gitignored). Kaiser Permanente CalPERS Basic,
+14 pages, **"The plan's overall deductible $0"**, specialist copay $15.
+
+**Assert:**
+
+| Check | Expected |
+|---|---|
+| Extracted deductible | `0`, individual and family — not null, not omitted, not $1,500 borrowed from the plan it replaced |
+| Deductible limit card | Either absent, or showing a met/limit pair that reads sensibly at zero. **Never** "met $0 of $0" with a full bar, and never a NaN |
+| Cost-share rows | Copays ($15 specialist), not coinsurance percentages. This plan has no coinsurance to speak of |
+| Trackers derived | Whatever is derived must not include a deductible tracker with limit 0 |
+
+**Also on this upload — the three-column trap.** Pages 12-14 print the SBC's three mandatory
+coverage examples side by side, each with its own block reading "The plan's overall deductible
+$0 / Specialist copayment $15 / Hospital (facility) copayment $0". Those are *illustrations of a
+hypothetical year*, not benefits. Assert the extracted plan does not carry "Peg is Having a Baby"
+or "Managing Joe's Type 2 Diabetes" as cost-share rows. No fixture we wrote has this shape;
+every real SBC does, because the regulation requires it.
+
+## C2 — A deductible stated in a network-split table (1 plan upload)
+**Use case:** `fake-sbc.pdf` prints one deductible on one line. A real carrier prints a grid —
+in-network beside out-of-network, employee-only beside employee-plus-family — and the figure the
+member cares about is one cell of it. Picking the wrong cell is silent and wrong in the
+expensive direction.
+
+**Data:** `test-fixtures/carrier/bcbsks-plan-c-2026.pdf`. Its deductible row reads
+**"Non Network: EE Only $2,750"**, and the in-network figure sits elsewhere on the same row.
+$2,750 is also the highest deductible in the corpus, so it doubles as the top of the range.
+
+**Assert:** the extracted deductible is the **in-network** figure, and the review screen shows
+the member which one it took before anything is saved. If it takes the non-network $2,750, every
+"you have met your deductible" conclusion afterwards is wrong by design.
+
+## C3 — Three more carrier layouts, same plan, same questions (3 plan uploads)
+**Use case:** C1 and C2 are the two ends of the range. These are the middle, and their only job
+is layout variety — five carriers, five ways of printing the same regulated form.
+
+**Data:** `blueshield-ppo-2026.pdf` ($1,000), `bcbsks-plan-a-2026.pdf` ($1,000, a different
+carrier printing the same number), `qhp-ks-2026.pdf` ($2,000, an exchange plan).
+
+**Assert** for each: deductible and out-of-pocket maximum match what
+`test/browser/carrier.test.js` reads out of the text layer, the plan year is the 2026 one printed
+on the document, and the plan name is the carrier's, not a paraphrase.
+
+**Budget note:** C1-C3 are 5 plan uploads against a cap of 3/day. Two days, or a counter reset
+recorded in the run log.
 
 ## FAM1 — Two family members are not one person billed twice
 **Use case:** a household shares a plan, a clinic and a day. Before 2026-08-24 the second
