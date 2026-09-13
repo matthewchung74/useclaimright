@@ -1093,7 +1093,15 @@ $("confirm-review").onclick = async () => {
   $("eob-file").value = "";
 
   show("processing");
-  setStatus("Analyzing your bill against the EOB…");
+  // Same family as the report copy below: do not narrate an EOB to someone who
+  // has just ticked "I don't have an EOB". Seen on production 2026-09-13 while
+  // re-verifying E2 — smaller than the report line, and wrong in the same way.
+  // `state.eob` is the right test HERE (unlike at the report, where the answer
+  // must survive a reload): nothing has been sent yet, so this is the only
+  // place that knows what the member actually staged.
+  setStatus(state.eob
+    ? "Analyzing your bill against the EOB…"
+    : "Analyzing your bill…");
   try {
     const { data } = await analyzeFn(payload);
     lastAuditId = data.auditId || null;
