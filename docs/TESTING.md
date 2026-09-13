@@ -41,6 +41,7 @@ removed by hand before verify came back clean.
 |---|---|---|---|
 | C4 | | | |
 | C5 | | | |
+| C6 | 2026-09-13 | agent | Client half ✓ automated in `test/browser/booklet.test.js` — 135 pages → 24, 3.94 MB where the whole document would be ~22 MB against a 10 MB limit, and pdf.js agrees with poppler on all ten sections. **The upload itself has not been re-run** since the narrowing work; what is on the account is the plan from 2026-09-10 |
 | C1 | 2026-09-12 | agent | ✓ **KAISER PERMANENTE : CalPERS TRADITIONAL HMO**, 2026-01-01 → 2026-12-31, deductible **$0**, out-of-pocket **$1,500** individual. Both right, and the OOP is the harder half: that line reads "$1,500 Individual / $3,000 Family. **$8,650 Individual / $17,300 Family for prescription drugs**" — two limits on one line and it took the medical one. **The $0 path works and had never run**: the card measured against the insurer's $1,500 from the EOB and said "your claims have already passed the $0.00 on your SBC, so that may not be the plan you are on". No NaN, no "$0 of $0", no full bar. The three-column coverage examples on pages 12-14 did **not** leak in as benefits |
 | C2 | 2026-09-12 | agent | ✓ **State Employee Health Plan: Plan C**, deductible **$2,750**, out-of-pocket **$4,500**, both correct. But the plan's premise was wrong — this document's network and non-network EE-only figures are identical, so it cannot fail the way it was written to. Corrected above; the real split is C3's Blue Shield. **Found the stale-View defect here**: with the panel open, replacing the plan left Kaiser's text ("$0 deductible") on screen under "Plan C". Fixed in `renderPlanCard` |
 | C3 | 2026-09-12 | agent | ✓ all three. **Full PPO Combined Deductible Value 10-1000 90/70** $1,000 / **$4,000** — the network split, and it took the participating-provider figure, not the $6,000 non-participating one. **State Employee Health Plan: A (PPO)** $1,000 / $5,250. **Kansas City : Blue KC Standard Gold BlueSelect EPO** $2,000 / $8,200. Five carriers, five layouts, 5/5 on plan name, plan year, deductible and out-of-pocket. **Found the tracker-carryover defect**: after three replaces the coverage list still held UMR's "Private Duty Nursing 0/14" and "Developmental Delays 1/20", badged "from your plan (SBC)". Fixed in `mergeSbcTrackers` |
@@ -1322,6 +1323,43 @@ the worst failure this product has.
 **Already covered for free:** both forms render and fit —
 `test/browser/carrier-browser.test.js` puts every document in the directory through the client
 pipeline, claim forms included (UB-04: 3 pages, 0.66 MB; CMS-1500: 6 pages, 1.50 MB).
+
+## C6 — A member's own plan booklet, end to end (1 plan upload)
+**Use case:** the document every other plan is a simplification of. 135 pages, three medical
+plans in one file, and nothing anywhere saying which one the member is enrolled in. It is the
+reason `findPlanSections`, `selectSchedulePages`, `resolvePlan`, `keepChoice` and the
+"You chose this plan" radio list all exist, and it is the **only** document that reaches
+`extractFromPdf`'s narrowing branch — every SBC is under the page budget, so `narrowed` is null
+for all of them.
+
+**Data:** `test-fixtures/private/booklet.pdf`. Not in the repo and not fetchable: a booklet
+belongs to an employer's plan and is published nowhere. See `test-fixtures/private/README.md`.
+
+**The client half is automated and costs nothing** — `test/browser/booklet.test.js`, seven tests,
+four on the page text and three driving the real `extractText` in Chromium. Measured 2026-09-13:
+
+| | |
+|---|---|
+| Document | 135 pages, 391,978 characters |
+| Sections found | 10 — PLAN INFORMATION, then medical / transplant / prescription for EPO, PPO and HDHP |
+| Narrowed to | **24 pages** — cover, PLAN INFORMATION, all three medical schedules, all three transplant schedules |
+| Payload sent | **3.94 MB**, 164 KB a page |
+| Payload if not narrowed | **~22 MB** against a 10 MB callable limit |
+| pdf.js vs poppler | identical, all ten sections, same boundaries |
+
+That last row is the one to keep. The cheap tests in this suite read documents with poppler; the
+app reads them with pdf.js and rebuilds lines by rounding item y-positions. They agree today. If
+they ever stop, the poppler tests are measuring a document the app does not see.
+
+**What still needs a run.** The review screen ("This is what we send") showing 24 of 135 pages
+and naming the sections; the three-plan radio list appearing with none pre-selected; picking one
+and it surviving a re-upload (`keepChoice`); the plan year coming out **2026** — it is on the
+cover as "Revised 01-01-2026" and only as a shape in PLAN INFORMATION ("begins on January 1 and
+ends on the following December 31"), which is why page 1 is always sent.
+
+**It replaces the plan on file.** Snapshot first — and note that `account-snapshot.py restore`
+does not delete documents created since the snapshot, so trackers the new plan adds must be
+removed by hand before `verify` says EXACT.
 
 ## FAM1 — Two family members are not one person billed twice
 **Use case:** a household shares a plan, a clinic and a day. Before 2026-08-24 the second

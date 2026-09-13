@@ -125,6 +125,7 @@ const NOT_COMMITTED = {
   "C3-more-layouts": ["blueshield-ppo-2026.pdf", "bcbsks-plan-a-2026.pdf", "qhp-ks-2026.pdf"],
   "C4-real-eob": ["eob-cigna-sample.pdf (plus a bill from gen-carrier-pairs.mjs, not yet written)"],
   "C5-claim-form-as-bill": ["claim-ub04-montana.pdf", "claim-cms1500-montana.pdf"],
+  "C6-member-booklet": ["test-fixtures/private/booklet.pdf — a member's own, not fetchable"],
 };
 
 rmSync(OUT, { recursive: true, force: true });
