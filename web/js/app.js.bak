@@ -1103,7 +1103,7 @@ $("confirm-review").onclick = async () => {
       // ever run and this branch never once fired on a fresh report. Someone
       // who ticked "I don't have an EOB" was told "the bill and EOB appear
       // consistent" about a comparison that never ran. The copy fixed on
-      // 2026-09-09 was correct; nothing ever reached it. Found on production
+      // 2026-09-09 was correct; nothing reached it. Found on production
       // 2026-09-13 running E2.
       //
       // Judge it the way openAudit does, on what the model transcribed: no EOB

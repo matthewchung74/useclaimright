@@ -286,3 +286,25 @@ test("the plans marked as needing a person match the tier-3 table", () => {
     `rows in the tier-3 table: ${[...listed].sort()}`);
   assert.ok(listed.size > 0, "the tier-3 table has no rows — did the section move?");
 });
+
+// asDoc(null) returns { text: "", images: [] }, so `!payload.eob` is false for
+// every audit ever run — a truthiness test against a function that always
+// returns an object. The bill-only report therefore told people "the bill and
+// EOB appear consistent" about a document they had just said they do not have,
+// for months after the copy was fixed, because nothing reached the copy.
+//
+// Found on production 2026-09-13 running E2. The lesson generalises past this
+// one line: anything asked "was there an EOB?" must ask what the model
+// transcribed, never whether a wrapper object exists.
+test("the no-EOB decision is never made by testing an asDoc() wrapper", () => {
+  const asDocReturnsObject = /const asDoc = \(d\) =>[^\n]*\{ text:/.test(APP_JS);
+  assert.ok(asDocReturnsObject,
+    "asDoc no longer always returns an object — re-read this test before trusting it");
+
+  const bad = [...APP_JS.matchAll(/noEob:\s*!([A-Za-z_$][\w$.]*)/g)]
+    .map((m) => m[1])
+    .filter((expr) => !/^auditText$/.test(expr.split("(")[0]));
+  assert.deepEqual(bad, [],
+    `noEob computed from ${bad.join(", ")} — asDoc() always returns an object, so a ` +
+    `truthiness test on payload.eob is always true. Use auditText(data, "eob").`);
+});
