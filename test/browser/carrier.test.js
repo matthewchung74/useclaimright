@@ -141,3 +141,33 @@ test("no two fixtures are the same document under different names",
       sums.set(sum, f);
     }
   });
+
+test("the EOB fixtures are what the README says they are", { skip: SKIP }, () => {
+  // One of these is an EOB and one is a leaflet about EOBs, and telling them
+  // apart matters: pairing a bill with the leaflet would test nothing while
+  // looking like it tested the Aetna layout.
+  const cigna = join(DIR, "eob-cigna-sample.pdf");
+  if (existsSync(cigna)) {
+    const t = pagesOfPdf("eob-cigna-sample.pdf").join("\n");
+    // A real EOB states what was billed, what the plan allowed, and what is
+    // left for the member. A document missing all three is not one. (It does
+    // NOT say "this is not a bill" — I assumed that and the test caught me.)
+    for (const phrase of [/amount billed/i, /\$\s?189\.00/, /covered amount/i]) {
+      assert.ok(phrase.test(t), `eob-cigna-sample.pdf no longer matches ${phrase}`);
+    }
+  }
+
+  const aetna = join(DIR, "eob-aetna-sample.pdf");
+  if (existsSync(aetna)) {
+    const t = pagesOfPdf("eob-aetna-sample.pdf").join("\n");
+    // Named "sample", but it is the annotated guide: explanatory prose beside a
+    // thumbnail of an EOB stamped SAMPLE, with the figures inside that image.
+    // 2,205 characters over two pages, none of them a claim. Kept as reference
+    // for the video series; useless as an audit fixture, and this says so where
+    // someone would otherwise reach for it.
+    assert.ok(/Understanding your/i.test(t) && /Explanation of Benefits/i.test(t),
+      "eob-aetna-sample.pdf is no longer the annotated guide — re-read it before using it");
+    assert.ok(t.length < 5000,
+      `eob-aetna-sample.pdf now has ${t.length} characters; if it gained a real claim it may be usable after all`);
+  }
+});

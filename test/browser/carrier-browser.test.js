@@ -18,7 +18,7 @@ import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
 import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { extname, join, normalize, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
@@ -36,6 +36,13 @@ const SBCS = [
 ];
 const SKIP = SBCS.every((f) => existsSync(join(CARRIER, f)))
   ? false : "run test-fixtures/carrier/fetch.sh first";
+
+// Everything fetch.sh pulls, not just the SBCs: two EOBs and four provider
+// claim forms as well. They are different document classes and the client does
+// not care — it renders pages — which is exactly why they belong in the
+// corpus-wide check at the bottom of this file.
+const everyCarrierPdf = () => SKIP ? []
+  : readdirSync(CARRIER).filter((f) => f.endsWith(".pdf")).sort();
 
 // What the client must stay under. Both are mirrored from source rather than
 // retyped: MAX_IMAGE_BYTES is the server's own check, and the 10MB is the
@@ -158,4 +165,35 @@ test("a real SBC fits in a callable request, with room to spare",
       assert.ok(r.bytes < CALLABLE_LIMIT / 2,
         `${note} — past half the callable limit; narrowing cannot rescue an SBC`);
     }
+  });
+
+test("every carrier document renders and fits, whatever kind it is",
+  { skip: SKIP }, async () => {
+    // fetch.sh pulls live URLs. A carrier can replace a 7-page SBC with a
+    // 40-page combined SBC-and-glossary, or serve a PDF pdf.js cannot open, and
+    // the first anyone would know is a member's upload failing. The SBC tests
+    // above cannot catch that for the EOBs and claim forms, so this one covers
+    // the whole directory and makes no assumption about what each file is.
+    const seen = [];
+    for (const f of everyCarrierPdf()) {
+      const r = await upload(f);
+      assert.equal(r.method, "image", `${f}: not sent as pages`);
+      assert.ok(r.pages > 0, `${f}: rendered no pages`);
+      assert.ok(r.pages <= MAX_PAGES, `${f}: ${r.pages} pages, server takes ${MAX_PAGES}`);
+      assert.ok(r.bytes < CALLABLE_LIMIT / 2,
+        `${f}: ${(r.bytes / 1e6).toFixed(2)}MB, past half the callable limit`);
+      seen.push(Math.round(r.bytes / r.pages / 1024));
+    }
+    assert.ok(seen.length >= 10, `only ${seen.length} carrier PDFs — run fetch.sh`);
+
+    // Measured 2026-09-12 across all eleven: 215-326 KB a page, on documents as
+    // different as a colour benefits grid, a two-page EOB and a fillable
+    // CMS-1500. The spread is narrow because the number is a property of the
+    // render scale and JPEG quality in extract.js, not of what is on the page —
+    // which is what makes "the callable runs out around 35 pages" a figure
+    // worth quoting rather than a guess from one document.
+    const lo = Math.min(...seen), hi = Math.max(...seen);
+    assert.ok(lo > 120 && hi < 500,
+      `per-page payload moved out of the 120-500KB band actually measured: ${lo}-${hi}KB. ` +
+      `The capacity figures in extract.js and docs/TESTING.md are derived from it.`);
   });

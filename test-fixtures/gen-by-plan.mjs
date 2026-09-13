@@ -123,6 +123,8 @@ const NOT_COMMITTED = {
   "C1-no-deductible": ["kaiser-calpers-2026.pdf"],
   "C2-network-split": ["bcbsks-plan-c-2026.pdf"],
   "C3-more-layouts": ["blueshield-ppo-2026.pdf", "bcbsks-plan-a-2026.pdf", "qhp-ks-2026.pdf"],
+  "C4-real-eob": ["eob-cigna-sample.pdf (plus a bill from gen-carrier-pairs.mjs, not yet written)"],
+  "C5-claim-form-as-bill": ["claim-ub04-montana.pdf", "claim-cms1500-montana.pdf"],
 };
 
 rmSync(OUT, { recursive: true, force: true });

@@ -35,15 +35,19 @@ its URL in the script.
 
 **SBCs** — real plans, the only real plan variation we have.
 
-**EOBs** — carrier layouts (Aetna, Cigna) with sample figures, published for
-member education. Cleaner than a real EOB: one tidy claim, no consolidated
-family statement. They test the *format*, not the mess.
+**EOBs** — **one** usable one, and it is Cigna's: two pages, a real claim
+layout, amount billed $189.00, "This is not a bill" printed on it. Published
+for member education, so it is cleaner than a real EOB — one tidy claim, no
+consolidated family statement. It tests the *format*, not the mess.
 
-There were meant to be three. Aetna's "EOB Guide" URL returns 200 and serves
-the plain sample, so `eob-aetna-guide.pdf` was the same bytes under another
-name and this file described a layout that was never here. `curl -f` catches a
-404; it cannot catch a 200 serving the wrong document. The check that does is
-in `test/browser/carrier.test.js`.
+`eob-aetna-sample.pdf` is not a second one. Aetna's "EOB Guide" URL returns 200
+and serves the same bytes as the sample URL, so the two files this directory
+was meant to hold were one file under two names — `curl -f` catches a 404, not
+a 200 serving the wrong document. Worse, the survivor is the **guide**:
+explanatory prose beside a thumbnail EOB stamped SAMPLE, 2,205 characters over
+two pages, not one of them a claim. Keep it for the video series; do not pair a
+bill with it. `test/browser/carrier.test.js` asserts both of these so the
+mistake cannot be made twice.
 
 **Claim forms** — a CMS-1500 or UB-04 is what a provider sends an insurer, not
 what a patient receives. The product audits the patient-facing itemized bill,

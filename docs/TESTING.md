@@ -39,6 +39,8 @@ removed by hand before verify came back clean.
 
 | Plan | Last run | By | Result |
 |---|---|---|---|
+| C4 | | | |
+| C5 | | | |
 | C1 | 2026-09-12 | agent | ✓ **KAISER PERMANENTE : CalPERS TRADITIONAL HMO**, 2026-01-01 → 2026-12-31, deductible **$0**, out-of-pocket **$1,500** individual. Both right, and the OOP is the harder half: that line reads "$1,500 Individual / $3,000 Family. **$8,650 Individual / $17,300 Family for prescription drugs**" — two limits on one line and it took the medical one. **The $0 path works and had never run**: the card measured against the insurer's $1,500 from the EOB and said "your claims have already passed the $0.00 on your SBC, so that may not be the plan you are on". No NaN, no "$0 of $0", no full bar. The three-column coverage examples on pages 12-14 did **not** leak in as benefits |
 | C2 | 2026-09-12 | agent | ✓ **State Employee Health Plan: Plan C**, deductible **$2,750**, out-of-pocket **$4,500**, both correct. But the plan's premise was wrong — this document's network and non-network EE-only figures are identical, so it cannot fail the way it was written to. Corrected above; the real split is C3's Blue Shield. **Found the stale-View defect here**: with the panel open, replacing the plan left Kaiser's text ("$0 deductible") on screen under "Plan C". Fixed in `renderPlanCard` |
 | C3 | 2026-09-12 | agent | ✓ all three. **Full PPO Combined Deductible Value 10-1000 90/70** $1,000 / **$4,000** — the network split, and it took the participating-provider figure, not the $6,000 non-participating one. **State Employee Health Plan: A (PPO)** $1,000 / $5,250. **Kansas City : Blue KC Standard Gold BlueSelect EPO** $2,000 / $8,200. Five carriers, five layouts, 5/5 on plan name, plan year, deductible and out-of-pocket. **Found the tracker-carryover defect**: after three replaces the coverage list still held UMR's "Private Duty Nursing 0/14" and "Developmental Delays 1/20", badged "from your plan (SBC)". Fixed in `mergeSbcTrackers` |
@@ -1246,6 +1248,57 @@ sparse — so it runs out around 35, and MAX_PAGES (25) lands at ~7.2 MB. It fit
 than the code claimed, and the code now says so. Worth knowing too: **MAX_IMAGE_BYTES (12 MB)
 sits above the 10 MB callable limit**, so it can never be what rejects an oversized upload — the
 callable refuses first, and the member sees a generic failure rather than our sentence.
+
+## C4 — A real carrier EOB against a bill we wrote (1 audit)
+**Use case:** every EOB the audit has ever read, we wrote. The findings that matter most —
+billed above the allowed amount, a line on the bill missing from the EOB — are read off the
+*EOB's* table, and ours is a table we designed to be readable. `eob-cigna-sample.pdf` is Cigna's
+own layout: amount billed $189.00, a "Covered amount", a discount line reading "You saved
+$177.11 (or 94%)", service date 11/09/2015.
+
+**Data:** `eob-cigna-sample.pdf` (real) + a bill we generate to match it (synthetic). This is the
+pattern the whole C-series should extend into: **real format, synthetic counterpart, known
+answer.** The real half makes extraction work for its living; the synthetic half is where the
+planted defect goes, so the correct finding is known before the model runs.
+
+Generate the bill with a `gen-carrier-pairs.mjs` beside `gen-series.mjs`, and put its answer key
+in `carrier-expected.json` the way `series-expected.json` already does.
+
+**Assert**, one planted defect per run:
+
+| Bill says | Expected finding |
+|---|---|
+| patient responsibility $60.00 against the EOB's figure | `billed_above_allowed`, for the exact difference |
+| a second line the EOB does not carry | `not_in_eob` |
+| the same CPT twice on one date | `duplicate` |
+| everything agreeing | **no findings** — the negative control, and the one most worth running |
+
+The negative control is not optional. Without it you measure recall and never precision, which is
+how "bill-only report claimed the EOB looked consistent" shipped.
+
+**Note the date.** Cigna's sample is a 2015 claim. Against a 2026 plan it should report
+`out_of_period`, not silently check it — which makes the first run of this plan a test of the
+plan-year guard whether you meant it or not.
+
+## C5 — A provider claim form is not a patient bill (1 audit)
+**Use case:** a CMS-1500 or UB-04 is what a provider sends an insurer. It is not the itemized
+bill a member receives, and the app asks for the bill. But a member who requests "an itemized
+bill" from a billing office is sometimes handed exactly this, so it arrives on the dropzone in
+real life, and nothing has ever tested what happens when it does.
+
+**Data:** `claim-ub04-montana.pdf` (3 pages, filled) or `claim-cms1500-montana.pdf` (6 pages,
+filled). `claim-cms1500-pqrs.pdf` and `claim-cms1500-annotated.pdf` are blank instruction guides
+— useful as video reference, useless here.
+
+**Assert:** the report either audits it sensibly or says plainly that this is a claim form rather
+than a bill. What it must **not** do is invent a patient responsibility: a CMS-1500 has no
+"amount you owe" field at all, because that is not what the document is for. A figure in that
+position on the report would be fabricated, and fabricating the one number a member acts on is
+the worst failure this product has.
+
+**Already covered for free:** both forms render and fit —
+`test/browser/carrier-browser.test.js` puts every document in the directory through the client
+pipeline, claim forms included (UB-04: 3 pages, 0.66 MB; CMS-1500: 6 pages, 1.50 MB).
 
 ## FAM1 — Two family members are not one person billed twice
 **Use case:** a household shares a plan, a clinic and a day. Before 2026-08-24 the second
