@@ -1195,6 +1195,40 @@ on the document, and the plan name is the carrier's, not a paraphrase.
 **Budget note:** C1-C3 are 5 plan uploads against a cap of 3/day. Two days, or a counter reset
 recorded in the run log.
 
+**They replace the plan on file, and there is no Cancel.** `runSbcExtraction` saves server-side
+and then reloads; the only dialog on the path is the *older-plan* guard, and these are all
+2026 documents, so it never fires. Whatever plan is on file is gone, along with the trackers it
+created and any "You chose this plan" choice. Snapshot with `scripts/account-snapshot.py save`
+first, or be holding the document you will restore from.
+
+### The free half — already automated, no uploads
+
+Most of what C1-C3 would tell you does not need a model at all, and is checked on every run:
+
+- `test/browser/carrier.test.js` — page text via poppler. Text layers, page counts against the
+  budget, the deductible each document contributes, and that no real SBC is mistaken for a
+  booklet.
+- `test/browser/carrier-browser.test.js` — the real client pipeline in real Chromium:
+  `extractText()` on each PDF, pdf.js rendering every page, and the payload measured the way
+  the callable will measure it.
+
+**Measured 2026-09-12** through the second of those:
+
+| SBC | Pages | Payload | Per page |
+|---|---|---|---|
+| Kaiser CalPERS | 14 | 4.09 MB | 286 KB |
+| Blue Shield PPO | 9 | 2.62 MB | 285 KB |
+| BCBS KS Plan A | 7 | 2.26 MB | 316 KB |
+| BCBS KS Plan C | 8 | 2.31 MB | 282 KB |
+| Kansas QHP | 7 | 2.07 MB | 289 KB |
+
+`extract.js` estimated ~106 KB a page and concluded the 10MB callable limit "runs out around
+70". Real carrier pages are **2.7x that** — a dense colour benefits grid, where our fixtures are
+sparse — so it runs out around 35, and MAX_PAGES (25) lands at ~7.2 MB. It fits. It fits by less
+than the code claimed, and the code now says so. Worth knowing too: **MAX_IMAGE_BYTES (12 MB)
+sits above the 10 MB callable limit**, so it can never be what rejects an oversized upload — the
+callable refuses first, and the member sees a generic failure rather than our sentence.
+
 ## FAM1 — Two family members are not one person billed twice
 **Use case:** a household shares a plan, a clinic and a day. Before 2026-08-24 the second
 audit reported "a provider billing you twice for one visit" and told the user to dispute a

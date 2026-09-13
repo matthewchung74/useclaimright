@@ -48,10 +48,20 @@ async function renderPageToDataUrl(page, scale = 1.5) {
 // association, and an EOB is a table. It also removes the whole class of bug
 // where a page looks perfect and its text layer is garbage — invisible until
 // the audit comes back wrong.
-// The server takes 20 pages; a Firebase callable takes 10MB, which at ~106KB a
-// page runs out around 70. Neither was ever hit by a fixture, because every
-// fixture is a 5-8 page SBC. A member's real plan booklet is 135 pages, and it
-// failed with "please try again" — forever, since retrying sends it again.
+// The server takes 25 pages; a Firebase callable takes 10MB. Neither was ever
+// hit by a fixture, because every fixture is a 5-8 page SBC. A member's real
+// plan booklet is 135 pages, and it failed with "please try again" — forever,
+// since retrying sends it again.
+//
+// The 10MB is the number to watch, and this comment used to put ~106KB against
+// it and conclude "runs out around 70 pages". That figure came from our own
+// sparse fixtures. Measured 2026-09-12 on five real carriers' SBCs through this
+// exact path (test/browser/carrier-browser.test.js): **286KB a page**, near
+// identical across all five, because a real benefits table is a dense colour
+// grid and a fixture is not. So the callable runs out around 35 pages, not 70 —
+// and MAX_PAGES (25) lands at ~7.2MB, which fits, but not by the margin the old
+// number implied. Note also that MAX_IMAGE_BYTES (12MB) sits ABOVE the callable
+// limit, so it can never be the thing that rejects an oversized upload.
 const PAGE_BUDGET = 24;
 
 async function extractFromPdf(file) {
