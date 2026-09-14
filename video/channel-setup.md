@@ -1,4 +1,16 @@
-# Channel setup — paste-ready
+# Channel setup
+
+**Created 2026-09-14** — `UseClaimRight` · `@useclaimright` ·
+`UCk3LT3FEx9ht_CwEZbZ3B7g`, as a separate channel on the existing Google
+account so it does not rewrite the identity on the personal one's comment and
+subscription history.
+
+Description and keywords below are still unapplied — paste them into
+Customisation when there is something on the channel worth describing.
+
+---
+
+The original note, kept because the reasoning still holds:
 
 You create it; I cannot. It needs a password and it stands up a public presence
 under your name. It takes about a minute.
@@ -24,10 +36,9 @@ First three things to type into it, in order:
 - `dispute medical bill`
 - `explanation of benefits`
 
-If those come back low — which is what Trends predicts — the written-page
-conclusion in `docs/CONTENT.md` stands and the video plan is a second priority.
-If they come back higher than Trends suggested, that is worth knowing before
-anything else.
+**Run on 2026-09-14. Every relevant term came back Low**, and YouTube does not
+recognise "explanation of benefits" as an insurance topic at all. Full figures in
+`docs/CONTENT.md` — the written-page conclusion stands.
 
 ## Name and handle
 

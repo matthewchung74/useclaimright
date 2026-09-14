@@ -536,6 +536,64 @@ document has been optimising the wrong one.**
 the only one of these with real YouTube volume figures, it is free, and it is
 gated behind having a channel — which costs nothing and takes a minute.
 
+## YouTube's own volume figures, from Studio Research (2026-09-14)
+
+The channel exists now (`@useclaimright`, `UCk3LT3FEx9ht_CwEZbZ3B7g`), which
+unlocked Studio → Analytics → Trends. These are **YouTube's labels, not my
+inference.**
+
+| Searched | Top related searches it returned | YouTube's label |
+|---|---|---|
+| **medical bill** | out of network medical billing · patient calling in medical billing · medical billing machine | **Low · Low · Low** |
+| **dispute medical bill** | how to remove medical bills from credit report · how to complaint against company in labour court · **dispute collections on credit report** | Low · Low · **Medium** |
+| **explanation of benefits** | what is cost benefit analysis · what is the benefit of eating · what are the benefits of | Low · Low · Medium |
+
+Three things, and the third is the one that settles it.
+
+**Every directly relevant term is Low.** Trends inferred this; YouTube now says
+it outright.
+
+**"medical bill" resolves to vocational searches again** — "patient calling in
+medical billing", "medical billing machine". That is billing-office work, for the
+third independent time.
+
+**YouTube does not recognise "explanation of benefits" as an insurance topic at
+all.** It matched the word *benefits* and offered cost-benefit analysis and the
+benefits of eating. The phrase has so little search volume in its insurance sense
+that YouTube's topic engine has not learned it exists. Video 5's title targets a
+phrase the platform cannot see.
+
+### The one Medium-volume signal is a different product
+
+**"dispute collections on credit report."** That is the only term in the set
+YouTube rates above Low, and the demand under it is *"get this off my credit
+report"* — not *"is this bill correct?"*
+
+UseClaimRight finds billing errors. It does not remove entries from credit
+reports. The demand that exists on YouTube is adjacent to what this product does
+and not the same thing, and a video series built to serve it would be advertising
+a tool that does not do the job the viewer came for.
+
+### Where that leaves the plan
+
+The video series is **not a search play on YouTube**. That is now measured three
+independent ways — Trends, autocomplete, and YouTube's own volume labels — and
+all three agree.
+
+What survives:
+
+1. **Shorts, on the feed.** Distribution there does not depend on search, so
+   none of the above disqualifies it. The 4.1M Short is evidence the *topic* can
+   travel; it is not evidence that anyone looks for it.
+2. **A written page, for Google.** That is where the intent is, and where three
+   advertisers are bidding on "how to dispute a medical bill". This is the
+   recommendation with the most evidence behind it and the least work in it.
+3. **The scripts as reference material** — the thing linked from a Reddit reply
+   or a support email, not the thing anyone arrives at.
+
+What does not survive: publishing nine long-form videos on YouTube and expecting
+search to deliver an audience.
+
 ## Open work
 
 - **Video 9 needs a synthetic multi-plan booklet.** The only real one is the
