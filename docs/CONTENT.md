@@ -301,6 +301,90 @@ report; a video carries nothing unless you put it there. Whatever the app's
 footer says about self-help rather than legal advice belongs on screen in that
 video, in words, not in a description nobody opens.
 
+## The premise check was run on 2026-09-14. It did not pass.
+
+The review above said an hour of hand-searching gates everything. It took twenty
+minutes and the answer is not the one this plan assumed.
+
+### What the top results look like
+
+| Query | Top result | Views | Age |
+|---|---|---|---|
+| explanation of benefits not a bill | exact-title match | **8** | 6 months |
+| " | DeltaDentalAZ, institutional | 2.2K | **10 years** |
+| why is my medical bill higher than my eob | "Why Is My EOB Not A Medical Bill?" | **3** | 9 months |
+| " | "EOB vs Medical Bill" | 21 | 2 months |
+| what does allowed amount mean | Inlera University | **12K** | 6 years |
+
+A video whose title exactly matches the search, six months old, with eight
+views, is not a discoverability problem. It is an absence of searchers.
+
+### What YouTube's own autocomplete says, which is the harder evidence
+
+Autocomplete is ordered by real query volume. Typing **"medical bill"** gives,
+in order:
+
+> medical billing and coding · medical billing · medical billing and coding day
+> in the life · medical billing for beginners · medical billing training videos ·
+> medical billing and coding course · medical billing and coding for beginners 2025
+
+Every one is **someone training for a job in billing**. Not one is a patient.
+"what does allowed amount" completes to *"what is allowed amount **in medical
+billing**"* — and to *"...in medical billing **tamil**"*, which is the offshore
+billing workforce. "explanation of benefits" completes to *"explanation of
+benefits **in medical billing**"*.
+
+That single fact explains the table above. Inlera University has 12K views
+because it is a **training channel**, and the 12K are students. The eight-view
+video is the one that was actually aimed at patients.
+
+### The patient demand that does exist is a different question entirely
+
+"why is my medical bill" completes to exactly three things:
+
+> what happens if i don't pay my medical bills · how to get medical bills reduced
+> · should i pay my medical bills
+
+Not one of them is "help me understand this document". They are all **"can I
+avoid paying this?"** — which is a different register, a different script, and
+arguably a better fit for what the product does than the education framing is.
+
+### What this means, stated carefully
+
+**It does not mean the videos are worthless.** It means the traffic assumption
+was wrong, and the real trade is volume against qualification:
+
+- The **vocational** audience has the volume and converts at zero. A billing
+  student will never audit their own hospital bill with this.
+- The **patient** audience is small on YouTube but extraordinarily qualified —
+  someone typing "why is my bill higher than my EOB" is holding the bill.
+
+500 views a year of the second may be worth more than 12,000 of the first. That
+is a real argument for making these anyway; it is **not** the argument this
+document opened with, and the opening claim — that people search this while
+holding the bill, in numbers — is not supported.
+
+### What I would change
+
+1. **Reframe the tier-1 titles around paying, not understanding.** "Should I pay
+   this medical bill?" is a question people demonstrably ask. "What is an EOB" is
+   one they demonstrably do not.
+2. **Video 3 moves to the front.** "I got a bill after my insurance already paid"
+   sits closest to "should i pay my medical bills", which is live demand.
+3. **Keep 5 and 4 as supporting material, not as the opening move.** They remain
+   the right vocabulary videos and the right things to link to from a description
+   or a Reddit reply — they are just not how anyone arrives.
+4. **Do not abandon it on this evidence alone.** Autocomplete is directional, not
+   volume data; a query absent from it is not a query with no searchers. But it is
+   enough to stop shooting nine videos in the order this document proposed.
+
+### Limits of this check
+
+Three queries, top two results each, plus four autocomplete probes. Not
+exhaustive, and view count is a lagging and noisy proxy. The strongest single
+signal is the autocomplete set, because it comes from aggregate behaviour rather
+than from any one creator's thumbnail.
+
 ## Open work
 
 - **Video 9 needs a synthetic multi-plan booklet.** The only real one is the
@@ -309,6 +393,7 @@ video, in words, not in a description nobody opens.
   medical schedules. `test-fixtures/gen-*.mjs` is the pattern to follow.
 - **Nothing is scripted yet.** This is the plan, not the scripts. Video 4 is the
   one to draft first.
-- **The premise check comes before any of it** — an hour of hand-searching the
-  nine titles on YouTube, reading view counts. If that fails, none of the rest
-  is worth doing.
+- ~~The premise check comes before any of it.~~ **Run 2026-09-14 — see above. It
+  did not pass as stated.** The open question is now whether to reframe around
+  "should I pay this?" and reorder, or to accept low volume in exchange for very
+  high intent. That is a decision, not a research task.

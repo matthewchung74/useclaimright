@@ -37,6 +37,35 @@ The sample claim is dated 11/09/2015. Do not zoom on the date, and do not hide
 it either — if it is legible, say "this is their published example, a few years
 old now" and move on. Pretending not to notice is worse than mentioning it.
 
+### Framing — checked against a render, not assumed
+
+Page 1 at 96dpi is 816×1056. **Crop to the white claim card only** — roughly the
+right two-thirds, from "Explanation of benefits" down to the "You saved" row.
+That block is clean and legible at 1080p with room to spare.
+
+Cropping also removes Cigna's own teaching notes down the left margin ("The
+amount you owe does not reflect any amount you may have already paid") and the
+"Together, all the way" branding at the foot. Both are theirs, both pull focus,
+and neither is needed. Keep the small Cigna logo at the top of the card so the
+attribution is visible on screen while you say it aloud.
+
+**Six figures are visible in that card, not three.** In order: Amount billed
+$189.00 · Discount $70.05 · Amount not covered $0.00 · What Cigna plan paid
+$107.06 · What I owe $11.89 · You saved 94%. The one-number-at-a-time rule is
+doing real work here — four of those six are never mentioned, and the viewer's
+eye will find them anyway. Consider a soft dim or blur on unused rows until the
+final pull-back.
+
+**The $177.11 is fine print.** The big visible element is a **94% circle**; the
+dollar figure sits in the small explanatory text beside it. Lead the beat with
+the percentage, which is what the viewer can actually read, and say the dollar
+amount aloud rather than pointing at it.
+
+**Gift from the document:** its row labels are already plain English — "Amount
+billed", "What I owe", "You saved". That is Cigna having done the translation
+for us, and it is worth one line of narration noticing it, because it tells the
+viewer these pages are readable.
+
 ---
 
 ## Beats
@@ -80,8 +109,8 @@ old now" and move on. Pretending not to notice is worse than mentioning it.
 > to the other.
 
 ### 1:15 — What happened in between
-**Screen:** Cursor traces **You saved $177.11 (or 94%)**, then the $70.05
-discount line.
+**Screen:** Cursor rests on the **94%** circle, then moves up to the **Discount
+$70.05** row.
 
 **Say:**
 > Two things happened. Your insurer had already agreed a lower price with that
@@ -89,7 +118,8 @@ discount line.
 > its share of what was left.
 >
 > Add those together and it's a hundred and seventy-seven dollars you're not being
-> asked for. Which is genuinely the good news on this page.
+> asked for — ninety-four percent of what you were originally quoted. Which is
+> genuinely the good news on this page.
 
 ### 1:45 — The turn
 **Screen:** Pull back to the whole page.
