@@ -385,6 +385,86 @@ exhaustive, and view count is a lagging and noisy proxy. The strongest single
 signal is the autocomplete set, because it comes from aggregate behaviour rather
 than from any one creator's thumbnail.
 
+## Titles, built from queries that exist (2026-09-14)
+
+The check above killed the education framing. This is the replacement, and it is
+built the other way round: find the query first, write the title to match.
+
+### What "how to dispute a medical bill" actually looks like
+
+Unlike the EOB queries, this one is busy, and the shape of it matters more than
+the volume.
+
+| Result | Views | Note |
+|---|---|---|
+| NPR, *How to negotiate your medical bills \| Life Kit* | **72K** | 3 yr, 9 chapters |
+| Rossen Reports, *How to Beat Debt Collectors* | 18K | 1 yr |
+| NBC Bay Area, *How to Dispute a Medical Bill Mistake* | 5.3K | 5 yr |
+| **"How to negotiate medical bills" — a Short** | **4.1M** | — |
+| *Medical Bill Savings Hack YOU Must Know* — Short | 45K | — |
+| *What to do if you have medical bills in collections* — Short | 13K | — |
+| *How to Dispute Medical Charges Before You Pay (3 Steps)* | **11** | 3 mo — and its description is our exact thesis |
+
+**Two things fall out of that table.**
+
+**Shorts carry this topic, not long-form.** 4.1 million against 72,000 for the
+best long-form video in the results. The plan proposed three-to-five-minute
+screen recordings and treated vertical cuts as a by-product; the data says that
+is backwards. Shorts are the format, and the long-form video is the thing a
+Short links to.
+
+**Unknown channels doing good work get ten views.** "How to Dispute Medical
+Charges Before You Pay — get itemized bill + EOB, compare for errors, dispute in
+writing with line numbers" is our thesis almost word for word. Eleven views in
+three months. And "How To Dispute a Medical Bill (The Law Most People Never
+Use)", a well-chaptered piece on the No Surprises Act, has sixteen. The winners
+here are brands with existing audiences — NPR, NBC, Rossen — not better scripts.
+That is the distribution problem the review raised, confirmed.
+
+### The query is commercially validated, and somebody is already there
+
+Three advertisers were bidding on this search:
+
+- **testmybill.com** — *"Upload your bill for a free review. We flag charges worth
+  questioning & share next steps."* That is UseClaimRight's pitch, in our words.
+- **solace.health** — medical bill advocate, "correct medical billing errors".
+- **patientadvocators.com** — *"$6 Million Returned to Clients."*
+
+Advertisers do not bid on queries with no commercial value, so this is the
+strongest evidence yet that the intent is real. It also means the space is not
+empty, which the earlier competitor research had already half-established and
+this confirms from the demand side.
+
+### Candidate titles
+
+Each maps to a suggestion that autocomplete actually returned. Left column is
+what gets typed; right is what to publish.
+
+| Real query | Title |
+|---|---|
+| how to dispute a medical bill | **How to dispute a medical bill — start with these two documents** |
+| how to fight medical bills | **How to fight a medical bill before you call them** |
+| how to get medical bills reduced | **The part of your bill you may not owe at all** |
+| medical bill in collections | **Medical bill in collections? Check this before you pay a cent** |
+| hospital bill after baby | **Your hospital bill after a baby — what to check first** |
+| hospital bill no insurance | **No insurance? Ask for this before you pay the hospital** |
+| should i pay my medical bills | **Should you pay that medical bill? Three checks first** |
+
+**Our differentiator sits under all of them** and is not itself a search term:
+bill against EOB against plan. Nobody searches "compare my bill to my EOB" — they
+search "how to dispute" and the comparison is the answer. So it belongs in the
+content, never in the title.
+
+### What I would actually shoot first
+
+A **Short**: *"Your bill and your insurance letter should say the same number.
+Here's where to look."* Thirty seconds, the two figures from the Cigna sample,
+one instruction. It tests the topic, the format and the hook for the cost of an
+afternoon — and if it does nothing, no long-form script was wasted proving it.
+
+The video 5 script stays written and unshot until that Short says whether anyone
+is listening.
+
 ## Open work
 
 - **Video 9 needs a synthetic multi-plan booklet.** The only real one is the
