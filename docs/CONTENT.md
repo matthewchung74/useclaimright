@@ -21,6 +21,44 @@ UnitedHealthcare's EOB, CMS guides, clinic blogs. An insurer teaching you to
 read their EOB will never say *"here is how to catch them charging you above the
 allowed amount."* That sentence is the gap.
 
+## Writing for someone who has never read one of these
+
+The audience is not people who know the vocabulary and want the nuance. It is
+people holding a piece of paper they do not understand, who may not know the
+document has a name.
+
+**Titles use the jargon; the first ten seconds do not.** This is a real tension
+and it resolves in one direction only. Someone searching has the word in front of
+them — "Explanation of Benefits" is printed at the top of the page — so the title
+must carry it or the video is not found. But the opening line has to assume they
+have never heard it: *"If you have a page from your insurance company headed
+Explanation of Benefits — that is what this is about. It is not a bill."*
+
+Note the product already made this call. The dropzone does not say "upload your
+EOB"; it says **"Add the letter from your insurance, if you have it."** The
+videos should not be more jargon-heavy than the app they are advertising.
+
+**Words to keep off the soundtrack**, with what to say instead:
+
+| Do not say | Say |
+|---|---|
+| adjudicated | "your insurance hasn't finished processing it yet" |
+| accrues toward | "counts toward" |
+| network write-off | "the discount your insurer already negotiated" |
+| cost-sharing | "your share" |
+| balance billing | "billing you for the discount" |
+
+**One number at a time.** The report shows four totals at once; a novice cannot
+hold four. Introduce them singly and only the ones the video needs — video 1 uses
+two ($175 and $120) and should show only those until the end.
+
+**Answer the obvious question before it is asked.** The first thing anyone thinks
+watching video 1 is *"why does the insurance company get to decide what my doctor
+charges?"* If that is not answered in the video, nothing else in it is believed.
+The answer — the provider signed a contract agreeing to the lower price in
+exchange for patients — belongs early and in one sentence.
+
+
 ## What is safe to record
 
 | Source | Safe? | Why |
@@ -39,6 +77,25 @@ Each row names the fixture that demonstrates it and the figures that actually
 appear on screen — all verified against production during the 2026-09-13/14
 regression run, so nothing here is a number someone has to invent at record time.
 
+### Tier 0 — the words themselves (proposed addition; takes the series to 11)
+
+Not in the original nine, and the review below argues they are missing rather
+than optional: **videos 6 and 7 both depend on knowing what a deductible is, and
+nothing in the series explains it.** They are also the highest-volume searches in
+this space, and the easiest to make.
+
+**0a. "What is a deductible, and why did my bill get bigger in January?"**
+The deductible card, plainly. `real-sbc/cms-2025.pdf` prints $500 individual /
+$1,000 family; the card counts toward it as audits accumulate.
+The teaching beat: you pay the first $X yourself each year, and the counter
+restarts — which is why January bills shock people.
+
+**0b. "Copay or coinsurance — which one are you paying?"**
+`fake-sbc.pdf` prints both: a $60 copay on one row, a percentage on another.
+The teaching beat: a copay is a fixed price, coinsurance is a share of a price
+you have not been told yet. Knowing which your plan says is how you check a bill
+at all — and it is what video 1's mismatch finding is comparing against.
+
 ### Tier 1 — angry (someone is holding a bill and wants an answer now)
 
 **1. "Your bill says $175, your EOB says $120 — who's right?"**
@@ -47,14 +104,16 @@ $120.00 allowed / $120.00 your responsibility / $55.00 worth disputing**, with
 one finding: *"The provider billed $175.00 and reflects a balance due of
 $175.00, but the EOB sets the allowed amount and maximum patient responsibility
 at $120.00, requiring a network write-off of $55.00."*
-The teaching beat: **the EOB wins**, and the $55 is not yours to pay.
+The teaching beat: **the insurer's number wins**, and the $55 is not yours to
+pay — because the provider signed a contract accepting the lower price. Say that
+sentence early; it is the question every viewer has.
 
 **2. "There's a charge on my bill that isn't on my EOB"**
 `series/t4-bill.pdf` against the consolidated `t-eob.pdf`. One `not_in_eob`
 finding at **$175.00**: *"does not appear on the provided EOB, which only covers
 services through 2026-03-11."*
-The teaching beat: this is usually **timing, not fraud** — the claim has not
-been adjudicated yet. Do not pay it, and do not panic. Ask.
+The teaching beat: this is usually **timing, not fraud** — your insurance has
+not finished processing it. Do not pay it, and do not panic. Ask.
 
 **3. "I got a bill after my insurance already paid"**
 `fake-bill.pdf` + `fake-eob.pdf`. **$2,115.00 / $841.75 / $186.35 / $822.15**,
@@ -87,8 +146,9 @@ The teaching beat: it is a receipt of a negotiation you were not in.
 `real-sbc/cms-2025.pdf` on file ($500 individual / $1,000 family) with FAM1's
 audits. The card reads **$640.00 of $1,000.00**, sourced *"Family target from
 your plan (SBC)."*
-The teaching beat: a household accrues against one of two numbers, and the EOB
-is the only document that says which.
+The teaching beat: a family plan has two limits — one for each person, one for
+the household — and your bills count toward one of them. The insurer's letter is
+the only document that tells you which.
 
 **7. "Your plan covers 6 visits — how do you know where you are?"**
 `series/t4-t6` pairs with no plan on file. After t5 the app surfaces the
@@ -121,13 +181,17 @@ built first** — see Open work.
 
 ## Order to shoot
 
-Not 1→9. **4, 5, 1** first.
+Not 1→9. **5, then 4, then 1** — and 0a/0b before either if they are made.
 
-4 and 5 are evergreen definitional searches with the steadiest volume and the
-lowest risk of being wrong. They also teach the vocabulary the other seven
-depend on, so shooting them first means later videos can say "allowed amount"
-without stopping to explain it. Then 1, which is the highest-intent query in the
-set.
+**5 comes before 4**, which the first draft had backwards. You cannot explain
+what a number on a document means to someone who does not yet know what the
+document is. "Your EOB is not a bill" is the foundation; "allowed amount" is the
+first thing built on it.
+
+Both are evergreen definitional searches and the lowest risk of being wrong. They
+also teach the vocabulary the other seven depend on, so shooting them first means
+later videos can say "allowed amount" without stopping to explain it. Then 1,
+which is the highest-intent query in the set.
 
 Leave 3 until the format is settled. Balance billing is the video most likely to
 be quoted back at someone in a dispute, and it should be the most careful.
