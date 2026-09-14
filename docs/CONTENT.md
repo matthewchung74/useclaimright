@@ -465,6 +465,77 @@ afternoon — and if it does nothing, no long-form script was wasted proving it.
 The video 5 script stays written and unshot until that Short says whether anyone
 is listening.
 
+## YouTube search volume, measured — and why the title matters less than I said
+
+**Google Trends has a YouTube Search filter** (`gprop=youtube`), which is the only
+free source of YouTube-specific demand. Run on 2026-09-14, United States, twelve
+months, comparing three terms:
+
+| Term | Shape of the line |
+|---|---|
+| medical bill | flat at zero for long stretches, with isolated spikes to 50-100 |
+| explanation of benefits | **flat at zero across the whole year**, one small bump |
+| negotiate medical bill | **flat at zero across the whole year** |
+
+Trends normalises to 100 within the comparison, so a spike to 100 does not mean
+"high" — it means that week held the most of a small number. A line that sits at
+zero and occasionally jumps is the signature of a term **below the reporting
+threshold**. On YouTube search, in the US, this entire subject is close to empty.
+
+That includes the reframe. "Negotiate medical bill" is flat too, so the pivot
+from education to negotiation fixed the *question* and not the *channel*.
+
+### The consequence, which is the useful part
+
+**The 4.1M Short did not come from search.** It cannot have — the search volume
+is not there. It came from the Shorts feed, which distributes on watch-through
+and engagement and does not care whether anyone typed anything.
+
+So the reason to make Shorts is stronger than the one given above, and different:
+not "Shorts get more views on this topic" but **"feed distribution is the only
+mechanism available, because search is empty"**. Which in turn means:
+
+- **Keyword-optimised titles are close to pointless here.** Nobody is typing these
+  words into YouTube. The title's job is to make someone who is *already being
+  shown the video* keep watching — it is a hook, not a keyword.
+- **The first two seconds decide everything**, not the title and not the
+  thumbnail.
+- **The SEO framing of this whole document was wrong**, including the seven
+  titles above. They are good titles for a blog post, which is a channel where
+  search demand does exist — Google's index, not YouTube's.
+
+### Titles for a Short, written as hooks
+
+| Title | Opening frame |
+|---|---|
+| **"Two numbers on your medical bill should match. They often don't."** | the bill and the EOB side by side, both figures circled |
+| **"$189 or $11.89? Your insurance already decided."** | the Cigna card, both figures visible at once |
+| **"Before you pay a medical bill, find this number."** | cursor landing on What I owe |
+
+The second is the strongest: a number in the first frame, a contradiction in the
+first second, and no jargon anywhere.
+
+### Where the search demand actually lives
+
+Google, not YouTube. "how to dispute a medical bill" has advertisers bidding on
+it — three of them, including a direct competitor — and advertisers bid on Google
+search, which is where that intent is being served. If the goal is to be found by
+someone holding a bill, **a written page is the better instrument and this
+document has been optimising the wrong one.**
+
+### Tools worth knowing
+
+| Tool | Gives you | Cost |
+|---|---|---|
+| **Google Trends, YouTube Search filter** | relative interest over time, YouTube-specific | free |
+| **YouTube Studio → Research tab** | actual search-volume bands, and what your own viewers search | free, needs a channel |
+| Google Keyword Planner | Google search volume, not YouTube | free with an Ads account |
+| TubeBuddy / VidIQ | YouTube keyword scores and competition | freemium |
+
+**Create the channel before making anything.** YouTube Studio's Research tab is
+the only one of these with real YouTube volume figures, it is free, and it is
+gated behind having a channel — which costs nothing and takes a minute.
+
 ## Open work
 
 - **Video 9 needs a synthetic multi-plan booklet.** The only real one is the
