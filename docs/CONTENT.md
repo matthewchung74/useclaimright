@@ -125,10 +125,11 @@ This is the highest-stakes video in the series and should be made carefully.
 
 ### Tier 2 — learning (someone is trying to understand, not fighting)
 
-**4. "What 'allowed amount' means"**
-`carrier/eob-cigna-sample.pdf` — a real Cigna layout. Amount billed **$189.00**,
-a "Covered amount", and the line *"You saved $177.11 (or 94%) off the total
-amount billed."*
+**4. "What does 'allowed amount' mean on my EOB?"**
+`carrier/eob-cigna-sample.pdf` — **Cigna's own guide to reading an EOB**, with a
+sample claim inside it. Not a member's statement, and the video must say so.
+Amount billed **$189.00**, what I owe **$11.89**, and the line *"You saved
+$177.11 (or 94%) off the total amount billed."*
 The teaching beat: the sticker price is fiction; the allowed amount is the real
 price, and it is the only number worth arguing about. Use the real carrier
 document here — the credibility is the point — and say whose it is on screen.

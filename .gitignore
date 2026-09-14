@@ -30,3 +30,9 @@ test-fixtures/carrier/*.pdf
 # NOTHING in here is ever committed, including notes about what is in them.
 test-fixtures/private/*
 !test-fixtures/private/README.md
+
+# Video exports are build artefacts — the scripts in video/ are the source.
+video/**/*.mov
+video/**/*.mp4
+video/**/*.png
+video/**/*.wav
