@@ -15,6 +15,13 @@ what is on screen.
 video 5 defines the document every other video reads from, and 4 defines the
 number they all argue about.
 
+## Channel
+
+Not created yet. `channel-setup.md` holds the name, handle, description and
+keywords ready to paste — and the reason to create it before making anything,
+which is that **YouTube Studio's Research tab is the only free source of real
+search-volume figures** and is gated behind having a channel.
+
 ## Before shooting anything
 
 The premise is unverified — see the review in `docs/CONTENT.md`. An hour of
