@@ -28,7 +28,30 @@ is stronger than hoping nobody clocks "Jane Q. Testpatient". The alternative —
 real carrier EOB — only shows one side, and the whole point here is two documents
 disagreeing.
 
-## Framing for 9:16 — the frames are generated, not shot
+## Framing for 9:16 — document crops with the figure circled
+
+**Superseded the single-row crops.** Those showed one line of a document with no
+surroundings, which told a viewer nothing about what they were looking at. These
+show the table the number sits in — so someone recognises their own paperwork —
+and draw a circle on the figure as it is spoken.
+
+    python3 video/shorts-01-two-numbers/scenes.py
+
+| Scene | Shows | Circles |
+|---|---|---|
+| `hook`, `b1` | the bill: line items, total charges, balance due | **$845.00** |
+| `b2`, `b4` | the EOB claim table, all five lines | **$186.35** under "Your responsibility" |
+| `b3` | the same table | **$186.35** in the "what you may owe" box |
+| `b5` | the EOB header | **THIS IS NOT A BILL** |
+
+The bill window starts below the patient block on purpose — it carries a canary
+SSN, and a social security number on screen in a video about medical bills reads
+as careless whether or not it is fake.
+
+`circleAt` in lines.json is the fraction of the spoken line at which the circle
+starts, set so it closes as the figure is said rather than before it.
+
+### The older single-row approach
 
     python3 video/shorts-01-two-numbers/frames.py
 

@@ -9,29 +9,37 @@
   "body": [
     {
       "id": "b1",
-      "frame": "A-bill.png",
+      "scene": "b1",
+      "circleAt": 0.62,
       "text": "This is a hospital bill. It wants $845."
     },
     {
       "id": "b2",
-      "frame": "B-eob.png",
-      "text": "This is the letter from the insurance company, about the same visit. It says you owe $186.35."
+      "scene": "b2",
+      "circleAt": 0.7,
+      "text": "This is the Explanation of Benefits \u2014 the letter from your insurance, about the same visit. It says you owe $186.35."
     },
     {
       "id": "b3",
-      "frame": "C-both.png",
+      "scene": "b3",
+      "circleAt": 0.55,
       "text": "Same visit. Same day. Two different numbers."
     },
     {
       "id": "b4",
-      "frame": "D-gap.png",
+      "scene": "b4",
+      "circleAt": 0.3,
       "text": "The difference is $658.65, and it's the discount your insurer already negotiated. The hospital agreed to it when they joined the network."
     },
     {
       "id": "b5",
-      "frame": "B-eob.png",
-      "text": "So before you pay a medical bill, find the letter from your insurance and check that the numbers match. If they don't, that's a phone call."
+      "scene": "b5",
+      "circleAt": 0.45,
+      "text": "Your insurance letter isn't a bill \u2014 it's telling you what the bill should say. So check they match before you pay."
     }
   ],
-  "_numbers": "Figures are digits because TTS normalises them correctly and they are less ambiguous to proofread \u2014 NOT because spelled-out numbers fail. That was my first conclusion and it was wrong: see the retry note in ../tts.mjs. Empty responses are transient and hit any line."
+  "_numbers": "Figures are digits because TTS normalises them correctly and they are less ambiguous to proofread \u2014 NOT because spelled-out numbers fail. That was my first conclusion and it was wrong: see the retry note in ../tts.mjs. Empty responses are transient and hit any line.",
+  "_scenes": "Each beat names a scene in scenes.py (window + what to circle). circleAt is the fraction of the spoken line at which the circle starts being drawn \u2014 set it to land on the number as it is said, not before.",
+  "hookScene": "hook",
+  "hookCircleAt": 0.35
 }

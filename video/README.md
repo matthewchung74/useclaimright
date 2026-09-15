@@ -48,7 +48,7 @@ tests.
 
 Three commands, all generated, nothing by hand:
 
-    python3 video/shorts-01-two-numbers/frames.py        # five 1080x1920 stills
+    python3 video/shorts-01-two-numbers/scenes.py        # document crops + circle animations
     node video/tts.mjs shorts-01-two-numbers             # eight WAVs, Cloud TTS
     node video/assemble.mjs shorts-01-two-numbers        # -> 1-number.mp4
 
