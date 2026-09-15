@@ -34,6 +34,9 @@ from render import audio_track, caption, CAP_STEP, CAP_LINES     # noqa: E402
 
 HERE = Path(__file__).resolve().parent
 W, H, FPS = 1080, 1920, 15
+# The board is wider than the frame: the story runs left to right across it and
+# the camera moves to whatever is being drawn.
+BW, BH = 1600, 2200
 BOARD, INK, ACCENT, GREY = (253, 253, 251), (34, 38, 42), (190, 54, 54), (150, 158, 164)
 PEN_W = 7
 
@@ -86,15 +89,33 @@ def person(cx, top, s=1.0, arms_down=True, seed=3):
     strokes = [circle(cx, hy, head_r, seed=seed)]
     strokes.append(line(body[0], body[1], seed=seed + 1))
     sh = (cx, hy + head_r + 46 * s)
-    if arms_down:
-        strokes.append(line(sh, (cx - 74 * s, sh[1] + 86 * s), seed=seed + 2))
-        strokes.append(line(sh, (cx + 74 * s, sh[1] + 86 * s), seed=seed + 3))
-    else:                                     # clutching the stomach
-        strokes.append(line(sh, (cx - 36 * s, sh[1] + 64 * s), seed=seed + 2))
-        strokes.append(line(sh, (cx + 36 * s, sh[1] + 64 * s), seed=seed + 3))
+    strokes.append(line(sh, (cx - 74 * s, sh[1] + 86 * s), seed=seed + 2))
+    strokes.append(line(sh, (cx + 74 * s, sh[1] + 86 * s), seed=seed + 3))
     strokes.append(line(hip, (cx - 66 * s, hip[1] + 128 * s), seed=seed + 4))
     strokes.append(line(hip, (cx + 66 * s, hip[1] + 128 * s), seed=seed + 5))
     return strokes
+
+
+def person_hurt(cx, top, s=1.0, seed=51):
+    """Doubled over, clutching the middle, knees bent. Same person, worse night.
+
+    Drawn as its own figure rather than by modifying the first — a whiteboard
+    cannot un-draw an arm, so "before and after" is two drawings side by side.
+    """
+    r = 46 * s
+    cy = top + r
+    sh = (cx + 10 * s, cy + 66 * s)
+    hip = (cx + 46 * s, cy + 150 * s)
+    return [
+        circle(cx, cy, r, seed=seed),
+        line((cx + 4 * s, cy + r), hip, n=7, seed=seed + 1),          # spine, leaning in
+        line(sh, (cx + 72 * s, cy + 124 * s), seed=seed + 2),         # arms across the belly
+        line((cx - 6 * s, cy + 72 * s), (cx + 62 * s, cy + 132 * s), seed=seed + 3),
+        line(hip, (cx + 6 * s, cy + 216 * s), seed=seed + 4)          # knees bent
+        + line((cx + 6 * s, cy + 216 * s), (cx + 22 * s, cy + 282 * s), seed=seed + 5),
+        line(hip, (cx + 94 * s, cy + 218 * s), seed=seed + 6)
+        + line((cx + 94 * s, cy + 218 * s), (cx + 86 * s, cy + 284 * s), seed=seed + 7),
+    ]
 
 
 def hospital(x0, y0, w, h, seed=9):
@@ -152,14 +173,15 @@ def Sheet(x0, y0, w, h, text, colour=INK, rise=300):
 
 
 ART = {
-    "hook-cold-open": [S(person(250, 430)), T((360, 560), "you", 72, GREY)],
-    "d2": [T((560, 300), "2 a.m.", 82), S(squiggle(150, 400, 190), squiggle(370, 400, 190))],
-    "d3": [S(arrow((470, 700), (660, 700))), S(hospital(700, 620, 300, 250))],
-    "d4": [S(envelope(90, 1180, 400, 250)), S(envelope(590, 1180, 400, 250))],
-    "d5": [Sheet(120, 950, 340, 300, "$845.00", ACCENT),
-           Sheet(620, 950, 340, 300, "$186.35", INK)],
-    "d6": [T((300, 1520), "$659 apart", 96, ACCENT),
-           S([line((300, 1630), (740, 1630), n=10, seed=44)], colour=ACCENT, width=8)],
+    "hook-cold-open": [S(person(210, 620)), T((330, 760), "you", 72, GREY)],
+    "d2": [S(person_hurt(600, 700)), S(squiggle(560, 630, 150), squiggle(740, 630, 150)),
+           T((580, 470), "2 a.m.", 86)],
+    "d3": [S(arrow((830, 900), (1010, 900))), S(hospital(1070, 760, 320, 270))],
+    "d4": [S(envelope(180, 1500, 420, 260)), S(envelope(760, 1500, 420, 260))],
+    "d5": [Sheet(215, 1260, 350, 310, "$845.00", ACCENT),
+           Sheet(795, 1260, 350, 310, "$186.35", INK)],
+    "d6": [T((450, 1860), "$659 apart", 104, ACCENT),
+           S([line((450, 1985), (930, 1985), n=10, seed=44)], colour=ACCENT, width=8)],
 }
 
 
@@ -175,12 +197,16 @@ def extent(el):
     return (min(xs), min(ys), max(xs), max(ys))
 
 
-def frame_box(els, vw, vh, pad=90):
+def frame_box(els, vw, vh, pad=90, span=0):
     """The camera rectangle holding `els`, in board coordinates, matched to the
     viewport's aspect so nothing is stretched."""
     xs = [e[0] for e in els] + [e[2] for e in els]
     ys = [e[1] for e in els] + [e[3] for e in els]
     x0, y0, x1, y1 = min(xs) - pad, min(ys) - pad, max(xs) + pad, max(ys) + pad
+    # A floor on the shot, so one short stroke does not zoom to 400%.
+    if x1 - x0 < span:
+        cx = (x0 + x1) / 2
+        x0, x1 = cx - span / 2, cx + span / 2
     w, h = x1 - x0, y1 - y0
     if w / h < vw / vh:                       # too tall for the viewport: widen
         w = h * vw / vh
@@ -282,7 +308,7 @@ def main():
     MOVE = 0.55                        # seconds for the camera to settle
     MARGIN = 500                       # white overhang, so a wide shot has edges
     n, plan, done = 0, [], []          # `done` accumulates: a whiteboard keeps what was drawn
-    cam = None
+    cam, prev_els = None, []
     for b in beats:
         t = timings[b["id"]]
         steps = int((t["secs"] + b["pad"]) * FPS)
@@ -304,12 +330,16 @@ def main():
         # Where the camera wants to be for this line: everything drawn so far
         # plus what is about to be drawn. Held still while the hand works, so
         # only the cut between lines moves.
-        want = frame_box([extent(e) for e in done + els] or [(0, 0, W, H)], VW, VH)
+        # The shot holds this line and the one before it: framing only the
+        # current strokes cut the previous drawing in half, and framing the
+        # whole board shrank everything as the story grew.
+        want = frame_box([extent(e) for e in prev_els + els] or [(0, 0, BW, BH)],
+                         VW, VH, span=1050)
         prev = cam or want
 
         for k in range(steps):
             now = k / FPS
-            board = Image.new("RGB", (W, H), BOARD)
+            board = Image.new("RGB", (BW, BH), BOARD)
             for el in done:
                 draw_element(board, el, 1.0)
             tip = None
@@ -324,7 +354,7 @@ def main():
             e = min(1.0, now / MOVE)
             e = e * e * (3 - 2 * e)
             view = [a + (c - a) * e for a, c in zip(prev, want)]
-            pad = Image.new("RGB", (W + 2 * MARGIN, H + 2 * MARGIN), BOARD)
+            pad = Image.new("RGB", (BW + 2 * MARGIN, BH + 2 * MARGIN), BOARD)
             pad.paste(board, (MARGIN, MARGIN))
             crop = pad.crop((int(view[0]) + MARGIN, int(view[1]) + MARGIN,
                              int(view[2]) + MARGIN, int(view[3]) + MARGIN)
@@ -337,7 +367,7 @@ def main():
             im.save(frames / f"f{n:05d}.png")
             n += 1
         done.extend(els)
-        cam = want
+        cam, prev_els = want, els
 
     wav = dir_ / "audio" / "_track.wav"
     audio_track(dir_, plan, wav)
