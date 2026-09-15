@@ -25,7 +25,7 @@ without touching any of the timing code.
 Elements are shared out across each spoken line in proportion to their length,
 so the last stroke of an element lands as its line finishes.
 """
-import json, math, subprocess, sys
+import json, math, re, subprocess, sys
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
 
@@ -224,6 +224,24 @@ def T(xy, text, size=66, colour=INK):
     return {"kind": "text", "xy": xy, "text": text, "size": size, "colour": colour}
 
 
+def Spin(strokes, pivot, deg=180, drains=None):
+    """Art that turns. The bucket being emptied is the same bucket, so it is the
+    same strokes rotated — not a second drawing of an upside-down one.
+
+    `drains` is (x0, y0, w, h, frac): a fill level that empties as it turns.
+    Without it the bucket ends upside down with its contents still drawn inside,
+    which flatly contradicts the money falling out of it.
+    """
+    return {"kind": "spin", "strokes": strokes, "pivot": pivot, "deg": deg,
+            "drains": drains}
+
+
+def Coins(items, dy=200):
+    """Dollar signs falling out of something. One element rather than one per
+    sign, so they fall together instead of taking turns."""
+    return {"kind": "coins", "items": items, "dy": dy}
+
+
 def Sheet(x0, y0, w, h, text, colour=INK, rise=300):
     """A page sliding up out of an envelope. Not a reveal — the paper is already
     drawn, it moves. White-filled so it covers the envelope it comes out of."""
@@ -264,30 +282,65 @@ ART = {"short-01-two-numbers": {
                  S(ice(120, 760, 520))],
     # The bucket is explained before it is named, so it is drawn before the word
     # "deductible" is ever said.
-    "e2": [S(bucket(220, 1000, 380, 430)), T((238, 890), "$1,000", 84)],
-    "e3": [S(bucket_fill(220, 1000, 380, 430, 0.86))],
-    "e4": [S(box(180, 1580, 520, 1810, seed=95)), T((255, 1640), "$40", 100)],
-    # A whiteboard cannot un-draw, so "they empty it" is a second bucket, not
-    # this one rubbed out.
-    "e5": [S(arrow((660, 1210), (890, 1210))), S(bucket(950, 1000, 380, 430, seed=101))],
-    "e6": [S(box(910, 1580, 1250, 1810, seed=107)), T((960, 1640), "$400", 100)],
-    "e7": [T((470, 1960), "deductible", 116),
-           S([line((470, 2090), (1090, 2090), n=12, seed=113)], width=8)],
-    "e8": [T((330, 2340), "useclaimright.com", 100, ACCENT),
-           S([line((330, 2470), (1190, 2470), n=14, seed=119)], colour=ACCENT, width=8)],
+    "e2": [S(bucket(220, 960, 380, 420)), T((238, 860), "$1,000", 80)],
+    "e3": [S(bucket_fill(220, 960, 380, 420, 0.86))],
+    # November: the visit, the bill, and how the bill was split.
+    "e4": [S(hospital(150, 1700, 150, 130, seed=131)),
+           S(box(140, 1880, 420, 2120, seed=95)),
+           T((165, 1900), "BILL", 46, GREY), T((165, 1970), "$400", 80)],
+    "e5": [S(box(450, 1880, 860, 2120, seed=97)),
+           T((475, 1900), "you $100", 70), T((475, 2000), "insurance $300", 46, GREY)],
+    # January: the same bucket, turned over. Not a second drawing of an
+    # upside-down bucket — the same strokes, rotated, with the money falling out.
+    "e6": [S(arrow((660, 1130), (890, 1130))),
+           Spin(bucket(950, 960, 380, 420, seed=101), (1140, 1170),
+                drains=(950, 960, 380, 420, 0.86)),
+           # Kept clear of where the January hospital lands, or the money
+           # falls through its roof.
+           Coins([(1120, 1395, 86), (1210, 1425, 86), (1300, 1395, 86),
+                  (1388, 1430, 86)], dy=190)],
+    "e7": [S(hospital(920, 1700, 150, 130, seed=137)),
+           S(box(910, 1880, 1190, 2120, seed=107)),
+           T((935, 1900), "BILL", 46, GREY), T((935, 1970), "$400", 80)],
+    "e8": [S(box(1220, 1880, 1580, 2120, seed=109)),
+           T((1245, 1900), "you $400", 70, ACCENT),
+           T((1245, 2000), "insurance $0", 46, GREY)],
+    "e9": [T((470, 2220), "deductible", 110),
+           S([line((470, 2345), (1060, 2345), n=12, seed=113)], width=8),
+           T((520, 2400), "$1,000 a year", 62, GREY)],
+    "e10": [T((330, 2560), "useclaimright.com", 96, ACCENT),
+            S([line((330, 2690), (1160, 2690), n=14, seed=119)], colour=ACCENT, width=8)],
 }}
 
 # Beats that pull back to show everything drawn so far, instead of the usual
 # two-beat shot. The summary line of a comparison needs both halves of the
 # comparison in frame — e7 was cutting off the $40 bill it argues against.
-FRAME_ALL = {"short-02-january": {"e7"}}
+FRAME_ALL = {"short-02-january": {"e9"}}
 
+
+
+def turn(pts, pivot, deg):
+    r = math.radians(deg)
+    c, sn = math.cos(r), math.sin(r)
+    return [(pivot[0] + (x - pivot[0]) * c - (y - pivot[1]) * sn,
+             pivot[1] + (x - pivot[0]) * sn + (y - pivot[1]) * c) for x, y in pts]
 
 
 def extent(el):
     """Bounding box, so the camera knows where the drawing actually is."""
     if el["kind"] == "sheet":
         return el["box"]
+    if el["kind"] == "coins":
+        xs = [i[0] for i in el["items"]]
+        ys = [i[1] for i in el["items"]]
+        big = max(i[2] for i in el["items"])
+        return (min(xs), min(ys), max(xs) + big, max(ys) + el["dy"] + big * 1.3)
+    if el["kind"] == "spin":
+        # Both ends of the turn, so the camera does not drift while it rotates.
+        pts = [p for st in el["strokes"] for p in st]
+        pts += turn(pts, el["pivot"], el["deg"])
+        return (min(p[0] for p in pts), min(p[1] for p in pts),
+                max(p[0] for p in pts), max(p[1] for p in pts))
     if el["kind"] == "text":
         w = ImageDraw.Draw(Image.new("RGB", (1, 1))).textlength(el["text"], font=font(el["size"]))
         return (el["xy"][0], el["xy"][1], el["xy"][0] + w, el["xy"][1] + el["size"] * 1.25)
@@ -315,13 +368,27 @@ def frame_box(els, vw, vh, pad=90, span=0):
     return [cx - w / 2, cy - h / 2, cx + w / 2, cy + h / 2]
 
 
+def check_art():
+    """A duplicate key in a dict literal is silently legal — the later one wins
+    and the earlier one vanishes. That is exactly what happened when an edit to
+    this file was interrupted half-applied, and a whole Short rendered from art
+    nobody had written. Counting the keys in the source catches it."""
+    src = Path(__file__).read_text()
+    block = src[src.index("ART = {"):src.index("FRAME_ALL")]
+    seen = set()
+    for key in re.findall(r'^    "([^"]+)":', block, re.M):
+        if key in seen:
+            raise SystemExit(f"whiteboard.py: ART has two entries for {key!r}")
+        seen.add(key)
+
+
 def seg_len(a, b):
     return math.hypot(b[0] - a[0], b[1] - a[1])
 
 
 def element_len(el):
-    if el["kind"] == "sheet":
-        return 260.0                    # a move, not a stroke: give it a beat
+    if el["kind"] in ("sheet", "spin", "coins"):
+        return 300.0                    # a move, not a stroke: give it a beat
     if el["kind"] == "text":
         return ImageDraw.Draw(Image.new("RGB", (1, 1))).textlength(
             el["text"], font=font(el["size"])) * 0.9      # writing is faster than drawing
@@ -332,6 +399,21 @@ def draw_element(im, el, p):
     """Draw the first `p` of an element. Returns the pen position, or None once
     the element is finished (nothing left to hold the marker to)."""
     d = ImageDraw.Draw(im)
+    if el["kind"] == "spin":
+        e = p * p * (3 - 2 * p)
+        strokes = list(el["strokes"])
+        if el.get("drains"):
+            x0, y0, w, h, frac = el["drains"]
+            strokes += bucket_fill(x0, y0, w, h, frac * (1 - e), seed=103)
+        for st in strokes:
+            d.line(turn(st, el["pivot"], el["deg"] * e), fill=INK, width=PEN_W,
+                   joint="curve")
+        return None
+    if el["kind"] == "coins":
+        e = p * p * (3 - 2 * p)
+        for x, y, size in el["items"]:
+            d.text((x, y + el["dy"] * e), "$", font=font(size), fill=INK)
+        return None
     if el["kind"] == "sheet":
         e = p * p * (3 - 2 * p)
         x0, y0, x1, y1 = el["box"]
@@ -391,6 +473,7 @@ def marker(im, tip):
 
 
 def main():
+    check_art()
     folder = next((a for a in sys.argv[1:] if not a.startswith("--")), "short-01-two-numbers")
     dir_ = HERE / folder
     spec = json.loads((dir_ / "lines.json").read_text())
