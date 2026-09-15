@@ -131,6 +131,22 @@ company get to decide what my doctor charges?"* If that is not answered, nothing
 else is believed. The answer is one sentence: the provider signed a contract
 accepting the lower price in exchange for patients.
 
+### The cast recurs, and the injury never repeats
+
+There is a cast now — *you*, the hospital, the two envelopes. Ten Shorts that
+all open on the same stick figure beside the same two envelopes will blur into
+one, so **the figure gets hurt a different way every time**, and that injury is
+the opening image.
+
+It does two jobs at once. It is the variety the series needs, and it is a joke
+that costs nothing: a splinter and a $2,000 bill is the whole argument of Short 6
+before a word is spoken. Each Short below names its injury, and none of them is
+used twice.
+
+The injury also has to earn its place in the story — the ice in Short 2 is why it
+is January, the bad back in Short 8 is why there are six visits. An injury picked
+only for novelty is a wasted first second.
+
 ### Two drawing rules that are not stylistic
 
 **A whiteboard cannot un-draw.** Before-and-after is two drawings side by side,
@@ -177,17 +193,18 @@ tenth needs almost nothing new.
 
 Short 1 exists. The rest are planned, not written.
 
-Each entry gives the hook (the first line spoken, which is the whole game), the
-teaching beat, and the art it needs.
+Each gives the hook (the first line spoken, which is the whole game), the opening
+image, the injury, the teaching beat, and the art it adds to the library.
 
 ### 1. Two numbers · MADE — 41.4s
 
 **Hook:** *"Your hospital and your insurance don't talk to each other. You're the
 group chat."*
+**Opens on:** a stick figure, then the same figure doubled over at 2 a.m.
+**Injury:** something abdominal, unnamed — 2 a.m. is doing the work.
 
-Stick figure, 2 a.m., hospital, two envelopes three weeks later, $800 and $150
-sliding out of them, $650 apart. Labels the two documents, circles what you
-actually owe, ends on *call first* and the address.
+Two envelopes three weeks later, $800 and $150 sliding out of them, $650 apart.
+Labels both documents, circles what you actually owe, ends on *call first*.
 
 **Teaching beat:** the two papers are different documents with different jobs,
 and the insurer's letter is the one that says what you owe.
@@ -198,99 +215,140 @@ same video. Drawn, they are one.
 ### 2. The January reset · next
 
 **Hook:** *"Your January bill is not a mistake. It is a reset."*
+**Opens on:** an empty bucket with **1 JANUARY** written over it.
+**Injury:** slipped on ice — which is also why it is January.
 
 **Teaching beat:** you pay the first $X of the year yourself, and on 1 January
 the counter goes back to zero. That is why the same visit costs more in January
-than in November, and it is the single most common "my bill is wrong" that isn't.
+than in November, and it is the most common "my bill is wrong" that isn't.
 
-**New art:** a bucket that fills, a calendar page, a counter snapping to 0.
+**New art:** a bucket that fills, a calendar page, a counter snapping to 0, a
+figure flat on its back.
 
-Chosen second because deductible is the highest-volume concept in the space and
-two later Shorts depend on it.
+Second because deductible is load-bearing for Shorts 7 and 8.
 
 ### 3. Copay or coinsurance
 
 **Hook:** *"One of these is a price. The other is a percentage of a price nobody
 has told you yet."*
+**Opens on:** a coin with **$60** on it, beside a pie chart with no total.
+**Injury:** a twisted ankle, on the way into a routine appointment.
 
 **Teaching beat:** a copay is fixed and knowable before you go; coinsurance is a
 share of a number you will not see until afterwards. Which one your plan says is
 how you check a bill at all.
 
-**New art:** a coin with a number on it, a pie with a slice taken out.
+**New art:** a coin, a pie with its total missing.
 
 ### 4. A charge your insurance has never seen
 
 **Hook:** *"There is a line on your bill your insurance has never seen."*
+**Opens on:** two lists side by side, one row longer than the other.
+**Injury:** a bee sting — small, and it still produces a line nobody can explain.
 
 **Teaching beat:** usually **timing, not fraud** — they have not finished
-processing it. Do not pay it, do not panic, ask. The most actionable Short in the
-set and the second one to make.
+processing it. Do not pay it, do not panic, ask.
 
-**New art:** two lists side by side with one extra row, a clock.
+**New art:** two lists, a clock.
 
-### 5. A bill after they already paid
+### 5. The phone call
 
-**Hook:** *"They paid. Then the hospital sent you a bill for the discount."*
+**Hook:** *"They paid. Then the hospital billed you for the discount. Here is the
+sentence to say."*
+**Opens on:** a phone, and one sentence written out to be read aloud.
+**Injury:** an arm in a sling — already treated, now arguing.
 
-**Teaching beat:** balance billing, and that a network contract forbids it.
+**Teaching beat:** balance billing, and that a network contract forbids it — but
+the payload is **the sentence**, written on screen, that a viewer reads down the
+phone.
 
-**Highest-stakes Short in the series.** It tells someone not to pay a bill, which
-is the closest any of this comes to advice. The app carries a disclaimer on every
-report; a video carries nothing unless you put it there. **On screen, in words,
-not in a description nobody opens.**
+**Recast from an explainer to a procedure**, because as an explainer it was the
+same drawing as Short 1: two papers with different numbers. The earlier review
+had already reached this conclusion about old video 3 and it did not carry over.
+As a procedure it is the most valuable Short in the set.
 
-**New art:** a contract with two signatures.
+**Highest stakes in the series.** It tells someone not to pay a bill, and a stick
+figure is weak authority for that. The disclaimer goes **on screen, in words**,
+drawn like everything else — not in a description nobody opens.
+
+**New art:** a speech bubble with words in it, a contract with two signatures.
 
 ### 6. The sticker price is fiction
 
-**Hook:** *"The big number on a hospital bill is not a price. It is an opening
-offer."*
+**Hook:** *"A splinter. Two thousand dollars."*
+**Opens on:** three bars of wildly different heights.
+**Injury:** a splinter — the gap between the injury and the number is the joke.
 
 **Teaching beat:** billed, allowed, your share — three different numbers, and
-only one of them is real. The allowed amount is the only one worth arguing about.
+only one is real. The allowed amount is the only one worth arguing about.
 
-**New art:** three bars of very different heights.
+**New art:** three bars.
+
+The strongest visual in the set. A candidate to bring forward if Short 2 or 4
+turns out to be harder to draw than it looks.
 
 ### 7. A family deductible is not two of yours
 
 **Hook:** *"Two people, two deductibles — and a third one you did not know
 about."*
+**Opens on:** two figures and three buckets.
+**Injury:** a child with a broken arm, and a parent who is fine.
 
 **Teaching beat:** a family plan has a limit for each person and a limit for the
 household, and your bills count toward one of them. The insurer's letter is the
 only document that says which.
 
-**New art:** two buckets of different sizes. Reuses `person`.
+**New art:** buckets in two sizes, a smaller figure.
 
 ### 8. Six visits, and nobody says where you are
 
 **Hook:** *"Your plan covers six visits. Nothing tells you it is visit six."*
+**Opens on:** six boxes, five of them ticked.
+**Injury:** a bad back — the injury that takes six visits.
 
 **Teaching beat:** the count is often printed on the insurer's letter and nobody
 reads that far. Running out costs care, not just money.
 
-**New art:** six boxes, five ticked.
+**New art:** six boxes, ticks.
 
 ### 9. Same day, same code, not a duplicate
 
 **Hook:** *"Two identical charges, same day, same clinic. This one is fine."*
+**Opens on:** two figures with matching plasters on their arms.
+**Injury:** flu shots — two people, two sore arms.
 
-**Teaching beat:** same day and same code is not a duplicate — two people can get
-the same flu shot. **Same day, same code, same person** is. The contrast is the
-lesson, and this is the Short that teaches when *not* to dispute, which is worth
-as much as the others and builds more trust.
+**Teaching beat:** same day and same code is not a duplicate; two people can get
+the same shot. **Same day, same code, same person** is.
 
-**New art:** two figures holding matching sheets. Reuses `person`, `Sheet`.
+The Short that teaches when *not* to dispute, which buys more trust than the ones
+that teach when to.
 
-### 10. Three plans, one booklet
+**New art:** a plaster, a second smaller figure holding a matching sheet.
 
-**Hook:** *"Your plan document describes three plans. Two of them are not
-yours."*
+### 10. One line, no explanation
 
-**Teaching beat:** the deductible you read may belong to a plan you are not on.
+**Hook:** *"Your bill has one line on it. Ask for the one with all of them."*
+**Opens on:** a sheet with a single line and an enormous number.
+**Injury:** wrapped head to toe in bandages, unexplained — because the bill does
+not explain either.
 
-**New art:** a thick booklet with three tabs.
+**Teaching beat:** a summary bill cannot be checked. The **itemized** bill is the
+one with the codes and the line items, you are entitled to ask for it, and it is
+the document every other Short in this series assumes you have.
+
+**New art:** a bandaged figure, a long itemized list unrolling.
+
+**Replaces "Three plans, one booklet"**, which was dropped for weak subject
+matter rather than format. That one was really about our own plan-selection flow
+— a problem people have with the app, not a problem they have with their mail.
+This one is the single most recommended first action in every bill-dispute guide,
+it is trivially visual, and it is on-strategy: an itemized bill is the document
+that makes the product work at all.
+
+**On the bench, if the series gets past three:** out-of-network care inside an
+in-network hospital (the anaesthetist nobody chose — high incidence, and the No
+Surprises Act means it needs care), and a free annual physical that arrives with
+a bill because a symptom got mentioned.
 
 ## Order, and why it is short
 
@@ -308,6 +366,22 @@ the second time in this document.
 2 comes before 4 because deductible is load-bearing for 7 and 8. 4 comes third
 because it is the most immediately useful. 5 waits until the format is settled,
 for the reason given in its entry.
+
+**At a glance**, so the sameness risk stays visible — no two open on the same
+image, and no injury repeats:
+
+| # | Opens on | Injury |
+|---|---|---|
+| 1 | a figure doubled over at 2 a.m. | abdominal, unnamed |
+| 2 | an empty bucket, 1 JANUARY | slipped on ice |
+| 3 | a $60 coin beside a pie with no total | twisted ankle |
+| 4 | two lists, one a row longer | bee sting |
+| 5 | a phone and one sentence to read | arm in a sling |
+| 6 | three bars of wildly different heights | a splinter |
+| 7 | two figures, three buckets | child's broken arm |
+| 8 | six boxes, five ticked | bad back |
+| 9 | two figures with matching plasters | flu shots |
+| 10 | one line and an enormous number | bandaged head to toe |
 
 ## What we still do not know
 
