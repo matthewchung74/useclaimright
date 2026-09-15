@@ -53,15 +53,28 @@ Two commands, all generated, nothing by hand:
 
 `--variant 2-contradiction` cuts a different hook against the same body.
 
-`render.py` replaced `scenes.py` + `assemble.mjs`, which split geometry from
-time and so could not put a caption on screen at the moment a word was said.
-Everything is now driven by `audio/timings.json`: the karaoke highlight, the
-push-in, and the circle closing as the figure is spoken. Rewrite a line and the
+Every body beat is one slide — which document this is, the whole page, the
+circled part blown up, the caption:
+
+    THE BILL
+    [ the whole page, uncropped, circled where the figure is ]
+    [ that same region again, big enough to read on a phone ]
+    the word being spoken, in near-black
+
+The page is never cropped to the row being discussed. A strip of table is not a
+bill, and the point of showing the document at all is that a viewer recognises
+their own paperwork — so the zoom is a second panel rather than a camera move,
+and the circle is drawn in both panels at once so the eye connects them.
+
+Everything is driven by `audio/timings.json`: the karaoke highlight, the callout
+landing, and the circle closing as the figure is spoken. Rewrite a line and the
 frames that carry it change length; nothing else drifts.
 
-Crop edges are snapped to row and column gaps measured with `pdftotext -bbox`,
-so nothing on the page is ever sliced mid-character. Change a fixture and the
-boxes in `render.py` have to be re-measured.
+Callout edges are snapped to row and column gaps measured with
+`pdftotext -bbox`, so nothing is ever sliced mid-character. Change a fixture and
+the boxes in `render.py` have to be re-measured. The patient's SSN is painted
+out — it is a canary in a fake fixture, but an SSN on screen in a video about
+medical bills reads as careless.
 
 ## Conventions
 
