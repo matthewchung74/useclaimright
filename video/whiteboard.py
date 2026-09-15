@@ -178,9 +178,13 @@ ART = {
            T((580, 470), "2 a.m.", 86)],
     "d3": [S(arrow((830, 900), (1010, 900))), S(hospital(1070, 760, 320, 270))],
     "d4": [S(envelope(180, 1500, 420, 260)), S(envelope(760, 1500, 420, 260))],
-    "d5": [Sheet(215, 1260, 350, 310, "$845.00", ACCENT),
-           Sheet(795, 1260, 350, 310, "$186.35", INK)],
-    "d6": [T((450, 1860), "$659 apart", 104, ACCENT),
+    # Round numbers on purpose. The real fixtures say $845.00 and $186.35 and
+    # the whole product is built on those, but nobody holds two decimal places
+    # in their head off a feed — and this drawing is illustrating the shape of
+    # the problem, not quoting a document.
+    "d5": [Sheet(215, 1260, 350, 310, "$800", ACCENT),
+           Sheet(795, 1260, 350, 310, "$150", INK)],
+    "d6": [T((450, 1860), "$650 apart", 104, ACCENT),
            S([line((450, 1985), (930, 1985), n=10, seed=44)], colour=ACCENT, width=8)],
 }
 
