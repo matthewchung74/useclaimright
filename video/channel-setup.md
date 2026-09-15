@@ -5,8 +5,18 @@
 account so it does not rewrite the identity on the personal one's comment and
 subscription history.
 
-Description and keywords below are still unapplied — paste them into
-Customisation when there is something on the channel worth describing.
+**Applied 2026-09-15.** The description below is live, the eight keywords are
+set, and country of residence is United States — step 3, which had been missed
+when the channel was created and which changes what Studio reports.
+
+**Short 1 is uploaded and Private**, sitting under Content → Shorts (YouTube
+classified it as a Short on its own from the 1080x1920 frame and 0:42 runtime —
+no #Shorts tag needed). It is waiting on a watch-through before it goes Public.
+
+    Title        Your hospital and your insurance don't talk to each other
+    Audience     not made for kids
+    Visibility   Private
+    Disclosure   none declared — see below
 
 ---
 
@@ -79,6 +89,22 @@ health insurance, dispute a medical bill, itemized bill, deductible
 
 Low expectations for these — the volume measurement says almost nobody searches
 YouTube for this. They cost nothing and are not the plan.
+
+## The synthetic-content disclosure, undecided
+
+YouTube asks whether a video contains altered or synthetic content. This one is
+entirely generated — the narration is Cloud TTS and the drawing is code — so the
+question is live rather than academic.
+
+The reading that says no disclosure is needed: the requirement targets
+**realistic** synthetic media that could mislead about real people, events or
+places. A stick figure is not realistic, and the voice is a stock narrator
+imitating nobody.
+
+It was left undeclared rather than answered quietly, because it is a policy call
+with consequences and it belongs to whoever owns the channel. Revisit it if a
+future Short ever depicts something that could be mistaken for real footage or a
+real person's voice.
 
 ## What not to do yet
 
