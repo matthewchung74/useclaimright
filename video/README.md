@@ -44,6 +44,21 @@ and YouTube does not recognise "explanation of benefits" as an insurance topic a
 all. What remains is feed distribution, which is what the Shorts experiment
 tests.
 
+## Making one
+
+Three commands, all generated, nothing by hand:
+
+    python3 video/shorts-01-two-numbers/frames.py        # five 1080x1920 stills
+    node video/tts.mjs shorts-01-two-numbers             # eight WAVs, Cloud TTS
+    node video/assemble.mjs shorts-01-two-numbers        # -> 1-number.mp4
+
+`--variant 2-contradiction` cuts a different hook against the same body.
+`--no-b4` drops the network-contract line, which is the difference between 39.5s
+and 30.5s.
+
+Each frame is held for exactly as long as its line takes to say plus a beat, so
+rewriting a line changes that frame's length and nothing else drifts.
+
 ## Conventions
 
 **Format.** Screen recording of a document with a cursor. No face. Three to five

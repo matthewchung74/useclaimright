@@ -23,10 +23,13 @@
 //
 // Cloud TTS rendered the line that had just failed eight times, first attempt.
 // It also needs no API key at all — it runs on the gcloud credentials this
-// project already has. That is the better outcome for a second reason: the
-// Gemini attempt was reaching into another project's keychain entry for a key,
-// and this path reaches for nothing. If anyone does go back to Gemini TTS, the
-// entry to read is `gemini`, not `askmyfit-gemini`.
+// project already has, so no key is involved at all.
+//
+// If anyone does go back to Gemini TTS: the key is `askmyfit-gemini` in the
+// macOS login keychain, read via GEMINI_API_KEY when set and the keychain
+// otherwise. Read it straight into the process — never echo it, never write it
+// to a file, never commit it. It is named for the other project but it is the
+// key for video and ad generation generally.
 //
 // One-time setup, already done on this machine:
 //   gcloud services enable texttospeech.googleapis.com --project=useclaimright
