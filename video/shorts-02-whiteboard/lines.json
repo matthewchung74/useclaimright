@@ -1,5 +1,6 @@
 {
-  "_comment": "Whiteboard cold open — proof of concept. The first line is carried in `variants` because tts.mjs treats that as the hook; here the hook IS the first thing drawn.",
+  "_comment": "The whole Short, drawn. The first line is carried in `variants` because tts.mjs treats that as the hook; here the hook IS the first thing drawn.",
+  "_numbers": "$800 and $150 are deliberately round and deliberately NOT the fixture figures ($845.00 / $186.35). The drawing illustrates the shape of the problem rather than quoting a document, and nobody holds two decimal places in their head off a feed. If this ever cuts to the real documents, the numbers have to agree again.",
   "variants": {
     "cold-open": "This is you."
   },
@@ -8,6 +9,11 @@
     { "id": "d3", "text": "You go to the hospital. They fix you. You go home. Nice." },
     { "id": "d4", "text": "Three weeks later, two envelopes turn up." },
     { "id": "d5", "text": "The hospital wants $800. Your insurance says $150." },
-    { "id": "d6", "text": "Same visit, same day, $650 apart." }
+    { "id": "d6", "text": "Same visit, same day, $650 apart." },
+    { "id": "d7", "text": "The one from the hospital is the bill." },
+    { "id": "d8", "text": "The one from your insurance is not a bill. It says so, right at the top." },
+    { "id": "d9", "text": "That one tells you what you actually owe." },
+    { "id": "d10", "text": "So if the bill asks for more, that is a phone call before it is a payment." },
+    { "id": "d11", "text": "Check yours before you dispute. Or upload them free at useclaimright.com." }
   ]
 }

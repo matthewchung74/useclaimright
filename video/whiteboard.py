@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Whiteboard animation: the drawing appears stroke by stroke as it is narrated.
+"""Whiteboard animation: the whole Short is drawn, stroke by stroke, as narrated.
 
     python3 video/whiteboard.py shorts-02-whiteboard
 
@@ -36,7 +36,7 @@ HERE = Path(__file__).resolve().parent
 W, H, FPS = 1080, 1920, 15
 # The board is wider than the frame: the story runs left to right across it and
 # the camera moves to whatever is being drawn.
-BW, BH = 1600, 2200
+BW, BH = 1600, 2900
 BOARD, INK, ACCENT, GREY = (253, 253, 251), (34, 38, 42), (190, 54, 54), (150, 158, 164)
 PEN_W = 7
 
@@ -74,6 +74,20 @@ def circle(cx, cy, r, n=34, seed=0, start=-0.4):
     return wobble([(cx + r * math.cos(start + 2.15 * math.pi * i / n),
                     cy + r * math.sin(start + 2.15 * math.pi * i / n))
                    for i in range(n + 1)], amp=1.8, seed=seed)
+
+
+def ellipse(cx, cy, rx, ry, n=40, seed=0):
+    """Circling something by hand: starts at about eight o'clock and overshoots."""
+    return [wobble([(cx + rx * math.cos(-0.4 + 2.2 * math.pi * i / n),
+                     cy + ry * math.sin(-0.4 + 2.2 * math.pi * i / n))
+                    for i in range(n + 1)], amp=2.0, seed=seed)]
+
+
+def phone(x0, y0, w, h, seed=61):
+    return (box(x0, y0, x0 + w, y0 + h, seed=seed)
+            + [line((x0 + w * 0.32, y0 + 26), (x0 + w * 0.68, y0 + 26), seed=seed + 4),
+               line((x0 + 16, y0 + 56), (x0 + w - 16, y0 + 56), seed=seed + 5),
+               line((x0 + 16, y0 + h - 56), (x0 + w - 16, y0 + h - 56), seed=seed + 6)])
 
 
 def box(x0, y0, x1, y1, seed=0):
@@ -186,6 +200,14 @@ ART = {
            Sheet(795, 1260, 350, 310, "$150", INK)],
     "d6": [T((450, 1860), "$650 apart", 104, ACCENT),
            S([line((450, 1985), (930, 1985), n=10, seed=44)], colour=ACCENT, width=8)],
+    # Which envelope is which — the question a beginner actually has. The answer
+    # is who sent it, so the labels go under the papers they belong to.
+    "d7": [T((225, 2090), "the bill", 84)],
+    "d8": [T((760, 2090), "NOT a bill", 84)],
+    "d9": [S(ellipse(970, 1468, 140, 74), colour=ACCENT, width=8)],
+    "d10": [S(phone(430, 2280, 210, 340)), T((700, 2400), "call first", 84)],
+    "d11": [T((300, 2700), "useclaimright.com", 100, ACCENT),
+            S([line((300, 2830), (1160, 2830), n=14, seed=71)], colour=ACCENT, width=8)],
 }
 
 
@@ -375,7 +397,7 @@ def main():
 
     wav = dir_ / "audio" / "_track.wav"
     audio_track(dir_, plan, wav)
-    out = dir_ / "cold-open.mp4"
+    out = dir_ / "whiteboard.mp4"
     subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-framerate", str(FPS),
                     "-i", str(frames / "f%05d.png"), "-i", str(wav),
                     "-c:v", "libx264", "-pix_fmt", "yuv420p", "-r", "30",
