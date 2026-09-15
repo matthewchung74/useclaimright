@@ -1,44 +1,116 @@
-# A video series about reading your own medical bill
+# A series of drawn Shorts about reading your own medical bill
 
-Nine videos. The premise is that **YouTube is a search engine**, and people
-search "why is my bill higher than my EOB" *while holding the bill*. That is the
-intent moment nothing else we do reaches — LinkedIn finds people at work,
-Product Hunt finds people who like products, Instagram finds people scrolling. A
-good explainer keeps getting found for years; a launch post is dead in two days.
+Ten Shorts, 35–45 seconds each, hand-drawn on a whiteboard and narrated.
 
-## The format, and why it is not a talking head
+This document was rewritten on 2026-09-15, after the first one was made. It
+previously planned nine **three-to-five-minute screen recordings of real
+documents**, on the premise that **YouTube is a search engine** and people search
+"why is my bill higher than my EOB" while holding the bill. Both halves of that
+turned out to be wrong, in opposite ways and for different reasons:
 
-**Screen recording of an actual document, with a cursor pointing at lines.** No
-face, no studio, no editing beyond cuts. The content *is* the document, and
-pointing at the line is the whole teaching act.
+- **The premise failed on measurement.** YouTube search for this subject is
+  close to empty, established three independent ways. The evidence is preserved
+  below because it still governs everything.
+- **The format failed on inspection.** Real documents are not legible at phone
+  size, and cropping them until they are destroys the recognition that was the
+  only reason to show them. That is not a judgement call — it is what the frames
+  looked like. See *Why it is drawn*.
 
-Three to five minutes. One idea each. If a video needs two ideas it is two
-videos.
+The earlier reasoning in full is in git history. What follows is what survived.
 
-This is also the cheapest possible format and the one nobody is doing: search
-the space and you get institutional explainers — UnitedHealthcare explaining
-UnitedHealthcare's EOB, CMS guides, clinic blogs. An insurer teaching you to
-read their EOB will never say *"here is how to catch them charging you above the
-allowed amount."* That sentence is the gap.
+## Why it is drawn
 
-## Writing for someone who has never read one of these
+The first Short was built twice, and the first build is the argument for the
+second.
 
-The audience is not people who know the vocabulary and want the nuance. It is
-people holding a piece of paper they do not understand, who may not know the
-document has a name.
+**Attempt one: the real document, cropped to the line being discussed.** A strip
+of table is not a bill. The viewer loses the one thing a document was for —
+recognising their own paperwork — and gets nothing in exchange.
 
-**Titles use the jargon; the first ten seconds do not.** This is a real tension
-and it resolves in one direction only. Someone searching has the word in front of
-them — "Explanation of Benefits" is printed at the top of the page — so the title
-must carry it or the video is not found. But the opening line has to assume they
-have never heard it: *"If you have a page from your insurance company headed
-Explanation of Benefits — that is what this is about. It is not a bill."*
+**Attempt two: the whole page, with a zoom panel beside it.** Honest, and
+unreadable. A 564-point table row scaled to fit 1040 pixels puts the type at
+about 20px in a 1920px frame. The document was on screen and nobody could read
+it, which is the worst of both.
 
-Note the product already made this call. The dropzone does not say "upload your
-EOB"; it says **"Add the letter from your insurance, if you have it."** The
-videos should not be more jargon-heavy than the app they are advertising.
+**Attempt three: crop the zoom to the phrase**, not the row — "GENERAL HOSPITAL",
+"BALANCE DUE: $845.00". That works, at 60–120px type, and it is where the
+document version stopped. It is a decent video. It is also four panels of grey
+paperwork, and it took three rebuilds to get there.
 
-**Words to keep off the soundtrack**, with what to say instead:
+**A drawing has none of these problems.** It is legible at any size because it
+was authored at that size. It has motion by construction — a stroke being drawn
+creates anticipation, and the viewer waits for it to finish, which is dwell time
+on a feed that ranks on exactly that. And it can show things a document cannot:
+a person, 2 a.m., a hospital, three weeks passing.
+
+Three further consequences, all of which the old plan listed as unsolved
+problems:
+
+**The credibility objection disappears.** The old review worried that "Jane Q.
+Testpatient" on screen reads as fake to someone whose problem is a real bill. A
+drawing claims nothing. Nobody thinks a stick figure is their stick figure, so
+nothing is being passed off as anything.
+
+**The copyright and PHI questions stop applying.** No carrier documents, no
+fixtures, no attribution, no risk of a real bill ever being near the project.
+
+**The numbers get to be round.** A document forces you to quote it. A drawing
+illustrates the shape of the problem, so it can say **$800 and $150** instead of
+$845.00 and $186.35 — which is both easier to hold in your head and cheaper to
+say out loud. See *House style*.
+
+## House style
+
+Every rule here was learned by making the first one, usually by getting it wrong
+first.
+
+### The joke is the first thing said
+
+Not the payoff, the opening. The first version of Short 1 put the funny line at
+the end of an eight-second hook and it may as well not have existed.
+
+**Deadpan only.** The narrator is Google Cloud Studio-Q, which reads everything
+at one temperature — any joke that needs timing or a smirk dies on the way out.
+A joke that lives in the sentence survives. "Your hospital and your insurance
+don't talk to each other. You're the group chat."
+
+**The target is the situation, never the accusation.** Two organisations, one
+visit, two numbers, and the patient is the one who has to reconcile them — that
+is funny and it is true. "The hospital made this number up" is neither, and this
+is a product whose entire pitch is *check before you dispute*.
+
+### Round numbers, and as few of them as possible
+
+Nobody holds two decimal places in their head off a feed. There is also a
+mechanical cost: **"$186.35" is nine spoken words** and "$150" is three. Hook 1
+originally said both exact figures and ran 11.3 seconds; the same hook without
+them lands in four.
+
+One number at a time, and only the ones the Short needs.
+
+### Jargon under the plain word, never instead of it
+
+The label reads **the bill**, and *itemized statement* sits under it in grey.
+**NOT a bill**, and *Explanation of Benefits* under that.
+
+Someone holding the paper has to recognise the phrase printed on it — that is
+what the grey line is for — but the plain word is what makes the video make
+sense. The old plan resolved this tension the other way (jargon in the title,
+plain language in the script) because it was optimising for search. Search is
+empty. The jargon has no job left except recognition.
+
+**Do not call the hospital bill "the claim."** The claim is what the provider
+sends the insurer; the EOB is the insurer's answer to it. On an insurance portal
+claims sit on the EOB side of the story, so that label teaches the exact
+confusion these videos exist to undo.
+
+### Captions are how the video is read
+
+Most of this audience sees the first seconds muted. The karaoke captions are not
+an accessibility afterthought; they are the primary channel, and the voice is the
+secondary one.
+
+### Words to keep off the soundtrack
 
 | Do not say | Say |
 |---|---|
@@ -48,561 +120,296 @@ videos should not be more jargon-heavy than the app they are advertising.
 | cost-sharing | "your share" |
 | balance billing | "billing you for the discount" |
 
-**One number at a time.** The report shows four totals at once; a novice cannot
-hold four. Introduce them singly and only the ones the video needs — video 1 uses
-two ($175 and $120) and should show only those until the end.
+If the app's own interface does not use a word, the soundtrack should not either.
+The dropzone says *"Add the letter from your insurance, if you have it"* — not
+"upload your EOB".
 
-**Answer the obvious question before it is asked.** The first thing anyone thinks
-watching video 1 is *"why does the insurance company get to decide what my doctor
-charges?"* If that is not answered in the video, nothing else in it is believed.
-The answer — the provider signed a contract agreeing to the lower price in
-exchange for patients — belongs early and in one sentence.
+### Answer the obvious objection inside the video
 
+The first thing anyone thinks watching Short 1 is *"why does the insurance
+company get to decide what my doctor charges?"* If that is not answered, nothing
+else is believed. The answer is one sentence: the provider signed a contract
+accepting the lower price in exchange for patients.
 
-## What is safe to record
+### Two drawing rules that are not stylistic
 
-| Source | Safe? | Why |
-|---|---|---|
-| `/app?sample=1` | ✅ | A real report on synthetic documents. Public, no login, no PHI. Already built |
-| `test-fixtures/` — our own fixtures | ✅ | We wrote them. Canary names throughout (Jane Q. Testpatient) |
-| `test-fixtures/carrier/` — real SBCs and EOBs | ⚠️ | No personal data, but they are the carriers' copyright. Fine to *read from* on screen with attribution; do not republish the files |
-| `test-fixtures/private/` — the member booklet | ❌ | Not ours |
-| Anyone's real bill or EOB | ❌ | PHI. Never, not even scrubbed |
+**A whiteboard cannot un-draw.** Before-and-after is two drawings side by side,
+not one drawing modified. "This is you" and "this is you at 2 a.m." are two stick
+figures, which is also the funnier read.
 
-Everything below can be shot from the first two rows.
+**The camera holds two beats** — the line being drawn and the one before it.
+Framing only the current strokes cuts the previous drawing in half; framing
+everything drawn so far shrinks the art as the story grows.
 
-## The nine
+## How one gets made
 
-Each row names the fixture that demonstrates it and the figures that actually
-appear on screen — all verified against production during the 2026-09-13/14
-regression run, so nothing here is a number someone has to invent at record time.
+    node video/tts.mjs shorts-02-whiteboard        # WAVs, en-US-Studio-Q
+    python3 video/align.py shorts-02-whiteboard    # word timings, local Whisper
+    python3 video/whiteboard.py shorts-02-whiteboard
 
-### Tier 0 — the words themselves (proposed addition; takes the series to 11)
+About ten minutes to write `lines.json`, twenty to thirty to draw whatever shapes
+are new, two to run the pipeline. Everything regenerates from the script, so
+changing a line changes the video and nothing drifts.
 
-Not in the original nine, and the review below argues they are missing rather
-than optional: **videos 6 and 7 both depend on knowing what a deductible is, and
-nothing in the series explains it.** They are also the highest-volume searches in
-this space, and the easiest to make.
+**The voice is `en-US-Studio-Q`**, chosen by audition. It rejects SSML `<mark>`,
+which is where the caption timings used to come from, so the timings are measured
+afterwards by whisper.cpp on this machine — forced alignment against a known
+script, not transcription. `video/README.md` has the setup.
 
-**0a. "What is a deductible, and why did my bill get bigger in January?"**
-The deductible card, plainly. `real-sbc/cms-2025.pdf` prints $500 individual /
-$1,000 family; the card counts toward it as audits accumulate.
-The teaching beat: you pay the first $X yourself each year, and the counter
-restarts — which is why January bills shock people.
+**Verify pronunciation rather than guessing it.** Studio-Q was reading
+useclaimright.com letter by letter. Four spellings were synthesised and run back
+through Whisper; `UseClaimRight.com` comes back as one word and the lowercase
+form spells out. That loop costs nothing and should be used on every domain,
+abbreviation and dollar figure.
 
-**0b. "Copay or coinsurance — which one are you paying?"**
-`fake-sbc.pdf` prints both: a $60 copay on one row, a percentage on another.
-The teaching beat: a copay is a fixed price, coinsurance is a share of a price
-you have not been told yet. Knowing which your plan says is how you check a bill
-at all — and it is what video 1's mismatch finding is comparing against.
+### The art library, which compounds
 
-### Tier 1 — angry (someone is holding a bill and wants an answer now)
+`video/whiteboard.py` holds the shapes. After Short 1: `person`, `person_hurt`,
+`hospital`, `envelope`, `Sheet` (a page that slides out of an envelope), `phone`,
+`arrow`, `ellipse` (for circling), `squiggle`, `box`, `line`, plus `T` for
+handwritten text in Bradley Hand.
 
-**1. "Your bill says $175, your EOB says $120 — who's right?"**
-`series/t1-bill.pdf` + `t1-eob.pdf`. The report reads **$175.00 billed /
-$120.00 allowed / $120.00 your responsibility / $55.00 worth disputing**, with
-one finding: *"The provider billed $175.00 and reflects a balance due of
-$175.00, but the EOB sets the allowed amount and maximum patient responsibility
-at $120.00, requiring a network write-off of $55.00."*
-The teaching beat: **the insurer's number wins**, and the $55 is not yours to
-pay — because the provider signed a contract accepting the lower price. Say that
-sentence early; it is the question every viewer has.
+Each Short below names the two or three shapes it adds. They are inherited by
+every Short after it, so the marginal cost falls as the series goes on — the
+tenth needs almost nothing new.
 
-**2. "There's a charge on my bill that isn't on my EOB"**
-`series/t4-bill.pdf` against the consolidated `t-eob.pdf`. One `not_in_eob`
-finding at **$175.00**: *"does not appear on the provided EOB, which only covers
-services through 2026-03-11."*
-The teaching beat: this is usually **timing, not fraud** — your insurance has
-not finished processing it. Do not pay it, and do not panic. Ask.
+## The ten
 
-**3. "I got a bill after my insurance already paid"**
-`fake-bill.pdf` + `fake-eob.pdf`. **$2,115.00 / $841.75 / $186.35 / $822.15**,
-including *"The provider billed patient balance due ($845.00) exceeds the maximum
-patient responsibility indicated on the EOB ($186.35), improperly balance billing
-contracted network write-offs."*
-The teaching beat: **balance billing**, and that a network contract forbids it.
-This is the highest-stakes video in the series and should be made carefully.
+Short 1 exists. The rest are planned, not written.
 
-### Tier 2 — learning (someone is trying to understand, not fighting)
+Each entry gives the hook (the first line spoken, which is the whole game), the
+teaching beat, and the art it needs.
 
-**4. "What does 'allowed amount' mean on my EOB?"**
-`carrier/eob-cigna-sample.pdf` — **Cigna's own guide to reading an EOB**, with a
-sample claim inside it. Not a member's statement, and the video must say so.
-Amount billed **$189.00**, what I owe **$11.89**, and the line *"You saved
-$177.11 (or 94%) off the total amount billed."*
-The teaching beat: the sticker price is fiction; the allowed amount is the real
-price, and it is the only number worth arguing about. Use the real carrier
-document here — the credibility is the point — and say whose it is on screen.
+### 1. Two numbers · MADE — 41.4s
 
-**5. "Your EOB is not a bill — so what is it?"**
-Any EOB header: *"Explanation of Benefits — THIS IS NOT A BILL."*
-`carrier/eob-aetna-sample.pdf` is Aetna's own annotated guide to reading one and
-is useful reference, though its figures live inside a small watermarked image, so
-shoot the Cigna one for legibility.
-The teaching beat: it is a receipt of a negotiation you were not in.
+**Hook:** *"Your hospital and your insurance don't talk to each other. You're the
+group chat."*
 
-### Tier 3 — traps (things that look wrong and are not, or look fine and are not)
+Stick figure, 2 a.m., hospital, two envelopes three weeks later, $800 and $150
+sliding out of them, $650 apart. Labels the two documents, circles what you
+actually owe, ends on *call first* and the address.
 
-**6. "Your family deductible isn't two individual deductibles"**
-`real-sbc/cms-2025.pdf` on file ($500 individual / $1,000 family) with FAM1's
-audits. The card reads **$640.00 of $1,000.00**, sourced *"Family target from
-your plan (SBC)."*
-The teaching beat: a family plan has two limits — one for each person, one for
-the household — and your bills count toward one of them. The insurer's letter is
-the only document that tells you which.
+**Teaching beat:** the two papers are different documents with different jobs,
+and the insurer's letter is the one that says what you owe.
 
-**7. "Your plan covers 6 visits — how do you know where you are?"**
-`series/t4-t6` pairs with no plan on file. After t5 the app surfaces the
-insurer's own remark: *"Plan note: 5 of 6 covered outpatient mental health visits
-used this plan year."*
-The teaching beat: **the limit is often printed on the EOB and nobody reads it**
-— and running out of covered visits is the most expensive surprise in the series,
-because it costs care and not just money.
-*(Retitled from "which one are you on?", which collided with video 9.)*
+**Absorbs old videos 1 and 5**, which the earlier review flagged as nearly the
+same video. Drawn, they are one.
 
-**8. "Same day, same code, two family members — is that a duplicate?"**
-`family/matthew-bill.pdf` and `sarah-bill.pdf` — flu shot 90686, both
-**2026-03-10**, both **$85.00**, same clinic. The dashboard groups them as
-**2 bills · $170.00** and raises **no duplicate flag**.
-Then the contrast, which is the actual lesson: `t2-bill` and `t2-bill-rebill` —
-*one* person, *one* visit, two statements — and that one *does* flag:
-**"$175.00 at stake · The same visit is on two statements."**
-The teaching beat: same day and same code is not a duplicate. **Same day, same
-code, same person** is.
+### 2. The January reset · next
 
-**9. "Your plan document has three plans. Which one is yours?"**
-An employer booklet (shoot our own synthetic stand-in, not the member's).
-The app reports *"Your plan document is 135 pages. We're sending the 24 that look
-like the benefits schedule — it covers 3 plans (EPO Plan, PPO Plan, HDHP
-Plans)"*, then asks: *"Which plan are you on? Your EOBs disagree — PPO and HDHP.
-Until you say, bills are not checked against plan terms."*
-The teaching beat: your employer's booklet may describe plans you are not on, and
-the deductible you read may not be yours. **Video 9 needs a synthetic booklet
-built first** — see Open work.
+**Hook:** *"Your January bill is not a mistake. It is a reset."*
 
-## Order to shoot
+**Teaching beat:** you pay the first $X of the year yourself, and on 1 January
+the counter goes back to zero. That is why the same visit costs more in January
+than in November, and it is the single most common "my bill is wrong" that isn't.
 
-Not 1→9. **5, then 4, then 1** — and 0a/0b before either if they are made.
+**New art:** a bucket that fills, a calendar page, a counter snapping to 0.
 
-**5 comes before 4**, which the first draft had backwards. You cannot explain
-what a number on a document means to someone who does not yet know what the
-document is. "Your EOB is not a bill" is the foundation; "allowed amount" is the
-first thing built on it.
+Chosen second because deductible is the highest-volume concept in the space and
+two later Shorts depend on it.
 
-Both are evergreen definitional searches and the lowest risk of being wrong. They
-also teach the vocabulary the other seven depend on, so shooting them first means
-later videos can say "allowed amount" without stopping to explain it. Then 1,
-which is the highest-intent query in the set.
+### 3. Copay or coinsurance
 
-Leave 3 until the format is settled. Balance billing is the video most likely to
-be quoted back at someone in a dispute, and it should be the most careful.
+**Hook:** *"One of these is a price. The other is a percentage of a price nobody
+has told you yet."*
 
-## Cautions
+**Teaching beat:** a copay is fixed and knowable before you go; coinsurance is a
+share of a number you will not see until afterwards. Which one your plan says is
+how you check a bill at all.
+
+**New art:** a coin with a number on it, a pie with a slice taken out.
+
+### 4. A charge your insurance has never seen
+
+**Hook:** *"There is a line on your bill your insurance has never seen."*
+
+**Teaching beat:** usually **timing, not fraud** — they have not finished
+processing it. Do not pay it, do not panic, ask. The most actionable Short in the
+set and the second one to make.
+
+**New art:** two lists side by side with one extra row, a clock.
+
+### 5. A bill after they already paid
+
+**Hook:** *"They paid. Then the hospital sent you a bill for the discount."*
+
+**Teaching beat:** balance billing, and that a network contract forbids it.
+
+**Highest-stakes Short in the series.** It tells someone not to pay a bill, which
+is the closest any of this comes to advice. The app carries a disclaimer on every
+report; a video carries nothing unless you put it there. **On screen, in words,
+not in a description nobody opens.**
+
+**New art:** a contract with two signatures.
+
+### 6. The sticker price is fiction
+
+**Hook:** *"The big number on a hospital bill is not a price. It is an opening
+offer."*
+
+**Teaching beat:** billed, allowed, your share — three different numbers, and
+only one of them is real. The allowed amount is the only one worth arguing about.
+
+**New art:** three bars of very different heights.
+
+### 7. A family deductible is not two of yours
+
+**Hook:** *"Two people, two deductibles — and a third one you did not know
+about."*
+
+**Teaching beat:** a family plan has a limit for each person and a limit for the
+household, and your bills count toward one of them. The insurer's letter is the
+only document that says which.
+
+**New art:** two buckets of different sizes. Reuses `person`.
+
+### 8. Six visits, and nobody says where you are
+
+**Hook:** *"Your plan covers six visits. Nothing tells you it is visit six."*
+
+**Teaching beat:** the count is often printed on the insurer's letter and nobody
+reads that far. Running out costs care, not just money.
+
+**New art:** six boxes, five ticked.
+
+### 9. Same day, same code, not a duplicate
+
+**Hook:** *"Two identical charges, same day, same clinic. This one is fine."*
+
+**Teaching beat:** same day and same code is not a duplicate — two people can get
+the same flu shot. **Same day, same code, same person** is. The contrast is the
+lesson, and this is the Short that teaches when *not* to dispute, which is worth
+as much as the others and builds more trust.
+
+**New art:** two figures holding matching sheets. Reuses `person`, `Sheet`.
+
+### 10. Three plans, one booklet
+
+**Hook:** *"Your plan document describes three plans. Two of them are not
+yours."*
+
+**Teaching beat:** the deductible you read may belong to a plan you are not on.
+
+**New art:** a thick booklet with three tabs.
+
+## Order, and why it is short
+
+**1 is made. Publish it. Then 2, then 4. Then stop and look.**
+
+That is three Shorts, not ten, and the reason is that **nothing has ever been
+published**. The channel exists (`@useclaimright`, `UCk3LT3FEx9ht_CwEZbZ3B7g`,
+created 2026-09-14) and is empty, so there is no retention data, no feed
+behaviour, and no evidence that a drawing holds a swipe any better than a
+document did.
+
+Making ten before publishing one would be building on an unverified premise for
+the second time in this document.
+
+2 comes before 4 because deductible is load-bearing for 7 and 8. 4 comes third
+because it is the most immediately useful. 5 waits until the format is settled,
+for the reason given in its entry.
+
+## What we still do not know
+
+**Whether the drawing holds attention.** The old format's risk was retention and
+it was sold on cost; the same trap is available here. A whiteboard is more
+watchable than a cursor on a PDF, but "more watchable than the worst option" is
+not a standard.
+
+**Whether the humour lands or grates.** It is deadpan under a synthetic voice.
+That could read as dry and confident or as flat. One published Short answers it.
+
+**How the first hundred views happen.** Feed distribution is the mechanism, but a
+channel with no subscribers is not owed any. The honest answer may still be that
+Reddit and forum threads are the distribution and the Short is the thing linked
+rather than the thing discovered.
 
 **Do not use the "80% of medical bills contain errors" statistic.** It is
-everywhere, it is poorly sourced, and the entire positioning of this product is
-refusing to overclaim. One unsupported number in video 1 undoes the credibility
-the other eight are for.
+everywhere, poorly sourced, and one unsupported number undoes the credibility the
+other nine are for.
 
-**Say what the app cannot do.** It does not decide whether a CPT code was the
-right one, and it does not know whether the care was appropriate. It reads three
-documents and reports where they contradict each other. Saying so on camera is
-not a weakness — it is the reason to trust the parts it does claim.
+**Say what the app cannot do.** It does not decide whether a CPT code was right,
+and it does not know whether care was appropriate. It reads three documents and
+reports where they contradict each other. Saying so is not a weakness; it is the
+reason to believe the parts it does claim.
 
-**This is slow.** Months, not weeks. Five good videos beat thirty rushed ones,
-and "a little every week" is the correct cadence.
+## The evidence that killed the search plan
 
-**One recording, three channels.** Vertical cuts from the same screen recordings
-are Shorts and Reels. Whatever AskMyFit has learned about hooks and cadence
-applies to distributing the same asset.
+Measured 2026-09-14, three independent ways, all agreeing. This governs the
+format choice above and is kept in full because it is the most expensive thing in
+this document.
 
-## What is weak about this plan
-
-Written against it deliberately, because the parts that sound most confident are
-the parts with the least behind them.
-
-### The premise is unverified, and it is load-bearing
-
-"YouTube is a search engine and people search this while holding the bill" is an
-assertion. I searched once, found articles rather than videos, and noted at the
-time that the tool does not index YouTube well — so *"nobody is doing this"* is
-not established, it is the absence of evidence from a search that was not
-looking in the right place. You had already seen competing videos yourself.
-
-**Everything below depends on this and none of it tests it.** The cheap check,
-before shooting anything: search YouTube by hand for the nine titles, and read
-the view counts on the top three results for each. Under a few thousand views
-means the intent moment is not there and the whole plan is wrong. That is an
-hour of work against months of shooting.
-
-### Videos 1 and 3 are close to the same video
-
-"Billed above the allowed amount" and "balance billing after insurance paid" are
-the same mechanism with different framing — and the E1 fixture produces both
-findings from one pair of documents. Either merge them, or make 3 specifically
-about **what to do next** (who to call, what to say, that the network contract is
-the lever) so it is a procedure video rather than a second explainer.
-
-### Nothing here says how anyone finds video 1
-
-Nine videos on a channel with no subscribers is nine videos nobody watches.
-Search ranking uses engagement signals a new channel does not have. The plan
-covers what to make and is silent on how the first hundred views happen — and
-the honest answer may be that the Reddit and forum threads found earlier in the
-marketing work are the distribution, with the video as the thing linked rather
-than the thing discovered.
-
-### The format's biggest risk is retention, and I sold it on cost
-
-A cursor moving over a static document for four minutes, with no face, is
-low-retention by construction — and YouTube ranks on watch time. "Cheap, and
-nobody is doing it" may have a less flattering explanation than novelty. Worth
-testing on **one** video before committing to nine: if the retention graph falls
-off a cliff at thirty seconds, the format is wrong regardless of how right the
-content is.
-
-### Synthetic fixtures undercut exactly the videos that need credibility
-
-"Jane Q. Testpatient" and "Testville Behavioral Health Associates" on screen read
-as fake to someone whose problem is a real bill — and they appear in tiers 1 and
-3, which are the persuasion videos. The real carrier documents are confined to 4
-and 5, which need credibility least. That is backwards, and the fix is not
-obvious: a real bill cannot be filmed, so the options are better-disguised
-fixtures or saying plainly on screen that the documents are synthetic and why.
-Saying it is probably stronger than hoping nobody notices.
-
-### There is no path from watching to using
-
-The doc never says how a viewer becomes a user. Nine videos that never mention
-the product are charity; nine that pitch it lose the trust the format is for. A
-defensible middle — the tool is mentioned once, at the end, as the thing that
-does this comparison automatically — still needs deciding rather than assuming.
-
-### Mechanics are missing entirely
-
-Titles, thumbnails, descriptions and chapters are most of whether a video is
-found at all, and none of them appear above. The nine titles here are article
-headings, not search queries — "What 'allowed amount' means" is how a writer
-phrases it; "what does allowed amount mean on my EOB" is how someone types it.
-
-### Two claims I should not have made
-
-- *"running out of covered visits is the most expensive surprise in the series"*
-  — unsupported, and cut it or find the number.
-- *"verified against production"* is doing more work than it earns. Those figures
-  prove **the app is consistent on our own fixtures**, not that the scenarios are
-  common or that the findings are right in the world.
-
-### The one that matters most
-
-Video 3 tells someone not to pay a bill. That is the most useful thing in the
-series and the closest it comes to advice. The app carries a disclaimer on every
-report; a video carries nothing unless you put it there. Whatever the app's
-footer says about self-help rather than legal advice belongs on screen in that
-video, in words, not in a description nobody opens.
-
-## The premise check was run on 2026-09-14. It did not pass.
-
-The review above said an hour of hand-searching gates everything. It took twenty
-minutes and the answer is not the one this plan assumed.
-
-### What the top results look like
+### 1. Hand-searching the titles
 
 | Query | Top result | Views | Age |
 |---|---|---|---|
 | explanation of benefits not a bill | exact-title match | **8** | 6 months |
 | " | DeltaDentalAZ, institutional | 2.2K | **10 years** |
 | why is my medical bill higher than my eob | "Why Is My EOB Not A Medical Bill?" | **3** | 9 months |
-| " | "EOB vs Medical Bill" | 21 | 2 months |
 | what does allowed amount mean | Inlera University | **12K** | 6 years |
 
-A video whose title exactly matches the search, six months old, with eight
-views, is not a discoverability problem. It is an absence of searchers.
+A video whose title exactly matches the search, six months old, with eight views,
+is not a discoverability problem. It is an absence of searchers.
 
-### What YouTube's own autocomplete says, which is the harder evidence
+### 2. YouTube autocomplete, which is ordered by real volume
 
-Autocomplete is ordered by real query volume. Typing **"medical bill"** gives,
-in order:
+Typing **"medical bill"** returns, in order: *medical billing and coding ·
+medical billing · medical billing and coding day in the life · medical billing
+for beginners · medical billing training videos.*
 
-> medical billing and coding · medical billing · medical billing and coding day
-> in the life · medical billing for beginners · medical billing training videos ·
-> medical billing and coding course · medical billing and coding for beginners 2025
+**Every one is somebody training for a job in billing.** Not one is a patient.
+"what does allowed amount" completes to *"in medical billing"* and *"in medical
+billing tamil"* — the offshore billing workforce. That explains Inlera's 12K: it
+is a training channel and those are students. The eight-view video is the one
+actually aimed at patients.
 
-Every one is **someone training for a job in billing**. Not one is a patient.
-"what does allowed amount" completes to *"what is allowed amount **in medical
-billing**"* — and to *"...in medical billing **tamil**"*, which is the offshore
-billing workforce. "explanation of benefits" completes to *"explanation of
-benefits **in medical billing**"*.
+"why is my medical bill" completes to three things, and all three are **"can I
+avoid paying this?"** — *what happens if i don't pay my medical bills · how to
+get medical bills reduced · should i pay my medical bills.* None is "help me
+understand this document."
 
-That single fact explains the table above. Inlera University has 12K views
-because it is a **training channel**, and the 12K are students. The eight-view
-video is the one that was actually aimed at patients.
+### 3. YouTube Studio Research, which is YouTube's own label
 
-### The patient demand that does exist is a different question entirely
-
-"why is my medical bill" completes to exactly three things:
-
-> what happens if i don't pay my medical bills · how to get medical bills reduced
-> · should i pay my medical bills
-
-Not one of them is "help me understand this document". They are all **"can I
-avoid paying this?"** — which is a different register, a different script, and
-arguably a better fit for what the product does than the education framing is.
-
-### What this means, stated carefully
-
-**It does not mean the videos are worthless.** It means the traffic assumption
-was wrong, and the real trade is volume against qualification:
-
-- The **vocational** audience has the volume and converts at zero. A billing
-  student will never audit their own hospital bill with this.
-- The **patient** audience is small on YouTube but extraordinarily qualified —
-  someone typing "why is my bill higher than my EOB" is holding the bill.
-
-500 views a year of the second may be worth more than 12,000 of the first. That
-is a real argument for making these anyway; it is **not** the argument this
-document opened with, and the opening claim — that people search this while
-holding the bill, in numbers — is not supported.
-
-### What I would change
-
-1. **Reframe the tier-1 titles around paying, not understanding.** "Should I pay
-   this medical bill?" is a question people demonstrably ask. "What is an EOB" is
-   one they demonstrably do not.
-2. **Video 3 moves to the front.** "I got a bill after my insurance already paid"
-   sits closest to "should i pay my medical bills", which is live demand.
-3. **Keep 5 and 4 as supporting material, not as the opening move.** They remain
-   the right vocabulary videos and the right things to link to from a description
-   or a Reddit reply — they are just not how anyone arrives.
-4. **Do not abandon it on this evidence alone.** Autocomplete is directional, not
-   volume data; a query absent from it is not a query with no searchers. But it is
-   enough to stop shooting nine videos in the order this document proposed.
-
-### Limits of this check
-
-Three queries, top two results each, plus four autocomplete probes. Not
-exhaustive, and view count is a lagging and noisy proxy. The strongest single
-signal is the autocomplete set, because it comes from aggregate behaviour rather
-than from any one creator's thumbnail.
-
-## Titles, built from queries that exist (2026-09-14)
-
-The check above killed the education framing. This is the replacement, and it is
-built the other way round: find the query first, write the title to match.
-
-### What "how to dispute a medical bill" actually looks like
-
-Unlike the EOB queries, this one is busy, and the shape of it matters more than
-the volume.
-
-| Result | Views | Note |
+| Searched | What it returned | Label |
 |---|---|---|
-| NPR, *How to negotiate your medical bills \| Life Kit* | **72K** | 3 yr, 9 chapters |
-| Rossen Reports, *How to Beat Debt Collectors* | 18K | 1 yr |
-| NBC Bay Area, *How to Dispute a Medical Bill Mistake* | 5.3K | 5 yr |
-| **"How to negotiate medical bills" — a Short** | **4.1M** | — |
-| *Medical Bill Savings Hack YOU Must Know* — Short | 45K | — |
-| *What to do if you have medical bills in collections* — Short | 13K | — |
-| *How to Dispute Medical Charges Before You Pay (3 Steps)* | **11** | 3 mo — and its description is our exact thesis |
-
-**Two things fall out of that table.**
-
-**Shorts carry this topic, not long-form.** 4.1 million against 72,000 for the
-best long-form video in the results. The plan proposed three-to-five-minute
-screen recordings and treated vertical cuts as a by-product; the data says that
-is backwards. Shorts are the format, and the long-form video is the thing a
-Short links to.
-
-**Unknown channels doing good work get ten views.** "How to Dispute Medical
-Charges Before You Pay — get itemized bill + EOB, compare for errors, dispute in
-writing with line numbers" is our thesis almost word for word. Eleven views in
-three months. And "How To Dispute a Medical Bill (The Law Most People Never
-Use)", a well-chaptered piece on the No Surprises Act, has sixteen. The winners
-here are brands with existing audiences — NPR, NBC, Rossen — not better scripts.
-That is the distribution problem the review raised, confirmed.
-
-### The query is commercially validated, and somebody is already there
-
-Three advertisers were bidding on this search:
-
-- **testmybill.com** — *"Upload your bill for a free review. We flag charges worth
-  questioning & share next steps."* That is UseClaimRight's pitch, in our words.
-- **solace.health** — medical bill advocate, "correct medical billing errors".
-- **patientadvocators.com** — *"$6 Million Returned to Clients."*
-
-Advertisers do not bid on queries with no commercial value, so this is the
-strongest evidence yet that the intent is real. It also means the space is not
-empty, which the earlier competitor research had already half-established and
-this confirms from the demand side.
-
-### Candidate titles
-
-Each maps to a suggestion that autocomplete actually returned. Left column is
-what gets typed; right is what to publish.
-
-| Real query | Title |
-|---|---|
-| how to dispute a medical bill | **How to dispute a medical bill — start with these two documents** |
-| how to fight medical bills | **How to fight a medical bill before you call them** |
-| how to get medical bills reduced | **The part of your bill you may not owe at all** |
-| medical bill in collections | **Medical bill in collections? Check this before you pay a cent** |
-| hospital bill after baby | **Your hospital bill after a baby — what to check first** |
-| hospital bill no insurance | **No insurance? Ask for this before you pay the hospital** |
-| should i pay my medical bills | **Should you pay that medical bill? Three checks first** |
-
-**Our differentiator sits under all of them** and is not itself a search term:
-bill against EOB against plan. Nobody searches "compare my bill to my EOB" — they
-search "how to dispute" and the comparison is the answer. So it belongs in the
-content, never in the title.
-
-### What I would actually shoot first
-
-A **Short**: *"Your bill and your insurance letter should say the same number.
-Here's where to look."* Thirty seconds, the two figures from the Cigna sample,
-one instruction. It tests the topic, the format and the hook for the cost of an
-afternoon — and if it does nothing, no long-form script was wasted proving it.
-
-The video 5 script stays written and unshot until that Short says whether anyone
-is listening.
-
-## YouTube search volume, measured — and why the title matters less than I said
-
-**Google Trends has a YouTube Search filter** (`gprop=youtube`), which is the only
-free source of YouTube-specific demand. Run on 2026-09-14, United States, twelve
-months, comparing three terms:
-
-| Term | Shape of the line |
-|---|---|
-| medical bill | flat at zero for long stretches, with isolated spikes to 50-100 |
-| explanation of benefits | **flat at zero across the whole year**, one small bump |
-| negotiate medical bill | **flat at zero across the whole year** |
-
-Trends normalises to 100 within the comparison, so a spike to 100 does not mean
-"high" — it means that week held the most of a small number. A line that sits at
-zero and occasionally jumps is the signature of a term **below the reporting
-threshold**. On YouTube search, in the US, this entire subject is close to empty.
-
-That includes the reframe. "Negotiate medical bill" is flat too, so the pivot
-from education to negotiation fixed the *question* and not the *channel*.
-
-### The consequence, which is the useful part
-
-**The 4.1M Short did not come from search.** It cannot have — the search volume
-is not there. It came from the Shorts feed, which distributes on watch-through
-and engagement and does not care whether anyone typed anything.
-
-So the reason to make Shorts is stronger than the one given above, and different:
-not "Shorts get more views on this topic" but **"feed distribution is the only
-mechanism available, because search is empty"**. Which in turn means:
-
-- **Keyword-optimised titles are close to pointless here.** Nobody is typing these
-  words into YouTube. The title's job is to make someone who is *already being
-  shown the video* keep watching — it is a hook, not a keyword.
-- **The first two seconds decide everything**, not the title and not the
-  thumbnail.
-- **The SEO framing of this whole document was wrong**, including the seven
-  titles above. They are good titles for a blog post, which is a channel where
-  search demand does exist — Google's index, not YouTube's.
-
-### Titles for a Short, written as hooks
-
-| Title | Opening frame |
-|---|---|
-| **"Two numbers on your medical bill should match. They often don't."** | the bill and the EOB side by side, both figures circled |
-| **"$189 or $11.89? Your insurance already decided."** | the Cigna card, both figures visible at once |
-| **"Before you pay a medical bill, find this number."** | cursor landing on What I owe |
-
-The second is the strongest: a number in the first frame, a contradiction in the
-first second, and no jargon anywhere.
-
-### Where the search demand actually lives
-
-Google, not YouTube. "how to dispute a medical bill" has advertisers bidding on
-it — three of them, including a direct competitor — and advertisers bid on Google
-search, which is where that intent is being served. If the goal is to be found by
-someone holding a bill, **a written page is the better instrument and this
-document has been optimising the wrong one.**
-
-### Tools worth knowing
-
-| Tool | Gives you | Cost |
-|---|---|---|
-| **Google Trends, YouTube Search filter** | relative interest over time, YouTube-specific | free |
-| **YouTube Studio → Research tab** | actual search-volume bands, and what your own viewers search | free, needs a channel |
-| Google Keyword Planner | Google search volume, not YouTube | free with an Ads account |
-| TubeBuddy / VidIQ | YouTube keyword scores and competition | freemium |
-
-**Create the channel before making anything.** YouTube Studio's Research tab is
-the only one of these with real YouTube volume figures, it is free, and it is
-gated behind having a channel — which costs nothing and takes a minute.
-
-## YouTube's own volume figures, from Studio Research (2026-09-14)
-
-The channel exists now (`@useclaimright`, `UCk3LT3FEx9ht_CwEZbZ3B7g`), which
-unlocked Studio → Analytics → Trends. These are **YouTube's labels, not my
-inference.**
-
-| Searched | Top related searches it returned | YouTube's label |
-|---|---|---|
-| **medical bill** | out of network medical billing · patient calling in medical billing · medical billing machine | **Low · Low · Low** |
-| **dispute medical bill** | how to remove medical bills from credit report · how to complaint against company in labour court · **dispute collections on credit report** | Low · Low · **Medium** |
-| **explanation of benefits** | what is cost benefit analysis · what is the benefit of eating · what are the benefits of | Low · Low · Medium |
-
-Three things, and the third is the one that settles it.
-
-**Every directly relevant term is Low.** Trends inferred this; YouTube now says
-it outright.
-
-**"medical bill" resolves to vocational searches again** — "patient calling in
-medical billing", "medical billing machine". That is billing-office work, for the
-third independent time.
+| medical bill | out of network medical billing · patient calling in medical billing | **Low · Low** |
+| dispute medical bill | how to remove medical bills from credit report · **dispute collections on credit report** | Low · **Medium** |
+| explanation of benefits | what is cost benefit analysis · what is the benefit of eating | Low · Low |
 
 **YouTube does not recognise "explanation of benefits" as an insurance topic at
 all.** It matched the word *benefits* and offered cost-benefit analysis and the
-benefits of eating. The phrase has so little search volume in its insurance sense
-that YouTube's topic engine has not learned it exists. Video 5's title targets a
-phrase the platform cannot see.
+benefits of eating. The phrase has so little volume in its insurance sense that
+the topic engine has not learned it exists.
 
-### The one Medium-volume signal is a different product
+The one Medium term — *dispute collections on credit report* — is a different
+product. UseClaimRight finds billing errors; it does not remove entries from
+credit reports.
 
-**"dispute collections on credit report."** That is the only term in the set
-YouTube rates above Low, and the demand under it is *"get this off my credit
-report"* — not *"is this bill correct?"*
+### What follows from it
 
-UseClaimRight finds billing errors. It does not remove entries from credit
-reports. The demand that exists on YouTube is adjacent to what this product does
-and not the same thing, and a video series built to serve it would be advertising
-a tool that does not do the job the viewer came for.
+**The 4.1M-view Short on negotiating medical bills did not come from search.** It
+cannot have; the volume is not there. It came from the Shorts feed, which
+distributes on watch-through and does not care whether anyone typed anything.
 
-### Where that leaves the plan
+So:
 
-The video series is **not a search play on YouTube**. That is now measured three
-independent ways — Trends, autocomplete, and YouTube's own volume labels — and
-all three agree.
+- **Keyword titles are close to pointless here.** The title's job is to hold
+  someone already being shown the video. It is a hook, not a keyword.
+- **The first two seconds decide everything** — not the title, not the thumbnail.
+- **The written page is the better instrument for search demand**, because the
+  demand is on Google, not YouTube. Three advertisers bid on "how to dispute a
+  medical bill", one of them — testmybill.com — with our exact pitch. That is the
+  recommendation with the most evidence behind it and the least work in it, and
+  it is still not done.
 
-What survives:
-
-1. **Shorts, on the feed.** Distribution there does not depend on search, so
-   none of the above disqualifies it. The 4.1M Short is evidence the *topic* can
-   travel; it is not evidence that anyone looks for it.
-2. **A written page, for Google.** That is where the intent is, and where three
-   advertisers are bidding on "how to dispute a medical bill". This is the
-   recommendation with the most evidence behind it and the least work in it.
-3. **The scripts as reference material** — the thing linked from a Reddit reply
-   or a support email, not the thing anyone arrives at.
-
-What does not survive: publishing nine long-form videos on YouTube and expecting
-search to deliver an audience.
+Shorts are a cheap bet placed alongside that page, never instead of it.
 
 ## Open work
 
-- **Video 9 needs a synthetic multi-plan booklet.** The only real one is the
-  member's and cannot be filmed. It needs to be long enough that narrowing
-  actually runs — over `PAGE_BUDGET`, currently 24 pages — and hold three
-  medical schedules. `test-fixtures/gen-*.mjs` is the pattern to follow.
-- **Nothing is scripted yet.** This is the plan, not the scripts. Video 4 is the
-  one to draft first.
-- ~~The premise check comes before any of it.~~ **Run 2026-09-14 — see above. It
-  did not pass as stated.** The open question is now whether to reframe around
-  "should I pay this?" and reorder, or to accept low volume in exchange for very
-  high intent. That is a decision, not a research task.
+- **Publish Short 1.** Requires a person; the channel needs a sign-in.
+- **Apply the channel description and keywords** from `video/channel-setup.md`.
+- **Write the page for Google.** Still the highest-evidence recommendation in
+  this document and still unstarted.
+- **Decide what happens to `video/render.py`**, the document renderer. It works,
+  it is tested against the fixtures, and nothing currently plans to use it. Keep
+  it or retire it deliberately rather than letting it rot.

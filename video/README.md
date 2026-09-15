@@ -12,17 +12,17 @@ what is on screen.
       05-eob-is-not-a-bill/
         script.md                   ← spoken line, screen state, cuts, disclaimer
 
-## Shooting order
+## Order
 
-**Shorts experiment 1 first, and nothing else until it reports.**
+**Publish Short 1, then make 2 and 4, then stop and look.** Three, not ten — the
+channel is empty, so there is no evidence yet that a drawing holds a swipe any
+better than a document did. `docs/CONTENT.md` has the ten and the reasoning.
 
-Three thirty-second variants, one afternoon, published a week apart. It answers
-whether a document on screen can hold a swipe at all — and if it cannot, the
-long-form scripts below are moot and should not be shot.
-
-For long-form after that: **5 → 4 → 1**, and 0a/0b before either if Tier 0 is
-made. Not numerical order — video 5 defines the document every other video reads
-from, and 4 defines the number they all argue about.
+The format changed on 2026-09-15. It was three-to-five-minute screen recordings
+of real documents; it is now 35-45 second whiteboard Shorts, drawn. The short
+version of why: a real document is not legible at phone size, and cropping it
+until it is destroys the recognition that was the only reason to show it. The
+long version, with the frames that made the case, is in `docs/CONTENT.md`.
 
 **The measured position** (`docs/CONTENT.md`) is that YouTube search volume for
 this subject is Low by YouTube's own labels, three ways of measuring agree, and
@@ -117,10 +117,13 @@ build artefact.
 
 ## Status
 
-| # | Video | Script | Shot |
-|---|---|---|---|
-| — | Shorts experiment 1 — three hooks | ✅ draft | — |
-| 5 | Your EOB is not a bill — so what is it? | ✅ draft | — |
-| 4 | What does "allowed amount" mean on my EOB? | — | — |
-| 1 | Your bill says $175, your EOB says $120 | — | — |
-| 0a, 0b, 2, 3, 6, 7, 8, 9 | see `docs/CONTENT.md` | — | — |
+| # | Short | Script | Made | Published |
+|---|---|---|---|---|
+| 1 | Two numbers — the bill and the letter | ✅ | ✅ 41.4s | — |
+| 2 | The January reset (deductible) | — | — | — |
+| 4 | A charge your insurance has never seen | — | — | — |
+| 3, 5–10 | see `docs/CONTENT.md` | — | — | — |
+
+Superseded by the format change, kept because the writing is still good:
+`shorts-01-two-numbers/` (the document version, three hook variants) and
+`05-eob-is-not-a-bill/script.md` (long-form, absorbed into Short 1).
