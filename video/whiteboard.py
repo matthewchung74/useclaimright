@@ -144,17 +144,29 @@ def T(xy, text, size=66, colour=INK):
     return {"kind": "text", "xy": xy, "text": text, "size": size, "colour": colour}
 
 
+def Sheet(x0, y0, w, h, text, colour=INK, rise=300):
+    """A page sliding up out of an envelope. Not a reveal — the paper is already
+    drawn, it moves. White-filled so it covers the envelope it comes out of."""
+    return {"kind": "sheet", "box": (x0, y0, x0 + w, y0 + h), "rise": rise,
+            "text": text, "colour": colour}
+
+
 ART = {
     "hook-cold-open": [S(person(250, 430)), T((360, 560), "you", 72, GREY)],
     "d2": [T((560, 300), "2 a.m.", 82), S(squiggle(150, 400, 190), squiggle(370, 400, 190))],
     "d3": [S(arrow((470, 700), (660, 700))), S(hospital(700, 620, 300, 250))],
-    "d4": [S(envelope(90, 1130, 400, 250)), S(envelope(590, 1130, 400, 250)),
-           T((150, 1430), "$845.00", 92, ACCENT), T((650, 1430), "$186.35", 92, INK)],
+    "d4": [S(envelope(90, 1180, 400, 250)), S(envelope(590, 1180, 400, 250))],
+    "d5": [Sheet(120, 950, 340, 300, "$845.00", ACCENT),
+           Sheet(620, 950, 340, 300, "$186.35", INK)],
+    "d6": [T((300, 1520), "$659 apart", 96, ACCENT),
+           S([line((300, 1630), (740, 1630), n=10, seed=44)], colour=ACCENT, width=8)],
 }
 
 
 def extent(el):
     """Bounding box, so the camera knows where the drawing actually is."""
+    if el["kind"] == "sheet":
+        return el["box"]
     if el["kind"] == "text":
         w = ImageDraw.Draw(Image.new("RGB", (1, 1))).textlength(el["text"], font=font(el["size"]))
         return (el["xy"][0], el["xy"][1], el["xy"][0] + w, el["xy"][1] + el["size"] * 1.25)
@@ -183,6 +195,8 @@ def seg_len(a, b):
 
 
 def element_len(el):
+    if el["kind"] == "sheet":
+        return 260.0                    # a move, not a stroke: give it a beat
     if el["kind"] == "text":
         return ImageDraw.Draw(Image.new("RGB", (1, 1))).textlength(
             el["text"], font=font(el["size"])) * 0.9      # writing is faster than drawing
@@ -193,6 +207,21 @@ def draw_element(im, el, p):
     """Draw the first `p` of an element. Returns the pen position, or None once
     the element is finished (nothing left to hold the marker to)."""
     d = ImageDraw.Draw(im)
+    if el["kind"] == "sheet":
+        e = p * p * (3 - 2 * p)
+        x0, y0, x1, y1 = el["box"]
+        dy = el["rise"] * (1 - e)
+        d.rectangle((x0, y0 + dy, x1, y1 + dy), fill=(255, 255, 255))
+        for st in box(x0, y0 + dy, x1, y1 + dy, seed=31):
+            d.line(st, fill=INK, width=5, joint="curve")
+        for i in range(3):              # the body text of a bill, unreadable
+            yy = y0 + dy + 62 + i * 38
+            d.line(line((x0 + 34, yy), (x0 + 34 + (x1 - x0 - 68) * (0.95 - 0.16 * i), yy),
+                        n=9, seed=50 + i), fill=GREY, width=5, joint="curve")
+        f = font(76)
+        tw = d.textlength(el["text"], font=f)
+        d.text((x0 + (x1 - x0 - tw) / 2, y1 + dy - 130), el["text"], font=f, fill=el["colour"])
+        return None                     # nothing is being drawn, so no marker
     if el["kind"] == "text":
         f = font(el["size"])
         w = int(d.textlength(el["text"], font=f))

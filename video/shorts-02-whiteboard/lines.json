@@ -6,6 +6,8 @@
   "body": [
     { "id": "d2", "text": "This is you at two in the morning." },
     { "id": "d3", "text": "You go to the hospital. They fix you. You go home. Nice." },
-    { "id": "d4", "text": "Three weeks later, two envelopes turn up. And they disagree by $659." }
+    { "id": "d4", "text": "Three weeks later, two envelopes turn up." },
+    { "id": "d5", "text": "The hospital wants $845. Your insurance says $186.35." },
+    { "id": "d6", "text": "Same visit, same day, $659 apart." }
   ]
 }
