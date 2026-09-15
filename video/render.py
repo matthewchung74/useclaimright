@@ -43,12 +43,12 @@ F = "/System/Library/Fonts/Supplemental/Arial Bold.ttf"
 if not Path(F).exists():
     F = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
 
-PAGE_W = 880                       # the whole page, every frame
+PAGE_MAX_W = 940                   # the whole page, every frame, as big as fits
 # Both fixtures print on US Letter and stop well short of the bottom. Keeping
 # the blank half of the sheet costs the readable half its size, so each page is
 # trimmed just below its last line — still a whole bill, nothing of it missing.
 PAGE_TRIM = {"bill": 492, "eob": 412}
-CALL_W, CALL_H = 1000, 430         # the circled part, blown up
+HERO_W, HERO_H = 1040, 760         # the circled part, blown up to be read
 CAP_SIZE = 62
 CAP_STEP, CAP_LINES = CAP_SIZE + 22, 3
 LABEL_H, CARD_CAP_Y = 56, 1290
@@ -58,20 +58,26 @@ BILL, EOB = "$845.00", "$186.35"
 PAGES = {"bill": "fake-bill.pdf", "eob": "fake-eob.pdf"}
 LABELS = {"bill": "THE BILL", "eob": "EXPLANATION OF BENEFITS"}
 
-# What each beat circles, and the region the callout shows. Both in PDF points.
-# The callout box is snapped to row and column gaps read off the page: the
-# descriptions end at x=218.2 and the Billed column starts at x=283.5, so 250
-# splits them; the letterhead block ends at y=69.6 and the patient block starts
-# at 101.4, so 75 is clear of both.
+# What each beat circles, and the piece of page the hero panel shows. Both in
+# PDF points, both snapped to the gaps between words and rows measured with
+# `pdftotext -bbox` — so an edge never lands on a glyph.
+#
+# The hero is a PHRASE, not the row or block around it. A whole row scaled to
+# 1040px puts the type at about 20px in a 1920px frame, which is what "too far
+# away" meant: the document was on screen and nobody could read it. Cropping to
+# the words that carry the point gets the same type to 60-120px.
 TARGETS = {
-    "bill-sender":        ("bill", ( 30.0,  29.9, 316.7,  46.7), ( 24,  22, 400,   75)),
-    "bill-balance":       ("bill", (178.8, 423.3, 219.5, 435.9), ( 24, 374, 588,  444)),
-    "eob-notabill":       ("eob",  (128.0,  46.7, 233.0,  57.6), ( 24,  22, 400,   70)),
-    "eob-responsibility": ("eob",  (542.1, 315.5, 576.0, 326.0), (250, 178, 588,  340)),
-    # only the first sentence of the note: it ends at "coinsurance)." (x=352.6)
-    # and the lines under it wrap past the right edge, so taking them too would
-    # slice them mid-word
-    "eob-owe":            ("eob",  (179.3, 352.6, 211.8, 362.7), ( 30, 344, 353.6, 363)),
+    # "GENERAL HOSPITAL" — the answer to "who sent it"
+    "bill-sender":        ("bill", (164.7,  29.9, 316.7,  46.7), (160.5,  25,  322,  47)),
+    # "BALANCE DUE: $845.00", stopping before the em dash at x=222.6
+    "bill-balance":       ("bill", (178.8, 423.3, 219.5, 435.9), ( 88.5, 420,  221, 439)),
+    # "THIS IS NOT A BILL", starting in the gap at x=142.2-144.7
+    "eob-notabill":       ("eob",  (144.7,  46.7, 232.9,  57.6), (143.4,  46.2, 238,  59)),
+    # the "Your responsibility" column with its header — values start at 542.1,
+    # the header at 491.8, and "Plan paid" ends at 454.0, so 470 splits them
+    "eob-responsibility": ("eob",  (542.1, 315.5, 576.0, 326.0), (470,   178,  588, 340)),
+    # "owe the provider: $186.35", between "may" (ends 99.3) and "(" (starts 214.3)
+    "eob-owe":            ("eob",  (179.3, 352.6, 211.8, 362.7), (100.5, 348,  213, 363)),
 }
 # The canary SSN on the bill, painted over before anything else sees the page.
 SSN = (122.8, 111.6, 205.5, 124.8)
@@ -109,7 +115,7 @@ def ring(d, box, extent, width):
     d.arc(box, start=145, end=145 + min(extent, 360), fill=ACCENT, width=width)
 
 
-def whole_page(which, target, extent, width=PAGE_W):
+def whole_page(which, target, extent, width):
     """The full page, with the figure being spoken about circled on it."""
     key = ("page", which, target, round(extent / 36), width)
     if key in _cache:
@@ -127,16 +133,16 @@ def whole_page(which, target, extent, width=PAGE_W):
     return im
 
 
-def callout(target, extent, grow=1.0):
-    """The circled part of the page, blown up far enough to read on a phone."""
-    key = ("call", target, round(extent / 36), round(grow, 2))
+def hero(target, extent, grow=1.0):
+    """The circled phrase, blown up far enough to read on a phone."""
+    key = ("hero", target, round(extent / 36), round(grow, 2))
     if key in _cache:
         return _cache[key]
     which, tgt, box = TARGETS[target]
     x0, y0, x1, y1 = box
     crop = page(which).crop((int(x0 * S), int(y0 * S), int(x1 * S), int(y1 * S)))
-    pad = 26
-    sc = min((CALL_W - 2 * pad) / crop.width, (CALL_H - 2 * pad) / crop.height) * grow
+    pad = 48   # room for the ring: the crop is the phrase, the ring goes round it
+    sc = min((HERO_W - 2 * pad) / crop.width, (HERO_H - 2 * pad) / crop.height) * grow
     im = crop.resize((int(crop.width * sc), int(crop.height * sc)), Image.LANCZOS)
 
     card = Image.new("RGB", (im.width + 2 * pad, im.height + 2 * pad), PAPER)
@@ -206,17 +212,17 @@ def hook_card():
     word is spoken."""
     im = Image.new("RGB", (W, H), BG)
     d = ImageDraw.Draw(im)
-    thumbs = [whole_page("bill", None, 0, 490), whole_page("eob", None, 0, 490)]
+    thumbs = [whole_page("bill", None, 0, 520), whole_page("eob", None, 0, 520)]
     lab, num = font(38), font(96)
     y = 330
     # Short labels here, not the ones the body slides use: "EXPLANATION OF
     # BENEFITS" at this size runs into the edge of the frame.
     for i, (cap, amount) in enumerate([("THE HOSPITAL BILL", BILL),
                                        ("YOUR INSURANCE", EOB)]):
-        lo, hi = (20, 530) if i == 0 else (550, 1060)
+        lo, hi = (10, 540) if i == 0 else (540, 1070)
         centre(d, cap, lab, y, MUTE, lo, hi)
         centre(d, amount, num, y + 50, ACCENT if i == 0 else INK, lo, hi)
-        im.paste(thumbs[i], (lo + (hi - lo - 490) // 2, y + 190))
+        im.paste(thumbs[i], (lo + (hi - lo - 520) // 2, y + 190))
     centre(d, "Same visit. Same day.", font(58), y + 190 + thumbs[0].height + 60, MUTE)
     return im
 
@@ -281,9 +287,15 @@ def main():
 
         if b["scene"]:
             which = TARGETS[b["scene"]][0]
-            page_h = whole_page(which, None, 0).height
-            call_h = callout(b["scene"], 0).height
-            ly, py, cy, capy = layout([LABEL_H, page_h, call_h, CAP_STEP * CAP_LINES])
+            hero_h = hero(b["scene"], 0).height
+            # The page takes whatever the hero leaves. A short hero (a phrase on
+            # one line) buys a big readable page; a tall one (a whole column)
+            # shrinks it. Either way both are on screen and the frame is full.
+            cap_h = CAP_STEP * CAP_LINES
+            room = H - 170 - LABEL_H - hero_h - cap_h
+            page_w = min(PAGE_MAX_W, int(room * 612 / PAGE_TRIM[which]))
+            page_h = whole_page(which, None, 0, page_w).height
+            ly, py, cy, capy = layout([LABEL_H, page_h, hero_h, cap_h])
 
         for k in range(steps):
             spoken = k / FPS - lead
@@ -300,12 +312,12 @@ def main():
                 g = min(1.0, max(0.0, (spoken - circle_at + GROW) / GROW))
                 frame = Image.new("RGB", (W, H), BG)
                 centre(ImageDraw.Draw(frame), LABELS[which], font(46), ly, MUTE)
-                pg = whole_page(which, b["scene"], ext)
+                pg = whole_page(which, b["scene"], ext, page_w)
                 frame.paste(pg, ((W - pg.width) // 2, py))
                 if g > 0:
-                    card = callout(b["scene"], ext, 0.86 + 0.14 * (g * g * (3 - 2 * g)))
+                    card = hero(b["scene"], ext, 0.86 + 0.14 * (g * g * (3 - 2 * g)))
                     frame.paste(card, ((W - card.width) // 2,
-                                       cy + (call_h - card.height) // 2))
+                                       cy + (hero_h - card.height) // 2))
                 caption(frame, words, active, capy)
             frame.save(frames / f"f{n:05d}.png")
             n += 1

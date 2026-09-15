@@ -2,9 +2,9 @@
   "_comment": "Authoritative text for the audio. scripts.md is the prose version for a human; this is what gets spoken. Keep them in step.",
   "style": "Read calmly and plainly:",
   "variants": {
-    "1-number": "$845, or $186.35?",
-    "2-contradiction": "Two numbers on your medical bill should match. They usually don't.",
-    "3-instruction": "Before you pay this, there's one number you need to find."
+    "1-number": "Your hospital and your insurance don't talk to each other. You're the group chat.",
+    "2-contradiction": "Two envelopes, one hospital trip, $659 apart. Great system.",
+    "3-instruction": "Before you pay this: the biggest number on a hospital bill is the one nobody checks. Let's check it."
   },
   "body": [
     {
@@ -38,6 +38,7 @@
       "text": "The letter tells you what the bill should say. If they don't match, that's a phone call before it's a payment."
     }
   ],
+  "_humour": "Deadpan, and the joke lives in the sentence rather than the delivery \u2014 Neural2 reads everything at one temperature, so anything needing timing or a smirk dies on the way out. The target is the situation (two companies, one visit, two numbers, and you are the one who has to reconcile them), never the accusation that a figure is fake. It is not, and this is a product that tells people to check before they dispute.",
   "_numbers": "Figures are digits because TTS normalises them correctly and they are less ambiguous to proofread \u2014 NOT because spelled-out numbers fail. That was my first conclusion and it was wrong: see the retry note in ../tts.mjs. Empty responses are transient and hit any line.",
   "_scenes": "Each beat names what it circles; render.py maps that to the crop it pushes into and the figure it draws the circle on. circleAt is the fraction of the spoken line at which the circle starts being drawn \u2014 set it to land on the number as it is said, not before. The hook needs no scene: it is its own card.",
   "_teaching": "b1 and b3 exist to answer the question a beginner actually has: which of these two envelopes is which. The answer is who sent it, and both documents say so in their own letterhead \u2014 so the video circles their words rather than asserting anything.",
