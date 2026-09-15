@@ -46,3 +46,4 @@ video/**/audio/
 #   node video/tts.mjs <folder> && python3 video/render.py <folder>
 video/*/frames/
 video/*/*.mp4
+__pycache__/
