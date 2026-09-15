@@ -46,18 +46,22 @@ tests.
 
 ## Making one
 
-Three commands, all generated, nothing by hand:
+Two commands, all generated, nothing by hand:
 
-    python3 video/shorts-01-two-numbers/scenes.py        # document crops + circle animations
-    node video/tts.mjs shorts-01-two-numbers             # eight WAVs, Cloud TTS
-    node video/assemble.mjs shorts-01-two-numbers        # -> 1-number.mp4
+    node video/tts.mjs shorts-01-two-numbers      # WAVs + per-word timings, Cloud TTS
+    python3 video/render.py shorts-01-two-numbers # every frame, then the mux -> 1-number.mp4
 
 `--variant 2-contradiction` cuts a different hook against the same body.
-`--no-b4` drops the network-contract line, which is the difference between 39.5s
-and 30.5s.
 
-Each frame is held for exactly as long as its line takes to say plus a beat, so
-rewriting a line changes that frame's length and nothing else drifts.
+`render.py` replaced `scenes.py` + `assemble.mjs`, which split geometry from
+time and so could not put a caption on screen at the moment a word was said.
+Everything is now driven by `audio/timings.json`: the karaoke highlight, the
+push-in, and the circle closing as the figure is spoken. Rewrite a line and the
+frames that carry it change length; nothing else drifts.
+
+Crop edges are snapped to row and column gaps measured with `pdftotext -bbox`,
+so nothing on the page is ever sliced mid-character. Change a fixture and the
+boxes in `render.py` have to be re-measured.
 
 ## Conventions
 

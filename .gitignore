@@ -41,3 +41,8 @@ video/**/*.wav
 # video/ has its own deps, like test/browser
 video/node_modules/
 video/**/audio/
+
+# Video frames and cuts — rebuild with:
+#   node video/tts.mjs <folder> && python3 video/render.py <folder>
+video/*/frames/
+video/*/*.mp4

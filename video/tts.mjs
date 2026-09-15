@@ -1,44 +1,25 @@
-// Render the spoken lines of a Short to .wav, one file per beat.
+// Render the spoken lines of a Short to .wav, plus per-word timings for karaoke
+// captions.
 //
 //   node video/tts.mjs shorts-01-two-numbers
-//   node video/tts.mjs shorts-01-two-numbers --voice en-US-Chirp3-HD-Kore
+//   node video/tts.mjs shorts-01-two-numbers --voice en-US-Neural2-F
 //
-// One file per beat rather than one long track, because the edit cuts frames
-// against lines and a single track means re-rendering everything to change a
-// word.
+// Writes audio/<id>.wav and audio/timings.json.
 //
 // ---------------------------------------------------------------------------
-// Why Cloud Text-to-Speech and not Gemini TTS
+// Voice choice is forced by the captions, not by taste.
 //
-// Gemini 2.5 TTS was the first choice, because style rides in the prompt and
-// this script wants "like explaining a form to a friend". It does not work
-// reliably. `gemini-2.5-flash-preview-tts` returns finishReason OTHER with no
-// audio and no usageMetadata on better than half of calls, and for some lines
-// on eight consecutive attempts with backoff.
+// Chirp3-HD sounds the best of the Cloud TTS families and CANNOT do this: it
+// returns an empty timepoints array, because Chirp3 does not support SSML.
+// Studio voices reject <mark> outright — "not currently supported by Studio
+// voices". Neural2 and Wavenet both return exact per-word timings.
 //
-// It looks exactly like a content refusal, and it sent me after two wrong
-// explanations — first that a long style preamble caused it, then that
-// spelled-out amounts did. Neither. The decisive test was the identical prompt
-// three times: OTHER, OTHER, STOP. It is a preview model and it is flaky.
+// So: Neural2. Word-accurate captions are worth more on a muted-by-default feed
+// than a marginally smoother read, and most of this audience watches without
+// sound at first.
 //
-// Cloud TTS rendered the line that had just failed eight times, first attempt.
-// It also needs no API key at all — it runs on the gcloud credentials this
-// project already has, so no key is involved at all.
-//
-// If anyone does go back to Gemini TTS: the key is `askmyfit-gemini` in the
-// macOS login keychain, read via GEMINI_API_KEY when set and the keychain
-// otherwise. Read it straight into the process — never echo it, never write it
-// to a file, never commit it. It is named for the other project but it is the
-// key for video and ad generation generally.
-//
-// One-time setup, already done on this machine:
-//   gcloud services enable texttospeech.googleapis.com --project=useclaimright
-// Enabling takes a minute or two to propagate; calls fail with "API has not
-// been used in project" until it does, which is not a permissions problem.
-//
-// The cost is real: Chirp3-HD takes no style instruction, so `style` in
-// lines.json is ignored here. If the reading comes out too brisk, the lever is
-// SSML <break> tags, not an adjective.
+// (Gemini 2.5 TTS was tried before any of these and is too flaky to use —
+// finishReason OTHER with no audio on better than half of calls. See git log.)
 // ---------------------------------------------------------------------------
 import { execFileSync } from "node:child_process";
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
@@ -47,48 +28,53 @@ import { fileURLToPath } from "node:url";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const PROJECT = "useclaimright";
-const ENDPOINT = "https://texttospeech.googleapis.com/v1/text:synthesize";
+const ENDPOINT = "https://texttospeech.googleapis.com/v1beta1/text:synthesize";
 
 const args = process.argv.slice(2);
 const folder = args.find((a) => !a.startsWith("--")) || "shorts-01-two-numbers";
-const voice = args.includes("--voice")
-  ? args[args.indexOf("--voice") + 1] : "en-US-Chirp3-HD-Charon";
+const voice = args.includes("--voice") ? args[args.indexOf("--voice") + 1] : "en-US-Neural2-D";
 
-function token() {
-  try {
-    return execFileSync("gcloud", ["auth", "print-access-token"],
-      { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim();
-  } catch {
-    console.error("No gcloud credentials. Run: gcloud auth login");
-    process.exit(1);
-  }
+const TOKEN = execFileSync("gcloud", ["auth", "print-access-token"],
+  { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim();
+
+const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+                    .replace(/"/g, "&quot;");
+
+// A mark before every word. The timepoint that comes back for wN is when wN
+// starts being spoken, which is exactly what a caption needs to highlight on.
+function ssml(text) {
+  const words = text.split(/\s+/).filter(Boolean);
+  const body = words.map((w, i) => `<mark name="w${i}"/>${esc(w)}`).join(" ");
+  return { ssml: `<speak>${body}</speak>`, words };
 }
 
-const TOKEN = token();
-
-async function say(text, file, out) {
+async function say(text, id, out) {
+  const { ssml: doc, words } = ssml(text);
   const res = await fetch(ENDPOINT, {
     method: "POST",
-    headers: {
-      Authorization: `Bearer ${TOKEN}`,
-      "Content-Type": "application/json",
-      "x-goog-user-project": PROJECT,
-    },
+    headers: { Authorization: `Bearer ${TOKEN}`, "Content-Type": "application/json",
+               "x-goog-user-project": PROJECT },
     body: JSON.stringify({
-      input: { text },
+      input: { ssml: doc },
       voice: { languageCode: "en-US", name: voice },
-      // LINEAR16 comes back with a RIFF header already, so this writes straight
-      // to disk — no hand-rolled WAV header, which is the step people get wrong.
-      audioConfig: { audioEncoding: "LINEAR16", sampleRateHertz: 24000 },
+      audioConfig: { audioEncoding: "LINEAR16", sampleRateHertz: 24000, speakingRate: 0.96 },
+      enableTimePointing: ["SSML_MARK"],
     }),
   });
   const body = await res.json();
-  if (body.error) throw new Error(`${file}: ${body.error.message}`);
+  if (body.error) throw new Error(`${id}: ${body.error.message}`);
   const buf = Buffer.from(body.audioContent, "base64");
-  writeFileSync(join(out, file), buf);
+  writeFileSync(join(out, `${id}.wav`), buf);
   const secs = (buf.length - 44) / (24000 * 2);
-  console.log(`  ${file.padEnd(28)} ${secs.toFixed(1)}s  ${(buf.length / 1024).toFixed(0)}KB`);
-  return secs;
+
+  const points = body.timepoints || [];
+  if (points.length !== words.length) {
+    console.warn(`  ! ${id}: ${points.length} timepoints for ${words.length} words`);
+  }
+  // [word, startSeconds]. The last word ends when the audio does.
+  const timing = words.map((w, i) => [w, points[i] ? points[i].timeSeconds : (secs * i) / words.length]);
+  console.log(`  ${id.padEnd(6)} ${secs.toFixed(1)}s  ${words.length} words`);
+  return { secs, timing };
 }
 
 const dir = join(HERE, folder);
@@ -97,19 +83,15 @@ const out = join(dir, "audio");
 mkdirSync(out, { recursive: true });
 
 console.log(`voice ${voice}`);
-console.log("hooks:");
+const timings = {};
 for (const [name, text] of Object.entries(spec.variants)) {
-  await say(text, `hook-${name}.wav`, out);
+  timings[`hook-${name}`] = await say(text, `hook-${name}`, out);
 }
-console.log("body:");
-let total = 0;
 for (const beat of spec.body) {
-  total += await say(beat.text, `${beat.id}.wav`, out);
+  timings[beat.id] = await say(beat.text, beat.id, out);
 }
-if (spec.cta) {
-  console.log("closing:");
-  total += await say(spec.cta, "cta.wav", out);
-}
-console.log(`\nbody is ${total.toFixed(1)}s of speech before pauses.`);
-console.log(`a hook adds ~4-6s — target for a Short is under 60s, comfortably met.`);
-console.log(out);
+if (spec.cta) timings.cta = await say(spec.cta, "cta", out);
+
+writeFileSync(join(out, "timings.json"), JSON.stringify(timings, null, 1));
+const total = spec.body.reduce((n, b) => n + timings[b.id].secs, 0);
+console.log(`\nbody ${total.toFixed(1)}s · timings.json written`);

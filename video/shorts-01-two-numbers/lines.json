@@ -9,39 +9,37 @@
   "body": [
     {
       "id": "b1",
-      "scene": "b1",
+      "scene": "bill-sender",
       "circleAt": 0.72,
       "text": "After a hospital visit, two pieces of paper turn up. This one's the bill \u2014 it comes from the hospital."
     },
     {
       "id": "b2",
-      "scene": "b2",
+      "scene": "bill-balance",
       "circleAt": 0.6,
       "text": "It wants $845."
     },
     {
       "id": "b3",
-      "scene": "b3",
+      "scene": "eob-notabill",
       "circleAt": 0.72,
       "text": "This one's from your insurance. It's the Explanation of Benefits, and it says so at the top: this is not a bill."
     },
     {
       "id": "b4",
-      "scene": "b4",
+      "scene": "eob-responsibility",
       "circleAt": 0.72,
       "text": "About the same visit, it says what you actually owe is $186.35."
     },
     {
       "id": "b5",
-      "scene": "b5",
+      "scene": "eob-owe",
       "circleAt": 0.5,
       "text": "The letter tells you what the bill should say. If they don't match, that's a phone call before it's a payment."
     }
   ],
   "_numbers": "Figures are digits because TTS normalises them correctly and they are less ambiguous to proofread \u2014 NOT because spelled-out numbers fail. That was my first conclusion and it was wrong: see the retry note in ../tts.mjs. Empty responses are transient and hit any line.",
-  "_scenes": "Each beat names a scene in scenes.py (window + what to circle). circleAt is the fraction of the spoken line at which the circle starts being drawn \u2014 set it to land on the number as it is said, not before.",
-  "hookScene": "hook",
-  "hookCircleAt": 0.35,
+  "_scenes": "Each beat names what it circles; render.py maps that to the crop it pushes into and the figure it draws the circle on. circleAt is the fraction of the spoken line at which the circle starts being drawn \u2014 set it to land on the number as it is said, not before. The hook needs no scene: it is its own card.",
   "_teaching": "b1 and b3 exist to answer the question a beginner actually has: which of these two envelopes is which. The answer is who sent it, and both documents say so in their own letterhead \u2014 so the video circles their words rather than asserting anything.",
   "cta": "Check yours before you dispute. Or upload them free at useclaimright.com."
 }
