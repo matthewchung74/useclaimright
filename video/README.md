@@ -7,7 +7,7 @@ what is on screen.
 
     video/
       channel-setup.md              ← name, handle, description, keywords
-      shorts-01-two-numbers/
+      superseded-document-short/
         scripts.md                  ← one body, three hooks, as an experiment
       05-eob-is-not-a-bill/
         script.md                   ← spoken line, screen state, cuts, disclaimer
@@ -48,9 +48,9 @@ tests.
 
 Three commands, all generated, nothing by hand:
 
-    node video/tts.mjs shorts-01-two-numbers      # WAVs, Cloud TTS (en-US-Studio-Q)
-    python3 video/align.py shorts-01-two-numbers  # measure the word timings, locally
-    python3 video/render.py shorts-01-two-numbers # every frame, then the mux -> 1-number.mp4
+    node video/tts.mjs superseded-document-short      # WAVs, Cloud TTS (en-US-Studio-Q)
+    python3 video/align.py superseded-document-short  # measure the word timings, locally
+    python3 video/render.py superseded-document-short # every frame, then the mux -> 1-number.mp4
 
 `--variant 2-contradiction` cuts a different hook against the same body. The
 whiteboard films the same way, with `whiteboard.py` in place of `render.py`.
@@ -119,16 +119,17 @@ build artefact.
 
 | # | Short | Folder | Made | Published |
 |---|---|---|---|---|
-| 1 | Two numbers — the bill and the letter | `shorts-02-whiteboard` | ✅ 41.4s | ✅ 2026-09-15 |
-| 2 | The January reset (deductible) | `shorts-03-january` | ✅ 28.7s | — |
+| 1 | Two numbers — the bill and the letter | `short-01-two-numbers` | ✅ 41.4s | ✅ 2026-09-15 |
+| 2 | The January reset (deductible) | `short-02-january` | ✅ 28.7s | — |
 | 4 | A charge your insurance has never seen | — | — | — |
 | 3, 5–10 | see `docs/CONTENT.md` | — | — | — |
 
-**The folder numbers and the Short numbers do not agree**, and it is not worth
-renaming directories to fix: folders are numbered in the order they were built,
-Shorts in the order `docs/CONTENT.md` argues for. The middle column is the
-mapping. `shorts-01-two-numbers` is the superseded document version of Short 1.
+**`short-NN-` matches the number in `docs/CONTENT.md`.** It briefly did not:
+folders were numbered as they were built, so the superseded document version sat
+on 01 and pushed everything after it out by one. `superseded-document-short/`
+holds that version — the real bill and EOB on screen, three hook variants — kept
+because the writing is still good, and `video/render.py` still builds it.
 
 Superseded by the format change, kept because the writing is still good:
-`shorts-01-two-numbers/` (the document version, three hook variants) and
+`superseded-document-short/` (the document version, three hook variants) and
 `05-eob-is-not-a-bill/script.md` (long-form, absorbed into Short 1).

@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Render a Short frame by frame, then mux it against the voice track.
 
-    python3 video/render.py shorts-01-two-numbers
-    python3 video/render.py shorts-01-two-numbers --variant 2-contradiction
+    python3 video/render.py superseded-document-short
+    python3 video/render.py superseded-document-short --variant 2-contradiction
 
 Needs audio/*.wav and audio/timings.json from tts.mjs. Writes frames/, builds
 the audio track from the same per-beat lengths the frames were counted from,
@@ -256,7 +256,7 @@ def audio_track(dir_, plan, out):
 
 def main():
     args = sys.argv[1:]
-    folder = next((a for a in args if not a.startswith("--")), "shorts-01-two-numbers")
+    folder = next((a for a in args if not a.startswith("--")), "superseded-document-short")
     variant = args[args.index("--variant") + 1] if "--variant" in args else "1-number"
 
     dir_ = HERE / folder

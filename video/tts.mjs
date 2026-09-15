@@ -1,8 +1,8 @@
 // Render the spoken lines of a Short to .wav, plus per-word timings for karaoke
 // captions.
 //
-//   node video/tts.mjs shorts-01-two-numbers
-//   node video/tts.mjs shorts-01-two-numbers --voice en-US-Neural2-F
+//   node video/tts.mjs short-01-two-numbers
+//   node video/tts.mjs short-01-two-numbers --voice en-US-Neural2-F
 //
 // Writes audio/<id>.wav and audio/timings.json.
 //
@@ -32,7 +32,7 @@ const PROJECT = "useclaimright";
 const ENDPOINT = "https://texttospeech.googleapis.com/v1beta1/text:synthesize";
 
 const args = process.argv.slice(2);
-const folder = args.find((a) => !a.startsWith("--")) || "shorts-01-two-numbers";
+const folder = args.find((a) => !a.startsWith("--")) || "short-01-two-numbers";
 const voice = args.includes("--voice") ? args[args.indexOf("--voice") + 1] : "en-US-Studio-Q";
 const MARKS = /-(Neural2|Wavenet|Standard)-/.test(voice);
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Whiteboard animation: the whole Short is drawn, stroke by stroke, as narrated.
 
-    python3 video/whiteboard.py shorts-02-whiteboard
+    python3 video/whiteboard.py short-01-two-numbers
 
 Needs audio/*.wav and audio/timings.json from tts.mjs. Writes frames/ and the
 mp4 beside them.
@@ -231,7 +231,7 @@ def Sheet(x0, y0, w, h, text, colour=INK, rise=300):
             "text": text, "colour": colour}
 
 
-ART = {"shorts-02-whiteboard": {
+ART = {"short-01-two-numbers": {
     "hook-cold-open": [S(person(210, 620)), T((330, 760), "you", 72, GREY)],
     "d2": [S(person_hurt(600, 700)), S(squiggle(560, 630, 150), squiggle(740, 630, 150)),
            T((580, 470), "2 a.m.", 86)],
@@ -257,7 +257,7 @@ ART = {"shorts-02-whiteboard": {
     "d10": [S(phone(430, 2280, 210, 340)), T((700, 2400), "call first", 84)],
     "d11": [T((300, 2700), "useclaimright.com", 100, ACCENT),
             S([line((300, 2830), (1160, 2830), n=14, seed=71)], colour=ACCENT, width=8)],
-}, "shorts-03-january": {
+}, "short-02-january": {
     # The date goes above the figure, not beside it: side by side the pair is
     # wide and short, and a wide-and-short shot in a 9:16 frame is mostly white.
     "hook-ice": [T((170, 340), "1 JANUARY", 96), S(person_down(200, 640)),
@@ -280,7 +280,7 @@ ART = {"shorts-02-whiteboard": {
 # Beats that pull back to show everything drawn so far, instead of the usual
 # two-beat shot. The summary line of a comparison needs both halves of the
 # comparison in frame — e7 was cutting off the $40 bill it argues against.
-FRAME_ALL = {"shorts-03-january": {"e7"}}
+FRAME_ALL = {"short-02-january": {"e7"}}
 
 
 
@@ -391,7 +391,7 @@ def marker(im, tip):
 
 
 def main():
-    folder = next((a for a in sys.argv[1:] if not a.startswith("--")), "shorts-02-whiteboard")
+    folder = next((a for a in sys.argv[1:] if not a.startswith("--")), "short-01-two-numbers")
     dir_ = HERE / folder
     spec = json.loads((dir_ / "lines.json").read_text())
     timings = json.loads((dir_ / "audio" / "timings.json").read_text())

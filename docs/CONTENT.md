@@ -159,9 +159,9 @@ everything drawn so far shrinks the art as the story grows.
 
 ## How one gets made
 
-    node video/tts.mjs shorts-02-whiteboard        # WAVs, en-US-Studio-Q
-    python3 video/align.py shorts-02-whiteboard    # word timings, local Whisper
-    python3 video/whiteboard.py shorts-02-whiteboard
+    node video/tts.mjs short-01-two-numbers        # WAVs, en-US-Studio-Q
+    python3 video/align.py short-01-two-numbers    # word timings, local Whisper
+    python3 video/whiteboard.py short-01-two-numbers
 
 About ten minutes to write `lines.json`, twenty to thirty to draw whatever shapes
 are new, two to run the pipeline. Everything regenerates from the script, so

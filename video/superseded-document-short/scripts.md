@@ -1,3 +1,8 @@
+> **Superseded.** This is the document-tour version of Short 1, before the
+> whiteboard format. Paths below are as they were; `scenes.py` and
+> `frames.py` no longer exist. The whiteboard version is
+> `video/short-01-two-numbers/`.
+
 # Shorts experiment 1 — three hooks, one body
 
 **This is not three videos. It is one video with three openings**, so that the

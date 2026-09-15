@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Replace estimated word timings with measured ones, using local Whisper.
 
-    python3 video/align.py shorts-02-whiteboard
+    python3 video/align.py short-01-two-numbers
 
 Rewrites audio/timings.json in place, so the karaoke highlights land on the word
 actually being spoken.
@@ -83,7 +83,7 @@ def align(words, got, secs):
 def main():
     if not MODEL.exists():
         sys.exit(f"no model at {MODEL} — see the header of this file")
-    folder = next((a for a in sys.argv[1:] if not a.startswith("--")), "shorts-01-two-numbers")
+    folder = next((a for a in sys.argv[1:] if not a.startswith("--")), "short-01-two-numbers")
     audio = HERE / folder / "audio"
     timings = json.loads((audio / "timings.json").read_text())
 
