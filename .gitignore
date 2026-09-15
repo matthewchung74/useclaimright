@@ -35,4 +35,5 @@ test-fixtures/private/*
 video/**/*.mov
 video/**/*.mp4
 video/**/*.png
+video/**/_*.png
 video/**/*.wav

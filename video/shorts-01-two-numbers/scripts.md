@@ -28,17 +28,32 @@ is stronger than hoping nobody clocks "Jane Q. Testpatient". The alternative —
 real carrier EOB — only shows one side, and the whole point here is two documents
 disagreeing.
 
-## Framing for 9:16
+## Framing for 9:16 — the frames are generated, not shot
 
-The gift of vertical: **one row fills the frame.** No cursor needed for most of
-it — cut between two tight crops.
+    python3 video/shorts-01-two-numbers/frames.py
 
-- **Crop A** — the bill's balance-due line, nothing else in frame
-- **Crop B** — the EOB's patient-responsibility line, nothing else in frame
-- **Crop C** — both stacked, A above B, for the reveal
+Writes five 1080×1920 PNGs beside that script. **They are gitignored** — the
+generator is the source and the frames are a build artefact, the same split as
+`test-fixtures/gen-*.mjs`.
 
-Big text, filmed at 2x and downscaled so it is legible on a phone held at arm's
-length. If you have to squint on your own phone, it is too small.
+| Frame | Shows |
+|---|---|
+| `A-bill.png` | THE BILL — PATIENT BALANCE DUE: **$845.00** |
+| `B-eob.png` | YOUR INSURANCE LETTER — What you may owe the provider: **$186.35** |
+| `C-both.png` | both, stacked and labelled |
+| `D-gap.png` | both, plus **$658.65 difference** in the app's own red |
+| `E-disclaimer.png` | "Example documents. Check your own before disputing anything." |
+
+The gift of vertical: **one row fills the frame.** There is no screen recording
+and no cursor — it is five stills and a voice track, which is why this is an
+afternoon rather than a day.
+
+Crops are pinned to coordinates read out of the PDFs with `pdftotext -bbox`
+rather than eyeballed, so a fixture change makes the generator fail loudly
+instead of drifting a few pixels.
+
+The blocks sit slightly above centre on purpose: YouTube lays the handle and
+description across the bottom of a Short and the like/share rail down the right.
 
 ---
 
@@ -48,12 +63,12 @@ Starts at 0:02. **Do not re-record this between variants.**
 
 | Time | Frame | Say |
 |---|---|---|
-| 0:02 | **Crop A** — $845.00 | "This is a hospital bill. It wants eight hundred and forty-five dollars." |
-| 0:07 | **Crop B** — $186.35 | "This is the letter from the insurance company, about the same visit. It says you owe a hundred and eighty-six." |
-| 0:13 | **Crop C** — both stacked | "Same visit. Same day. Two different numbers." |
-| 0:17 | Crop C, the gap highlighted | "The difference is six hundred and fifty-eight dollars — and it's the discount your insurer already negotiated. The hospital agreed to it when they joined the network." |
-| 0:25 | Crop B, back on $186.35 | "So before you pay a medical bill, find the letter from your insurance and check that the numbers match. If they don't, that's a phone call." |
-| 0:29 | Card | *on screen:* "Example documents. Check your own before disputing anything." |
+| 0:02 | `A-bill.png` | "This is a hospital bill. It wants eight hundred and forty-five dollars." |
+| 0:07 | `B-eob.png` | "This is the letter from the insurance company, about the same visit. It says you owe a hundred and eighty-six." |
+| 0:13 | `C-both.png` | "Same visit. Same day. Two different numbers." |
+| 0:17 | `D-gap.png` | "The difference is six hundred and fifty-eight dollars — and it's the discount your insurer already negotiated. The hospital agreed to it when they joined the network." |
+| 0:25 | `B-eob.png` again | "So before you pay a medical bill, find the letter from your insurance and check that the numbers match. If they don't, that's a phone call." |
+| 0:29 | `E-disclaimer.png` | *(silent, or read it)* |
 
 **Total: ~30 seconds.** If it runs to 35, cut the network-contract clause at 0:17
 before cutting anything else — it is the most explanatory and the least urgent.
@@ -62,7 +77,7 @@ before cutting anything else — it is the most explanatory and the least urgent
 
 ## Variant 1 — the number hook
 
-**Opening frame: Crop C, both numbers already visible. No build-up.**
+**Opening frame: `C-both.png`, both numbers already visible. No build-up.**
 
 > **"Eight hundred and forty-five dollars, or a hundred and eighty-six?"**
 
@@ -73,7 +88,7 @@ context — the viewer has to stay to find out what they are looking at.
 
 ## Variant 2 — the contradiction hook
 
-**Opening frame: Crop C, both numbers visible.**
+**Opening frame: `C-both.png`.**
 
 > **"Two numbers on your medical bill should match. They usually don't."**
 
@@ -82,7 +97,7 @@ and asks them to stay for the evidence — the opposite bet to variant 1.
 
 ## Variant 3 — the instruction hook
 
-**Opening frame: Crop A, the $845 alone.**
+**Opening frame: `A-bill.png`, the $845 alone.**
 
 > **"Before you pay this, there's one number you need to find."**
 
