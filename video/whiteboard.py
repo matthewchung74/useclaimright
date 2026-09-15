@@ -202,8 +202,12 @@ ART = {
            S([line((450, 1985), (930, 1985), n=10, seed=44)], colour=ACCENT, width=8)],
     # Which envelope is which — the question a beginner actually has. The answer
     # is who sent it, so the labels go under the papers they belong to.
-    "d7": [T((225, 2090), "the bill", 84)],
-    "d8": [T((760, 2090), "NOT a bill", 84)],
+    # The jargon goes under the plain word, not instead of it. Someone holding
+    # the paper needs to recognise the phrase printed on it, but the plain word
+    # is what makes the video make sense.
+    "d7": [T((225, 2090), "the bill", 84), T((205, 2190), "itemized statement", 54, GREY)],
+    "d8": [T((790, 2090), "NOT a bill", 84),
+           T((730, 2190), "Explanation of Benefits", 54, GREY)],
     "d9": [S(ellipse(970, 1468, 140, 74), colour=ACCENT, width=8)],
     "d10": [S(phone(430, 2280, 210, 340)), T((700, 2400), "call first", 84)],
     "d11": [T((300, 2700), "useclaimright.com", 100, ACCENT),
