@@ -47,7 +47,10 @@ const beats = [
     wav: join(audio, `${b.id}.wav`), scene: b.scene, at: b.circleAt,
     pad: i === a.length - 1 ? PAD.last : PAD.line,
   })),
-  { wav: null, scene: null, pad: 2.2 },
+  // The closing card is spoken now, not silent — it carries the one instruction
+  // and the offer, and a card nobody reads aloud is a card nobody reads.
+  { wav: existsSync(join(audio, "cta.wav")) ? join(audio, "cta.wav") : null,
+    scene: null, pad: 1.4 },
 ];
 
 rmSync(work, { recursive: true, force: true });

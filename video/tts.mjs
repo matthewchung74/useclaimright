@@ -106,6 +106,10 @@ let total = 0;
 for (const beat of spec.body) {
   total += await say(beat.text, `${beat.id}.wav`, out);
 }
+if (spec.cta) {
+  console.log("closing:");
+  total += await say(spec.cta, "cta.wav", out);
+}
 console.log(`\nbody is ${total.toFixed(1)}s of speech before pauses.`);
 console.log(`a hook adds ~4-6s — target for a Short is under 60s, comfortably met.`);
 console.log(out);
