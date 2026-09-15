@@ -132,6 +132,51 @@ def person_hurt(cx, top, s=1.0, seed=51):
     ]
 
 
+def person_down(cx, cy, s=1.0, seed=71):
+    """Flat on their back, limbs still in the air. Read left to right: head,
+    then the rest of them going the wrong way."""
+    r = 46 * s
+    return [
+        circle(cx, cy, r, seed=seed),
+        line((cx + r, cy + 6 * s), (cx + 190 * s, cy + 18 * s), n=7, seed=seed + 1),
+        line((cx + 100 * s, cy + 10 * s), (cx + 118 * s, cy - 82 * s), seed=seed + 2),
+        line((cx + 132 * s, cy + 14 * s), (cx + 172 * s, cy - 66 * s), seed=seed + 3),
+        line((cx + 190 * s, cy + 18 * s), (cx + 272 * s, cy - 42 * s), seed=seed + 4),
+        line((cx + 190 * s, cy + 18 * s), (cx + 286 * s, cy + 44 * s), seed=seed + 5),
+    ]
+
+
+def ice(x, y, w, seed=79):
+    """A patch of it. The short marks underneath are what stop the long line
+    reading as the ground."""
+    return [wobble([(x + w * i / 24, y + 7 * math.sin(i * 1.1)) for i in range(25)],
+                   amp=2.4, seed=seed)] + [
+        line((x + w * f, y + 18), (x + w * f + 26, y + 46), n=3, seed=seed + i + 1)
+        for i, f in enumerate((0.18, 0.46, 0.74))]
+
+
+def bucket(x0, y0, w, h, seed=83):
+    """Wider at the top, so it reads as a bucket rather than a box."""
+    inset = w * 0.13
+    return [line((x0, y0), (x0 + w, y0), n=7, seed=seed),
+            line((x0, y0), (x0 + inset, y0 + h), n=7, seed=seed + 1),
+            line((x0 + w, y0), (x0 + w - inset, y0 + h), n=7, seed=seed + 2),
+            line((x0 + inset, y0 + h), (x0 + w - inset, y0 + h), n=6, seed=seed + 3)]
+
+
+def bucket_fill(x0, y0, w, h, frac, seed=89):
+    """Hatching inside the bucket, ordered bottom to top — so the ordinary
+    stroke reveal fills it up, with no new kind of element."""
+    inset, rows = w * 0.13, []
+    y = y0 + h - 22
+    while y > y0 + h * (1 - frac):
+        t = (y - y0) / h
+        rows.append(line((x0 + inset * t + 14, y), (x0 + w - inset * t - 14, y),
+                         n=6, seed=seed + len(rows)))
+        y -= 30
+    return rows
+
+
 def hospital(x0, y0, w, h, seed=9):
     cx, cy, a = x0 + w / 2, y0 + h * 0.40, 34
     return (box(x0, y0, x0 + w, y0 + h, seed=seed)
@@ -186,7 +231,7 @@ def Sheet(x0, y0, w, h, text, colour=INK, rise=300):
             "text": text, "colour": colour}
 
 
-ART = {
+ART = {"shorts-02-whiteboard": {
     "hook-cold-open": [S(person(210, 620)), T((330, 760), "you", 72, GREY)],
     "d2": [S(person_hurt(600, 700)), S(squiggle(560, 630, 150), squiggle(740, 630, 150)),
            T((580, 470), "2 a.m.", 86)],
@@ -212,7 +257,31 @@ ART = {
     "d10": [S(phone(430, 2280, 210, 340)), T((700, 2400), "call first", 84)],
     "d11": [T((300, 2700), "useclaimright.com", 100, ACCENT),
             S([line((300, 2830), (1160, 2830), n=14, seed=71)], colour=ACCENT, width=8)],
-}
+}, "shorts-03-january": {
+    # The date goes above the figure, not beside it: side by side the pair is
+    # wide and short, and a wide-and-short shot in a 9:16 frame is mostly white.
+    "hook-ice": [T((170, 340), "1 JANUARY", 96), S(person_down(200, 640)),
+                 S(ice(120, 760, 520))],
+    # The bucket is explained before it is named, so it is drawn before the word
+    # "deductible" is ever said.
+    "e2": [S(bucket(220, 1000, 380, 430)), T((238, 890), "$1,000", 84)],
+    "e3": [S(bucket_fill(220, 1000, 380, 430, 0.86))],
+    "e4": [S(box(180, 1580, 520, 1810, seed=95)), T((255, 1640), "$40", 100)],
+    # A whiteboard cannot un-draw, so "they empty it" is a second bucket, not
+    # this one rubbed out.
+    "e5": [S(arrow((660, 1210), (890, 1210))), S(bucket(950, 1000, 380, 430, seed=101))],
+    "e6": [S(box(910, 1580, 1250, 1810, seed=107)), T((960, 1640), "$400", 100)],
+    "e7": [T((470, 1960), "deductible", 116),
+           S([line((470, 2090), (1090, 2090), n=12, seed=113)], width=8)],
+    "e8": [T((330, 2340), "useclaimright.com", 100, ACCENT),
+           S([line((330, 2470), (1190, 2470), n=14, seed=119)], colour=ACCENT, width=8)],
+}}
+
+# Beats that pull back to show everything drawn so far, instead of the usual
+# two-beat shot. The summary line of a comparison needs both halves of the
+# comparison in frame — e7 was cutting off the $40 bill it argues against.
+FRAME_ALL = {"shorts-03-january": {"e7"}}
+
 
 
 def extent(el):
@@ -346,7 +415,7 @@ def main():
         words = [w for w, _ in t["timing"]]
         starts = [s for _, s in t["timing"]]
 
-        els = ART.get(b["id"], [])
+        els = ART.get(folder, {}).get(b["id"], [])
         lens = [element_len(e) for e in els] or [1]
         total = sum(lens)
         # Drawing finishes a shade before the line does, so the voice is never
@@ -363,7 +432,9 @@ def main():
         # The shot holds this line and the one before it: framing only the
         # current strokes cut the previous drawing in half, and framing the
         # whole board shrank everything as the story grew.
-        want = frame_box([extent(e) for e in prev_els + els] or [(0, 0, BW, BH)],
+        wide = b["id"] in FRAME_ALL.get(folder, ())
+        shot = (done + els) if wide else (prev_els + els)
+        want = frame_box([extent(e) for e in shot] or [(0, 0, BW, BH)],
                          VW, VH, span=1050)
         prev = cam or want
 
@@ -401,7 +472,7 @@ def main():
 
     wav = dir_ / "audio" / "_track.wav"
     audio_track(dir_, plan, wav)
-    out = dir_ / "whiteboard.mp4"
+    out = dir_ / f"{folder.split('-', 2)[-1]}.mp4"
     subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-framerate", str(FPS),
                     "-i", str(frames / "f%05d.png"), "-i", str(wav),
                     "-c:v", "libx264", "-pix_fmt", "yuv420p", "-r", "30",

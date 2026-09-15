@@ -1,0 +1,18 @@
+{
+  "_comment": "Short 2 in docs/CONTENT.md — the January reset. The first line is carried in `variants` because tts.mjs treats that as the hook; here the hook IS the first thing drawn.",
+  "_injury": "Slipped on ice, which is also why it is January. House style: the injury has to earn its place in the story, not just be different from the last one.",
+  "_numbers": "A $1,000 deductible, a $40 visit in November and a $400 visit in January. Round, and deliberately not $800 — that is Short 1's number and reusing it across Shorts would imply a connection that is not there.",
+  "_jargon": "The word 'deductible' is withheld until the second-to-last line, on purpose. The bucket is explained first and named afterwards, so a viewer who has never heard the word still understands the mechanism before it arrives.",
+  "variants": {
+    "ice": "Your body does not know it is January. Your insurance does."
+  },
+  "body": [
+    { "id": "e2", "text": "Every year, you pay the first chunk of your own care. Say the first thousand dollars." },
+    { "id": "e3", "text": "By November, you had filled it." },
+    { "id": "e4", "text": "So a visit cost you forty dollars." },
+    { "id": "e5", "text": "Then on the first of January, they empty it." },
+    { "id": "e6", "text": "Same clinic, same knee. Four hundred dollars." },
+    { "id": "e7", "text": "Nothing changed except the calendar. The word for that bucket is deductible." },
+    { "id": "e8", "text": "Check yours before you dispute. Or upload them free at UseClaimRight.com." }
+  ]
+}

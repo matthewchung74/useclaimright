@@ -212,7 +212,7 @@ and the insurer's letter is the one that says what you owe.
 **Absorbs old videos 1 and 5**, which the earlier review flagged as nearly the
 same video. Drawn, they are one.
 
-### 2. The January reset · next
+### 2. The January reset · MADE — 28.7s
 
 **Hook:** *"Your January bill is not a mistake. It is a reset."*
 **Opens on:** an empty bucket with **1 JANUARY** written over it.
@@ -222,8 +222,17 @@ same video. Drawn, they are one.
 the counter goes back to zero. That is why the same visit costs more in January
 than in November, and it is the most common "my bill is wrong" that isn't.
 
-**New art:** a bucket that fills, a calendar page, a counter snapping to 0, a
-figure flat on its back.
+**New art added:** `person_down`, `ice`, `bucket`, `bucket_fill`.
+
+Two things worth carrying to the next one. The bucket fills by **ordering the
+hatch lines bottom to top** — the ordinary stroke reveal then fills it, with no
+new kind of element. And "they empty it" is a **second bucket**, because a
+whiteboard cannot un-draw; the same rule that made the hurt figure a second
+drawing in Short 1.
+
+The word "deductible" is withheld until the second-to-last line. The bucket is
+explained first and named afterwards, so someone who has never heard the word
+understands the mechanism before it arrives.
 
 Second because deductible is load-bearing for Shorts 7 and 8.
 

@@ -117,12 +117,17 @@ build artefact.
 
 ## Status
 
-| # | Short | Script | Made | Published |
+| # | Short | Folder | Made | Published |
 |---|---|---|---|---|
-| 1 | Two numbers — the bill and the letter | ✅ | ✅ 41.4s | — |
-| 2 | The January reset (deductible) | — | — | — |
+| 1 | Two numbers — the bill and the letter | `shorts-02-whiteboard` | ✅ 41.4s | ✅ 2026-09-15 |
+| 2 | The January reset (deductible) | `shorts-03-january` | ✅ 28.7s | — |
 | 4 | A charge your insurance has never seen | — | — | — |
 | 3, 5–10 | see `docs/CONTENT.md` | — | — | — |
+
+**The folder numbers and the Short numbers do not agree**, and it is not worth
+renaming directories to fix: folders are numbered in the order they were built,
+Shorts in the order `docs/CONTENT.md` argues for. The middle column is the
+mapping. `shorts-01-two-numbers` is the superseded document version of Short 1.
 
 Superseded by the format change, kept because the writing is still good:
 `shorts-01-two-numbers/` (the document version, three hook variants) and
