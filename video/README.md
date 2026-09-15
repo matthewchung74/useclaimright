@@ -6,14 +6,28 @@ all of it live in that document; this directory holds only what gets said and
 what is on screen.
 
     video/
+      channel-setup.md              ← name, handle, description, keywords
+      shorts-01-two-numbers/
+        scripts.md                  ← one body, three hooks, as an experiment
       05-eob-is-not-a-bill/
-        script.md          ← spoken line, screen state, cuts, disclaimer
+        script.md                   ← spoken line, screen state, cuts, disclaimer
 
 ## Shooting order
 
-**5 → 4 → 1**, and 0a/0b before either if Tier 0 is made. Not numerical order:
-video 5 defines the document every other video reads from, and 4 defines the
-number they all argue about.
+**Shorts experiment 1 first, and nothing else until it reports.**
+
+Three thirty-second variants, one afternoon, published a week apart. It answers
+whether a document on screen can hold a swipe at all — and if it cannot, the
+long-form scripts below are moot and should not be shot.
+
+For long-form after that: **5 → 4 → 1**, and 0a/0b before either if Tier 0 is
+made. Not numerical order — video 5 defines the document every other video reads
+from, and 4 defines the number they all argue about.
+
+**The measured position** (`docs/CONTENT.md`) is that YouTube search volume for
+this subject is Low by YouTube's own labels, three ways of measuring agree, and
+the intent lives on Google instead. Video here is a cheap bet placed alongside a
+written page, not instead of one.
 
 ## Channel
 
@@ -24,10 +38,11 @@ search-volume figures** and is gated behind having a channel.
 
 ## Before shooting anything
 
-The premise is unverified — see the review in `docs/CONTENT.md`. An hour of
-hand-searching these titles on YouTube and reading the view counts on the top
-three results comes first. If the intent is not there, none of this is worth
-shooting.
+~~The premise is unverified.~~ **Measured 2026-09-14 and it did not hold** — see
+`docs/CONTENT.md`. Trends, autocomplete and YouTube Studio all report Low volume,
+and YouTube does not recognise "explanation of benefits" as an insurance topic at
+all. What remains is feed distribution, which is what the Shorts experiment
+tests.
 
 ## Conventions
 
@@ -55,6 +70,7 @@ build artefact.
 
 | # | Video | Script | Shot |
 |---|---|---|---|
+| — | Shorts experiment 1 — three hooks | ✅ draft | — |
 | 5 | Your EOB is not a bill — so what is it? | ✅ draft | — |
 | 4 | What does "allowed amount" mean on my EOB? | — | — |
 | 1 | Your bill says $175, your EOB says $120 | — | — |
