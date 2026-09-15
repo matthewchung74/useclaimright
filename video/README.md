@@ -46,12 +46,29 @@ tests.
 
 ## Making one
 
-Two commands, all generated, nothing by hand:
+Three commands, all generated, nothing by hand:
 
-    node video/tts.mjs shorts-01-two-numbers      # WAVs + per-word timings, Cloud TTS
+    node video/tts.mjs shorts-01-two-numbers      # WAVs, Cloud TTS (en-US-Studio-Q)
+    python3 video/align.py shorts-01-two-numbers  # measure the word timings, locally
     python3 video/render.py shorts-01-two-numbers # every frame, then the mux -> 1-number.mp4
 
-`--variant 2-contradiction` cuts a different hook against the same body.
+`--variant 2-contradiction` cuts a different hook against the same body. The
+whiteboard films the same way, with `whiteboard.py` in place of `render.py`.
+
+**Why there is an alignment step.** The captions need to know when each word
+starts. Cloud TTS will tell you directly — an SSML `<mark>` before every word,
+timepoints back — but only for Neural2, Wavenet and Standard. Studio voices
+reject `<mark>` and Chirp3-HD returns an empty array, and those are the voices
+worth listening to. So `tts.mjs` sends marks when the voice takes them and plain
+text when it does not, and `align.py` measures the timings afterwards with
+whisper.cpp on this machine. Nothing is uploaded; it takes a second or two a
+line. It is forced alignment, not transcription — the script is known, so
+Whisper's output is matched against it and a misheard word still gets a sensible
+time from its neighbours.
+
+    brew install whisper-cpp
+    curl -L --create-dirs -o ~/.cache/whisper/ggml-base.en.bin \
+      https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.en.bin
 
 Every body beat is one slide — which document this is, the whole page, the
 circled part blown up, the caption:

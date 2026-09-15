@@ -7,16 +7,17 @@
 // Writes audio/<id>.wav and audio/timings.json.
 //
 // ---------------------------------------------------------------------------
-// Voice choice is forced by the captions, not by taste.
+// Voices split into two camps, and the split is about captions, not sound.
 //
-// Chirp3-HD sounds the best of the Cloud TTS families and CANNOT do this: it
-// returns an empty timepoints array, because Chirp3 does not support SSML.
-// Studio voices reject <mark> outright — "not currently supported by Studio
-// voices". Neural2 and Wavenet both return exact per-word timings.
+// Neural2, Wavenet and Standard accept SSML <mark> and hand back exact per-word
+// timings. Studio voices reject <mark> outright — "not currently supported by
+// Studio voices" — and Chirp3-HD returns an empty array, because Chirp3 does
+// not support SSML at all. Those are the voices worth listening to.
 //
-// So: Neural2. Word-accurate captions are worth more on a muted-by-default feed
-// than a marginally smoother read, and most of this audience watches without
-// sound at first.
+// So this sends marks when the voice takes them, plain text when it does not,
+// and in the second case writes a proportional ESTIMATE into timings.json and
+// says so. Run video/align.py afterwards to replace the estimate with measured
+// times from local Whisper — no upload, a couple of seconds a line.
 //
 // (Gemini 2.5 TTS was tried before any of these and is too flaky to use —
 // finishReason OTHER with no audio on better than half of calls. See git log.)
@@ -32,7 +33,8 @@ const ENDPOINT = "https://texttospeech.googleapis.com/v1beta1/text:synthesize";
 
 const args = process.argv.slice(2);
 const folder = args.find((a) => !a.startsWith("--")) || "shorts-01-two-numbers";
-const voice = args.includes("--voice") ? args[args.indexOf("--voice") + 1] : "en-US-Neural2-D";
+const voice = args.includes("--voice") ? args[args.indexOf("--voice") + 1] : "en-US-Studio-Q";
+const MARKS = /-(Neural2|Wavenet|Standard)-/.test(voice);
 
 const TOKEN = execFileSync("gcloud", ["auth", "print-access-token"],
   { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim();
@@ -55,10 +57,10 @@ async function say(text, id, out) {
     headers: { Authorization: `Bearer ${TOKEN}`, "Content-Type": "application/json",
                "x-goog-user-project": PROJECT },
     body: JSON.stringify({
-      input: { ssml: doc },
+      input: MARKS ? { ssml: doc } : { text },
       voice: { languageCode: "en-US", name: voice },
       audioConfig: { audioEncoding: "LINEAR16", sampleRateHertz: 24000, speakingRate: 0.96 },
-      enableTimePointing: ["SSML_MARK"],
+      ...(MARKS ? { enableTimePointing: ["SSML_MARK"] } : {}),
     }),
   });
   const body = await res.json();
@@ -68,7 +70,7 @@ async function say(text, id, out) {
   const secs = (buf.length - 44) / (24000 * 2);
 
   const points = body.timepoints || [];
-  if (points.length !== words.length) {
+  if (MARKS && points.length !== words.length) {
     console.warn(`  ! ${id}: ${points.length} timepoints for ${words.length} words`);
   }
   // [word, startSeconds]. The last word ends when the audio does.
@@ -82,7 +84,7 @@ const spec = JSON.parse(readFileSync(join(dir, "lines.json"), "utf8"));
 const out = join(dir, "audio");
 mkdirSync(out, { recursive: true });
 
-console.log(`voice ${voice}`);
+console.log(`voice ${voice}${MARKS ? "" : "  (no SSML marks — timings are estimates)"}`);
 const timings = {};
 for (const [name, text] of Object.entries(spec.variants)) {
   timings[`hook-${name}`] = await say(text, `hook-${name}`, out);
@@ -95,3 +97,4 @@ if (spec.cta) timings.cta = await say(spec.cta, "cta", out);
 writeFileSync(join(out, "timings.json"), JSON.stringify(timings, null, 1));
 const total = spec.body.reduce((n, b) => n + timings[b.id].secs, 0);
 console.log(`\nbody ${total.toFixed(1)}s · timings.json written`);
+if (!MARKS) console.log(`run:  python3 video/align.py ${folder}   to measure the real timings`);
