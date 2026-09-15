@@ -1,0 +1,12 @@
+{
+  "name": "useclaimright-video",
+  "private": true,
+  "type": "module",
+  "description": "Frame and voice generation for the Shorts experiments. Kept out of the repo root and out of functions/ so `firebase deploy` never sees it.",
+  "scripts": {
+    "tts": "node tts.mjs"
+  },
+  "dependencies": {
+    "@google/genai": "^1.9.0"
+  }
+}

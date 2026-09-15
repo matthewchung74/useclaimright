@@ -1,0 +1,37 @@
+{
+  "_comment": "Authoritative text for the audio. scripts.md is the prose version for a human; this is what gets spoken. Keep them in step.",
+  "style": "Read calmly and plainly:",
+  "variants": {
+    "1-number": "$845, or $186.35?",
+    "2-contradiction": "Two numbers on your medical bill should match. They usually don't.",
+    "3-instruction": "Before you pay this, there's one number you need to find."
+  },
+  "body": [
+    {
+      "id": "b1",
+      "frame": "A-bill.png",
+      "text": "This is a hospital bill. It wants $845."
+    },
+    {
+      "id": "b2",
+      "frame": "B-eob.png",
+      "text": "This is the letter from the insurance company, about the same visit. It says you owe $186.35."
+    },
+    {
+      "id": "b3",
+      "frame": "C-both.png",
+      "text": "Same visit. Same day. Two different numbers."
+    },
+    {
+      "id": "b4",
+      "frame": "D-gap.png",
+      "text": "The difference is $658.65, and it's the discount your insurer already negotiated. The hospital agreed to it when they joined the network."
+    },
+    {
+      "id": "b5",
+      "frame": "B-eob.png",
+      "text": "So before you pay a medical bill, find the letter from your insurance and check that the numbers match. If they don't, that's a phone call."
+    }
+  ],
+  "_numbers": "Figures are digits because TTS normalises them correctly and they are less ambiguous to proofread \u2014 NOT because spelled-out numbers fail. That was my first conclusion and it was wrong: see the retry note in ../tts.mjs. Empty responses are transient and hit any line."
+}

@@ -37,3 +37,7 @@ video/**/*.mp4
 video/**/*.png
 video/**/_*.png
 video/**/*.wav
+
+# video/ has its own deps, like test/browser
+video/node_modules/
+video/**/audio/

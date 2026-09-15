@@ -70,8 +70,24 @@ Starts at 0:02. **Do not re-record this between variants.**
 | 0:25 | `B-eob.png` again | "So before you pay a medical bill, find the letter from your insurance and check that the numbers match. If they don't, that's a phone call." |
 | 0:29 | `E-disclaimer.png` | *(silent, or read it)* |
 
-**Total: ~30 seconds.** If it runs to 35, cut the network-contract clause at 0:17
-before cutting anything else — it is the most explanatory and the least urgent.
+**Measured, not estimated.** `node video/tts.mjs shorts-01-two-numbers` renders
+every line to `audio/` — Chirp3-HD, 24kHz mono WAV:
+
+| File | Speech |
+|---|---|
+| `hook-1-number.wav` | 4.7s |
+| `hook-2-contradiction.wav` | 3.8s |
+| `hook-3-instruction.wav` | 3.7s |
+| `b1` · `b2` · `b3` · `b4` · `b5` | 3.9 · 7.2 · 3.8 · **8.7** · 6.1 = **29.7s** |
+
+So a full cut is **~34s of speech** before any pause, against a 60s Shorts
+ceiling — comfortable, but longer than the thirty this was written for.
+
+**`b4` is 8.7s, the longest line in the piece, and it is the network-contract
+explanation.** That is exactly the clause flagged above as the first thing to
+cut: dropping it brings the whole thing to **~26s** and loses only the *why*,
+keeping the *what* and the instruction. Cut it first if it needs to be shorter,
+and only then touch anything else.
 
 ---
 
