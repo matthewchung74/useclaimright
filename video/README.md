@@ -120,7 +120,7 @@ build artefact.
 | # | Short | Folder | Made | Published |
 |---|---|---|---|---|
 | 1 | Two numbers — the bill and the letter | `short-01-two-numbers` | ✅ 41.4s | ✅ 2026-09-15 |
-| 2 | The January reset (deductible) | `short-02-january` | ✅ 28.7s | — |
+| 2 | The January reset (deductible) | `short-02-january` | ✅ 46.0s | uploaded, Private |
 | 4 | A charge your insurance has never seen | — | — | — |
 | 3, 5–10 | see `docs/CONTENT.md` | — | — | — |
 

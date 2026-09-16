@@ -13,9 +13,12 @@ when the channel was created and which changes what Studio reports.
 classified it as a Short on its own from the 1080x1920 frame and 0:42 runtime —
 no #Shorts tag needed). It is waiting on a watch-through before it goes Public.
 
-    Title        Your hospital and your insurance don't talk to each other
-    Audience     not made for kids
-    Visibility   Private
+    Short 1   Your hospital and your insurance don't talk to each other
+              0:42 · Public since 2026-09-15
+    Short 2   Your body doesn't know it's January. Your insurance does.
+              0:47 · Private, waiting on a watch-through
+
+    Audience     not made for kids, both
     Disclosure   none declared — see below
 
 ---
