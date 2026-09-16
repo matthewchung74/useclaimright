@@ -381,34 +381,37 @@ ART = {"short-01-two-numbers": {
     # The 20% goes down FIRST. Beat time is shared by stroke length, and the
     # hopping figure is much the longest element — drawn first it ate three of
     # the hook's four seconds, so the one image worth seeing arrived last.
-    # The scene first. The question, and the big red number, are the next beat.
     "hook-cat": [S(person_hop(300, 420)), S(cat(640, 830))],
-    "f2": [T((900, 480), "20%", 150, ACCENT), T((910, 660), "of what?", 70, GREY)],
-    # One divider, drawn once, so the two halves are visibly two things.
-    "f3": [S([line((800, 1010), (800, 1520), n=12, seed=167)], colour=GREY, width=5),
-           S(coin(430, 1110, 108)), T((355, 1070), "$30", 76),
-           T((300, 1290), "copay", 84), T((300, 1390), "a price", 52, GREY)],
-    "f4": [S(pie(1160, 1110, 118, 0.2)), T((930, 1290), "coinsurance", 84),
-           T((930, 1390), "20% of ???", 52, GREY)],
-    "f5": [S(box(200, 1660, 700, 1910, seed=173)),
-           T((230, 1690), "$400 visit", 54, GREY), T((230, 1780), "you $80", 80)],
-    "f6": [S(box(880, 1660, 1380, 1910, seed=179)),
-           T((910, 1690), "$2,000 visit", 54, GREY),
-           T((910, 1780), "you $400", 80, ACCENT)],
-    "f7": [T((560, 1990), "same 20%", 78)],
-    # The plan document, which is where both answers are actually printed.
-    "f8": [S(box(400, 2130, 1200, 2420, seed=181)),
-           T((430, 2160), "your plan says", 50, GREY),
-           T((430, 2250), "office visit", 54, GREY), T((880, 2250), "$30", 54),
-           T((430, 2340), "emergency", 54, GREY), T((880, 2340), "20%", 54)],
-    "f9": [T((330, 2580), "useclaimright.com", 96, ACCENT),
-           S([line((330, 2710), (1160, 2710), n=14, seed=191)], colour=ACCENT, width=8)],
+    # Left column: the visit, which has a price you were told in advance.
+    "f2": [S(coin(430, 1180, 108)), T((355, 1140), "$30", 76),
+           T((300, 1360), "copay", 84), T((300, 1460), "a price", 52, GREY)],
+    # Right column: the scan, which has a percentage of something unstated.
+    "f3": [S([line((800, 1030), (800, 1680), n=12, seed=167)], colour=GREY, width=5),
+           T((1010, 1040), "20%", 118, ACCENT), T((1020, 1170), "of what?", 58, GREY)],
+    "f4": [S(pie(1180, 1390, 92, 0.2)), T((930, 1510), "coinsurance", 80),
+           T((930, 1605), "a share of ???", 50, GREY)],
+    "f5": [S(box(200, 1720, 700, 1970, seed=173)),
+           T((230, 1750), "X-ray $400", 54, GREY), T((230, 1840), "you $80", 80)],
+    "f6": [S(box(880, 1720, 1380, 1970, seed=179)),
+           T((910, 1750), "MRI $2,000", 54, GREY),
+           T((910, 1840), "you $400", 80, ACCENT)],
+    "f7": [T((560, 2050), "same 20%", 78)],
+    # The plan document, where both answers are actually printed — and where the
+    # two halves of this one visit land in different rows.
+    "f8": [S(box(400, 2190, 1200, 2480, seed=181)),
+           T((430, 2220), "your plan says", 50, GREY),
+           T((430, 2310), "office visit", 54, GREY), T((880, 2310), "$30", 54),
+           T((430, 2400), "scans", 54, GREY), T((880, 2400), "20%", 54)],
+    "f9": [T((330, 2640), "useclaimright.com", 96, ACCENT),
+           S([line((330, 2770), (1160, 2770), n=14, seed=191)], colour=ACCENT, width=8)],
 }}
 
 # Beats that pull back to show everything drawn so far, instead of the usual
 # two-beat shot. The summary line of a comparison needs both halves of the
 # comparison in frame — e7 was cutting off the $40 bill it argues against.
-FRAME_ALL = {"short-02-january": {"e10"}, "short-03-copay": {"f7"}}
+# f4 names coinsurance, which only means anything against the copay beside it,
+# so it needs the wide shot as much as the summary does.
+FRAME_ALL = {"short-02-january": {"e10"}, "short-03-copay": {"f4", "f7"}}
 
 
 

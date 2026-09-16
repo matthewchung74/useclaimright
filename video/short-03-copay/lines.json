@@ -1,20 +1,20 @@
 {
   "_comment": "Short 3 in docs/CONTENT.md — copay or coinsurance. The first line is carried in `variants` because tts.mjs treats that as the hook.",
-  "_injury": "Tripped over the cat, hurt a knee. Specific rather than generic, because specificity is what makes the deadpan land — and because it is the cheapest possible reason to see a doctor, which is the point: the same plan charges two different ways depending on what kind of visit it is. The cat walks off unbothered.",
-  "_hook_shape": "The hook is a SCENE, not a statement. Shorts 1 and 2 both open on something happening to a person (2 a.m. doubled over, slipped on ice) and an earlier cut of this one opened on a sentence about a document, which made it the odd one out. The question — twenty percent of what — moved to the second beat, where the big red 20% can be the first thing drawn in it.",
-  "_why_now": "The plan's order is 1, 2, 4. This is 3 instead, because Short 2 showed you paying $100 of a $400 bill and never said why it was $100. That is coinsurance. Short 3 answers a question Short 2 left open, the way Short 2 answered one Short 1 left open.",
-  "_numbers": "$30 copay, 20% coinsurance, against a $400 visit and a $2,000 visit. The percentage is held fixed and the price is moved, because that is the whole lesson: the share does not change, the number does.",
+  "_injury": "Tripped over the cat, hurt a knee, sees the doctor. Specific rather than generic, because specificity is what makes the deadpan land. The cat walks off unbothered.",
+  "_one_visit": "Both charges happen on ONE visit, which is how it actually happens: the office visit is a copay, the scan they send you for is coinsurance. An earlier cut had the hook say you pay 20% to see a doctor, and then closed on a plan document saying an office visit is a $30 copay — it contradicted itself. Pinning the visit type in the first line is what exposed that.",
+  "_numbers": "$30 copay, 20% coinsurance, an X-ray at $400 and an MRI at $2,000. The percentage is held fixed and the price is moved, because that is the whole lesson: the share does not change, the number does.",
+  "_hook_shape": "The hook is a SCENE, not a statement. Shorts 1 and 2 both open on something happening to a person, and an earlier cut of this one opened on a sentence about a document.",
   "variants": {
-    "cat": "You tripped over the cat. Your plan says you pay twenty percent."
+    "cat": "You tripped over your cat and hurt your knee, so you see your doctor."
   },
   "body": [
-    { "id": "f2", "text": "Twenty percent of what? They tell you afterwards." },
-    { "id": "f3", "text": "A copay is a price. Thirty dollars to walk in the door. You know it before you go." },
-    { "id": "f4", "text": "Coinsurance is a share. Twenty percent of whatever the visit turns out to cost." },
-    { "id": "f5", "text": "If the visit costs four hundred, your twenty percent is eighty." },
-    { "id": "f6", "text": "If it costs two thousand, your twenty percent is four hundred." },
+    { "id": "f2", "text": "The visit costs you thirty dollars, and your plan said so in advance. That is a copay. A price." },
+    { "id": "f3", "text": "Then they send you for a scan, and your plan says you pay twenty percent. Twenty percent of what? They tell you afterwards." },
+    { "id": "f4", "text": "That is coinsurance. A share of a number nobody has given you yet." },
+    { "id": "f5", "text": "An X-ray costs four hundred. Your twenty percent is eighty." },
+    { "id": "f6", "text": "An MRI costs two thousand. Your twenty percent is four hundred." },
     { "id": "f7", "text": "Same plan. Same twenty percent. The number moved because the price did." },
-    { "id": "f8", "text": "So before you argue with a bill, check which one your plan uses, and for which kind of visit." },
+    { "id": "f8", "text": "So before you argue with a bill, check which one your plan uses, and for which kind of care." },
     { "id": "f9", "text": "Check yours before you dispute. Or upload them free at UseClaimRight.com." }
   ]
 }

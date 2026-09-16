@@ -249,17 +249,25 @@ exists to undo. Both visits now show BILL $400 and the split underneath.
 
 Second because deductible is load-bearing for Shorts 7 and 8.
 
-### 3. Copay or coinsurance · MADE — 42.3s
+### 3. Copay or coinsurance · MADE — 42.5s
 
-**Hook:** *"You tripped over the cat. Your plan says you pay twenty percent."* —
-then, one beat later, *"Twenty percent of what? They tell you afterwards."*
+**Hook:** *"You tripped over your cat and hurt your knee, so you see your
+doctor."*
 **Opens on:** a figure hopping on one leg while the cat walks off unbothered.
 **Injury:** a knee, courtesy of the cat.
 
 **Teaching beat:** a copay is a price you can know before you go; coinsurance is
 a share of a number you will not see until afterwards. The same 20% is then run
-against a $400 visit and a $2,000 visit — $80 and $400 — so the lesson is that
-the share holds still while the number moves.
+against a $400 X-ray and a $2,000 MRI — $80 and $400 — so the lesson is that the
+share holds still while the number moves.
+
+**Both charges land on ONE visit**, which is how it actually happens: the office
+visit is the copay, the scan they send you for is the coinsurance. An earlier cut
+had the hook say you pay 20% to see a doctor and then closed on a plan document
+saying an office visit is a $30 copay — it contradicted itself. Pinning the visit
+type in the first line is what exposed that, and fixing it made the Short more
+useful, because the split between a copay visit and a coinsurance scan is the
+thing people actually get caught by.
 
 It closes on the plan document with both printed side by side (*office visit
 $30, emergency 20%*), which is the actual answer to "which one do I have": both,
