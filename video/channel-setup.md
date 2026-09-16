@@ -17,6 +17,8 @@ no #Shorts tag needed). It is waiting on a watch-through before it goes Public.
               0:42 · Public since 2026-09-15
     Short 2   Your body doesn't know it's January. Your insurance does.
               0:47 · Private, waiting on a watch-through
+    Short 3   You tripped over your cat. Now: copay or coinsurance?
+              0:43 · Private, waiting on a watch-through
 
     Audience     not made for kids, both
     Disclosure   none declared — see below
@@ -97,6 +99,26 @@ health insurance, dispute a medical bill, itemized bill, deductible
 
 Low expectations for these — the volume measurement says almost nobody searches
 YouTube for this. They cost nothing and are not the plan.
+
+## What is filled in, and what is deliberately not
+
+Audited 2026-09-15. Filled: picture, description, keywords, country, handle,
+and two channel links — **Check a bill free** → useclaimright.com and
+**Source code** → the GitHub repo. The source link is there because being
+open-source is the trust argument this product actually has, and a channel
+giving billing advice needs one.
+
+Deliberately empty, each for a reason rather than an oversight:
+
+| Field | Why not |
+|---|---|
+| **Contact email** | It would be Matthew's personal address, publicly visible on the About tab. Needs a decision, and probably a separate address, before it goes up. |
+| **Banner** | Nothing to put on it that is not a slogan. A blank banner reads as new; a bad banner reads as trying. |
+| **Channel trailer / featured video** | Three Shorts, one of them public. A trailer is for a channel someone has arrived at on purpose, and nobody has yet. |
+| **Video watermark** | Pointless on Shorts — the player does not show it. |
+
+Revisit all four once there is a reason a viewer would visit the channel page
+rather than be shown a Short in a feed.
 
 ## The synthetic-content disclosure, undecided
 
