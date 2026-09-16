@@ -141,6 +141,10 @@ real person's voice.
 - **No banner, no trailer, no "welcome to my channel".** Nothing is watched
   before there is something to watch.
 - **No upload schedule commitment.** The plan is explicitly slow.
-- **Do not link it from the site yet.** An empty channel linked from a live
-  product looks abandoned; an empty channel nobody knows about looks like
-  nothing.
+- ~~**Do not link it from the site yet.**~~ **Linked 2026-09-15**, once there
+  were three Shorts rather than none. Two places: a muted line at the end of
+  "How it works" on the landing page (where someone who does not know which
+  envelope is which actually is), and the footer row. Plus one line near the top
+  of the repo README. **All three point at the playlist, so they only look right
+  once Shorts 2 and 3 are Public** — until then a visitor follows them to a
+  series with one item in it.

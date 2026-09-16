@@ -6,6 +6,10 @@ and tells you what disagrees.
 **[useclaimright.com](https://www.useclaimright.com)** — free, with a sample audit you can
 read without an account.
 
+**[Short explainers on YouTube](https://www.youtube.com/playlist?list=PLYCXBRe11FUU)** — forty-second drawn videos about the
+paperwork rather than about the tool: which document is which, why a January bill jumps,
+copay versus coinsurance. Scripts and the renderer that builds them are in `video/`.
+
 ## Why this exists
 
 Your bill comes from the provider. The EOB that would prove an error arrives weeks later,
