@@ -1,20 +1,23 @@
 {
   "_comment": "Short 2 in docs/CONTENT.md — the January reset. The first line is carried in `variants` because tts.mjs treats that as the hook; here the hook IS the first thing drawn.",
   "_injury": "Slipped on ice, which is also why it is January. House style: the injury has to earn its place in the story, not just be different from the last one.",
-  "_numbers": "A $1,000 deductible and the SAME $400 visit in both months — that is the whole point. What changes is the split: $100 you / $300 insurance in November, $400 you / $0 insurance in January. An earlier cut showed $40 against $400 as though the PRICE had changed, which is the exact confusion this Short exists to undo. Deliberately not $800, which is Short 1's number; reusing figures across Shorts implies a connection that is not there.",
-  "_jargon": "The word 'deductible' is withheld until the second-to-last line, on purpose. The bucket is explained first and named afterwards, so a viewer who has never heard the word still understands the mechanism before it arrives.",
+  "_numbers": "A $1,000 deductible and the SAME $400 visit in both months — that is the whole point. What changes is the split: $100 you / $300 insurance in November, $400 you / $0 insurance in January. An earlier cut showed $40 against $400 as though the PRICE had changed, which is the exact confusion this Short exists to undo.",
+  "_jargon": "e10 names the word and e11 defines it. An earlier cut named it and stopped, which taught a label rather than a meaning. The definition is the last thing said before the offer, because by then the viewer has watched the mechanism twice and the sentence lands on something they already understand.",
+  "_hold": "e6 asks a question and refuses to answer it. It is a retention beat — the payoff is two lines away and the viewer has a reason to stay for it — and it is also honest, because the answer genuinely is the definition of the word the Short is about.",
   "variants": {
     "ice": "Your body does not know it is January. Your insurance does."
   },
   "body": [
-    { "id": "e2", "text": "Every year you pay the first chunk of your own care. Here, the first thousand dollars." },
+    { "id": "e2", "text": "Every year, you pay the first chunk yourself. Here, a thousand dollars." },
     { "id": "e3", "text": "By November you had filled it." },
     { "id": "e4", "text": "So when you went in, the hospital billed four hundred." },
-    { "id": "e5", "text": "You paid one hundred of it. Your insurance paid the other three hundred." },
-    { "id": "e6", "text": "Then on the first of January, they tip it out." },
-    { "id": "e7", "text": "Same knee, same clinic, same four hundred dollar bill." },
-    { "id": "e8", "text": "This time you pay all four hundred, and your insurance pays nothing." },
-    { "id": "e9", "text": "The word for that bucket is deductible. This one is a thousand dollars a year. Yours will be a different number." },
-    { "id": "e10", "text": "Check yours before you dispute. Or upload them free at UseClaimRight.com." }
+    { "id": "e5", "text": "You paid one hundred. Your insurance paid the other three hundred." },
+    { "id": "e6", "text": "Why did they pay three hundred of it? It will make sense in a second." },
+    { "id": "e7", "text": "Because on the first of January, they tip the bucket out." },
+    { "id": "e8", "text": "Same knee, same clinic, same four hundred dollar bill." },
+    { "id": "e9", "text": "This time you pay all four hundred, and your insurance pays nothing." },
+    { "id": "e10", "text": "That bucket has a name. It is your deductible." },
+    { "id": "e11", "text": "What you pay yourself each year before your insurance starts paying its share. Full bucket, they pay. Empty bucket, you do." },
+    { "id": "e12", "text": "Check yours before you dispute. Or upload them free at UseClaimRight.com." }
   ]
 }

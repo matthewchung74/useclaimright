@@ -212,7 +212,7 @@ and the insurer's letter is the one that says what you owe.
 **Absorbs old videos 1 and 5**, which the earlier review flagged as nearly the
 same video. Drawn, they are one.
 
-### 2. The January reset · MADE — 28.7s
+### 2. The January reset · MADE — 46.0s
 
 **Hook:** *"Your January bill is not a mistake. It is a reset."*
 **Opens on:** an empty bucket with **1 JANUARY** written over it.
@@ -222,7 +222,9 @@ same video. Drawn, they are one.
 the counter goes back to zero. That is why the same visit costs more in January
 than in November, and it is the most common "my bill is wrong" that isn't.
 
-**New art added:** `person_down`, `ice`, `bucket`, `bucket_fill`.
+**New art added:** `person_down`, `ice`, `bucket`, `bucket_fill`, `Spin` (art
+that rotates about a pivot, with an option to drain a fill as it turns),
+`Coins` (dollar signs that fall together).
 
 Two things worth carrying to the next one. The bucket fills by **ordering the
 hatch lines bottom to top** — the ordinary stroke reveal then fills it, with no
@@ -230,9 +232,20 @@ new kind of element. And "they empty it" is a **second bucket**, because a
 whiteboard cannot un-draw; the same rule that made the hurt figure a second
 drawing in Short 1.
 
-The word "deductible" is withheld until the second-to-last line. The bucket is
-explained first and named afterwards, so someone who has never heard the word
-understands the mechanism before it arrives.
+**Name the word, then define it.** An earlier cut named it and stopped, which
+teaches a label rather than a meaning. The bucket is explained first, named
+second to last, and defined last — by which point the viewer has watched the
+mechanism run twice and the sentence lands on something they already understand.
+
+**Hold a question open.** After the November split, one beat asks "why did they
+pay three hundred of it?" and refuses to answer. It is a retention device — the
+payoff is two lines away — and it is honest, because the answer genuinely is the
+definition of the word the Short is about. The red "?" stays on the board until
+the definition is written under it.
+
+**Show the split, not the price.** The first cut of this compared $40 against
+$400 as though the price had changed, which is the exact confusion the Short
+exists to undo. Both visits now show BILL $400 and the split underneath.
 
 Second because deductible is load-bearing for Shorts 7 and 8.
 
