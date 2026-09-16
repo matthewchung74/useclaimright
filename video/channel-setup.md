@@ -21,6 +21,11 @@ no #Shorts tag needed). It is waiting on a watch-through before it goes Public.
     Audience     not made for kids, both
     Disclosure   none declared — see below
 
+**Playlist: "Reading your own medical bill"** · `PLYCXBRe11FUU` · Public, sorted
+**date published (oldest first)** so the series plays in the order it teaches —
+YouTube's default is newest-first, which would have played Short 2 before the
+Short that explains which document is which. Every Short goes in it.
+
 ---
 
 The original note, kept because the reasoning still holds:
