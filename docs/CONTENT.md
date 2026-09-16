@@ -249,18 +249,34 @@ exists to undo. Both visits now show BILL $400 and the split underneath.
 
 Second because deductible is load-bearing for Shorts 7 and 8.
 
-### 3. Copay or coinsurance
+### 3. Copay or coinsurance · MADE — 42.3s
 
-**Hook:** *"One of these is a price. The other is a percentage of a price nobody
-has told you yet."*
-**Opens on:** a coin with **$60** on it, beside a pie chart with no total.
-**Injury:** a twisted ankle, on the way into a routine appointment.
+**Hook:** *"Your plan says you pay twenty percent. Twenty percent of what? They
+tell you afterwards."*
+**Opens on:** a figure hopping on one foot, and a red **20%** with *of what?*
+under it.
+**Injury:** a twisted ankle.
 
-**Teaching beat:** a copay is fixed and knowable before you go; coinsurance is a
-share of a number you will not see until afterwards. Which one your plan says is
-how you check a bill at all.
+**Teaching beat:** a copay is a price you can know before you go; coinsurance is
+a share of a number you will not see until afterwards. The same 20% is then run
+against a $400 visit and a $2,000 visit — $80 and $400 — so the lesson is that
+the share holds still while the number moves.
 
-**New art:** a coin, a pie with its total missing.
+It closes on the plan document with both printed side by side (*office visit
+$30, emergency 20%*), which is the actual answer to "which one do I have": both,
+depending on the visit. That is what the twisted ankle is for — it is the
+cheapest possible injury, and the question is which column it lands in.
+
+**New art added:** `person_hop`, `coin`, `pie`.
+
+**Made third, against this document's own order (1, 2, 4).** Short 2 showed you
+paying $100 of a $400 bill and never said why it was $100 — that is coinsurance.
+Short 3 answers a question Short 2 left open, the way Short 2 answered one Short
+1 left open. Short 4 is next.
+
+A drawing lesson from it: the injury was first drawn as someone sitting holding
+their ankle, and a seated stick figure is a pile of crossing lines that reads as
+a scribble. One foot off the ground is a silhouette that needs no explaining.
 
 ### 4. A charge your insurance has never seen
 

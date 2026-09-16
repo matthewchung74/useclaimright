@@ -121,8 +121,9 @@ build artefact.
 |---|---|---|---|---|
 | 1 | Two numbers — the bill and the letter | `short-01-two-numbers` | ✅ 41.4s | ✅ 2026-09-15 |
 | 2 | The January reset (deductible) | `short-02-january` | ✅ 46.0s | uploaded, Private |
+| 3 | Copay or coinsurance | `short-03-copay` | ✅ 42.3s | — |
 | 4 | A charge your insurance has never seen | — | — | — |
-| 3, 5–10 | see `docs/CONTENT.md` | — | — | — |
+| 5–10 | see `docs/CONTENT.md` | — | — | — |
 
 **`short-NN-` matches the number in `docs/CONTENT.md`.** It briefly did not:
 folders were numbered as they were built, so the superseded document version sat

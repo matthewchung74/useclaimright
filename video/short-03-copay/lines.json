@@ -1,0 +1,19 @@
+{
+  "_comment": "Short 3 in docs/CONTENT.md — copay or coinsurance. The first line is carried in `variants` because tts.mjs treats that as the hook.",
+  "_injury": "A twisted ankle on the way into a routine appointment — the cheapest possible visit, which is the point: the same plan charges two different ways depending on what kind of visit it is.",
+  "_why_now": "The plan's order is 1, 2, 4. This is 3 instead, because Short 2 showed you paying $100 of a $400 bill and never said why it was $100. That is coinsurance. Short 3 answers a question Short 2 left open, the way Short 2 answered one Short 1 left open.",
+  "_numbers": "$30 copay, 20% coinsurance, against a $400 visit and a $2,000 visit. The percentage is held fixed and the price is moved, because that is the whole lesson: the share does not change, the number does.",
+  "variants": {
+    "percent": "Your plan says you pay twenty percent. Twenty percent of what? They tell you afterwards."
+  },
+  "body": [
+    { "id": "f2", "text": "There are two ways a plan charges you, and only one of them is a number you can check in advance." },
+    { "id": "f3", "text": "A copay is a price. Thirty dollars to walk in the door. You know it before you go." },
+    { "id": "f4", "text": "Coinsurance is a share. Twenty percent of whatever the visit turns out to cost." },
+    { "id": "f5", "text": "If the visit costs four hundred, your twenty percent is eighty." },
+    { "id": "f6", "text": "If it costs two thousand, your twenty percent is four hundred." },
+    { "id": "f7", "text": "Same plan. Same twenty percent. The number moved because the price did." },
+    { "id": "f8", "text": "So before you argue with a bill, check which one your plan uses, and for which kind of visit." },
+    { "id": "f9", "text": "Check yours before you dispute. Or upload them free at UseClaimRight.com." }
+  ]
+}

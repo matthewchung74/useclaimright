@@ -146,6 +146,50 @@ def person_down(cx, cy, s=1.0, seed=71):
     ]
 
 
+def person_hop(cx, top, s=1.0, seed=151):
+    """On one foot, the other held up behind, arms out for balance.
+
+    Drawn as a hop rather than as someone sat holding the ankle: a seated stick
+    figure is a pile of crossing lines and reads as a scribble, but one foot off
+    the ground is a silhouette that needs no explaining.
+    """
+    r = 46 * s
+    cy = top + r
+    hip = (cx, cy + r + 150 * s)
+    sh = (cx, cy + r + 46 * s)
+    knee = (cx + 78 * s, hip[1] + 62 * s)
+    foot = (cx + 30 * s, hip[1] + 126 * s)
+    return [
+        circle(cx, cy, r, seed=seed),
+        line((cx, cy + r), hip, n=7, seed=seed + 1),
+        line(sh, (cx - 92 * s, sh[1] - 62 * s), seed=seed + 2),     # arms up, balancing
+        line(sh, (cx + 96 * s, sh[1] - 44 * s), seed=seed + 3),
+        line(hip, (cx - 34 * s, hip[1] + 142 * s), seed=seed + 4),  # the leg still working
+        line(hip, knee, seed=seed + 5) + line(knee, foot, seed=seed + 6),
+        line((cx + 66 * s, foot[1] - 4 * s), (cx + 108 * s, foot[1] - 44 * s), n=3, seed=seed + 7),
+        line((cx + 76 * s, foot[1] + 38 * s), (cx + 126 * s, foot[1] + 20 * s), n=3, seed=seed + 8),
+    ]
+
+
+def coin(cx, cy, r, seed=157):
+    """Two circles, because one circle is a ball and two are a coin."""
+    return [circle(cx, cy, r, seed=seed), circle(cx, cy, r * 0.82, seed=seed + 1)]
+
+
+def pie(cx, cy, r, frac, seed=163):
+    """A circle with a wedge cut out and hatched. The wedge is the share; the
+    circle is the price nobody has told you yet."""
+    a0, a1 = -math.pi / 2, -math.pi / 2 + 2 * math.pi * frac
+    edge = [circle(cx, cy, r, seed=seed),
+            line((cx, cy), (cx + r * math.cos(a0), cy + r * math.sin(a0)), seed=seed + 1),
+            line((cx, cy), (cx + r * math.cos(a1), cy + r * math.sin(a1)), seed=seed + 2)]
+    for i in range(1, 5):                       # hatching inside the wedge
+        a = a0 + (a1 - a0) * i / 5
+        edge.append(line((cx, cy), (cx + r * 0.92 * math.cos(a), cy + r * 0.92 * math.sin(a)),
+                         n=4, seed=seed + 3 + i))
+    return edge
+
+
 def ice(x, y, w, seed=79):
     """A patch of it. The short marks underneath are what stop the long line
     reading as the ground."""
@@ -314,12 +358,34 @@ ART = {"short-01-two-numbers": {
             T((300, 2490), "$1,000 a year, in this case", 58, GREY)],
     "e12": [T((330, 2640), "useclaimright.com", 96, ACCENT),
             S([line((330, 2770), (1160, 2770), n=14, seed=119)], colour=ACCENT, width=8)],
+}, "short-03-copay": {
+    "hook-percent": [S(person_hop(300, 520)), T((760, 420), "20%", 150, ACCENT),
+                     T((770, 600), "of what?", 70, GREY)],
+    # One divider, drawn once, so the two halves are visibly two things.
+    "f2": [S([line((800, 940), (800, 1520), n=12, seed=167)], colour=GREY, width=5)],
+    "f3": [S(coin(430, 1110, 108)), T((355, 1070), "$30", 76),
+           T((300, 1290), "copay", 84), T((300, 1390), "a price", 52, GREY)],
+    "f4": [S(pie(1160, 1110, 118, 0.2)), T((930, 1290), "coinsurance", 84),
+           T((930, 1390), "20% of ???", 52, GREY)],
+    "f5": [S(box(200, 1660, 700, 1910, seed=173)),
+           T((230, 1690), "$400 visit", 54, GREY), T((230, 1780), "you $80", 80)],
+    "f6": [S(box(880, 1660, 1380, 1910, seed=179)),
+           T((910, 1690), "$2,000 visit", 54, GREY),
+           T((910, 1780), "you $400", 80, ACCENT)],
+    "f7": [T((560, 1990), "same 20%", 78)],
+    # The plan document, which is where both answers are actually printed.
+    "f8": [S(box(400, 2130, 1200, 2420, seed=181)),
+           T((430, 2160), "your plan says", 50, GREY),
+           T((430, 2250), "office visit", 54, GREY), T((880, 2250), "$30", 54),
+           T((430, 2340), "emergency", 54, GREY), T((880, 2340), "20%", 54)],
+    "f9": [T((330, 2580), "useclaimright.com", 96, ACCENT),
+           S([line((330, 2710), (1160, 2710), n=14, seed=191)], colour=ACCENT, width=8)],
 }}
 
 # Beats that pull back to show everything drawn so far, instead of the usual
 # two-beat shot. The summary line of a comparison needs both halves of the
 # comparison in frame — e7 was cutting off the $40 bill it argues against.
-FRAME_ALL = {"short-02-january": {"e10"}}
+FRAME_ALL = {"short-02-january": {"e10"}, "short-03-copay": {"f7"}}
 
 
 
