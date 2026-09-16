@@ -359,10 +359,13 @@ ART = {"short-01-two-numbers": {
     "e12": [T((330, 2640), "useclaimright.com", 96, ACCENT),
             S([line((330, 2770), (1160, 2770), n=14, seed=119)], colour=ACCENT, width=8)],
 }, "short-03-copay": {
-    "hook-percent": [S(person_hop(300, 520)), T((760, 420), "20%", 150, ACCENT),
-                     T((770, 600), "of what?", 70, GREY)],
+    # The 20% goes down FIRST. Beat time is shared by stroke length, and the
+    # hopping figure is much the longest element — drawn first it ate three of
+    # the hook's four seconds, so the one image worth seeing arrived last.
+    "hook-percent": [T((240, 420), "20%", 150, ACCENT),
+                     T((250, 600), "of what?", 70, GREY), S(person_hop(820, 520))],
     # One divider, drawn once, so the two halves are visibly two things.
-    "f2": [S([line((800, 940), (800, 1520), n=12, seed=167)], colour=GREY, width=5)],
+    "f2": [S([line((800, 960), (800, 1520), n=12, seed=167)], colour=GREY, width=5)],
     "f3": [S(coin(430, 1110, 108)), T((355, 1070), "$30", 76),
            T((300, 1290), "copay", 84), T((300, 1390), "a price", 52, GREY)],
     "f4": [S(pie(1160, 1110, 118, 0.2)), T((930, 1290), "coinsurance", 84),
