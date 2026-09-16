@@ -251,11 +251,10 @@ Second because deductible is load-bearing for Shorts 7 and 8.
 
 ### 3. Copay or coinsurance · MADE — 42.3s
 
-**Hook:** *"Your plan says you pay twenty percent. Twenty percent of what? They
-tell you afterwards."*
-**Opens on:** a figure hopping on one foot, and a red **20%** with *of what?*
-under it.
-**Injury:** a twisted ankle.
+**Hook:** *"You tripped over the cat. Your plan says you pay twenty percent."* —
+then, one beat later, *"Twenty percent of what? They tell you afterwards."*
+**Opens on:** a figure hopping on one leg while the cat walks off unbothered.
+**Injury:** a knee, courtesy of the cat.
 
 **Teaching beat:** a copay is a price you can know before you go; coinsurance is
 a share of a number you will not see until afterwards. The same 20% is then run
@@ -264,10 +263,18 @@ the share holds still while the number moves.
 
 It closes on the plan document with both printed side by side (*office visit
 $30, emergency 20%*), which is the actual answer to "which one do I have": both,
-depending on the visit. That is what the twisted ankle is for — it is the
-cheapest possible injury, and the question is which column it lands in.
+depending on the visit. That is what the cat is for — tripping over it is the
+cheapest possible reason to see a doctor, and the question is which column that
+lands in.
 
-**New art added:** `person_hop`, `coin`, `pie`.
+**The hook has to be a scene, not a statement.** The first cut opened on "your
+plan says you pay twenty percent," which is a sentence about a document, and it
+made this the odd Short out: 1 and 2 both open on something happening to a
+person. Moving the question to the second beat costs nothing — the big red 20%
+is then the first thing drawn in that beat rather than the third thing in the
+hook — and the Short got 4 seconds shorter in the process.
+
+**New art added:** `person_hop`, `cat`, `coin`, `pie`.
 
 **Made third, against this document's own order (1, 2, 4).** Short 2 showed you
 paying $100 of a $400 bill and never said why it was $100 — that is coinsurance.
@@ -412,7 +419,7 @@ image, and no injury repeats:
 |---|---|---|
 | 1 | a figure doubled over at 2 a.m. | abdominal, unnamed |
 | 2 | an empty bucket, 1 JANUARY | slipped on ice |
-| 3 | a $60 coin beside a pie with no total | twisted ankle |
+| 3 | a figure hopping, the cat walking off | knee, courtesy of the cat |
 | 4 | two lists, one a row longer | bee sting |
 | 5 | a phone and one sentence to read | arm in a sling |
 | 6 | three bars of wildly different heights | a splinter |

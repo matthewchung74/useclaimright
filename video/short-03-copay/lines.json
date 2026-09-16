@@ -1,13 +1,14 @@
 {
   "_comment": "Short 3 in docs/CONTENT.md — copay or coinsurance. The first line is carried in `variants` because tts.mjs treats that as the hook.",
-  "_injury": "A twisted ankle on the way into a routine appointment — the cheapest possible visit, which is the point: the same plan charges two different ways depending on what kind of visit it is.",
+  "_injury": "Tripped over the cat, hurt a knee. Specific rather than generic, because specificity is what makes the deadpan land — and because it is the cheapest possible reason to see a doctor, which is the point: the same plan charges two different ways depending on what kind of visit it is. The cat walks off unbothered.",
+  "_hook_shape": "The hook is a SCENE, not a statement. Shorts 1 and 2 both open on something happening to a person (2 a.m. doubled over, slipped on ice) and an earlier cut of this one opened on a sentence about a document, which made it the odd one out. The question — twenty percent of what — moved to the second beat, where the big red 20% can be the first thing drawn in it.",
   "_why_now": "The plan's order is 1, 2, 4. This is 3 instead, because Short 2 showed you paying $100 of a $400 bill and never said why it was $100. That is coinsurance. Short 3 answers a question Short 2 left open, the way Short 2 answered one Short 1 left open.",
   "_numbers": "$30 copay, 20% coinsurance, against a $400 visit and a $2,000 visit. The percentage is held fixed and the price is moved, because that is the whole lesson: the share does not change, the number does.",
   "variants": {
-    "percent": "Your plan says you pay twenty percent. Twenty percent of what? They tell you afterwards."
+    "cat": "You tripped over the cat. Your plan says you pay twenty percent."
   },
   "body": [
-    { "id": "f2", "text": "There are two ways a plan charges you, and only one of them is a number you can check in advance." },
+    { "id": "f2", "text": "Twenty percent of what? They tell you afterwards." },
     { "id": "f3", "text": "A copay is a price. Thirty dollars to walk in the door. You know it before you go." },
     { "id": "f4", "text": "Coinsurance is a share. Twenty percent of whatever the visit turns out to cost." },
     { "id": "f5", "text": "If the visit costs four hundred, your twenty percent is eighty." },

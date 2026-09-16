@@ -171,6 +171,25 @@ def person_hop(cx, top, s=1.0, seed=151):
     ]
 
 
+def cat(cx, cy, s=1.0, seed=193):
+    """Walking away, tail up, entirely unbothered. Drawn facing out of frame
+    because the joke is that it has already moved on."""
+    return [
+        line((cx, cy - 6 * s), (cx + 120 * s, cy - 16 * s), n=6, seed=seed),      # back
+        line((cx + 120 * s, cy - 16 * s), (cx + 112 * s, cy + 32 * s), seed=seed + 1),
+        line((cx + 112 * s, cy + 32 * s), (cx + 12 * s, cy + 34 * s), n=6, seed=seed + 2),
+        line((cx + 12 * s, cy + 34 * s), (cx, cy - 6 * s), seed=seed + 3),
+        line((cx + 24 * s, cy + 34 * s), (cx + 20 * s, cy + 78 * s), seed=seed + 4),
+        line((cx + 54 * s, cy + 34 * s), (cx + 58 * s, cy + 78 * s), seed=seed + 5),
+        line((cx + 92 * s, cy + 33 * s), (cx + 96 * s, cy + 78 * s), seed=seed + 6),
+        circle(cx + 148 * s, cy - 28 * s, 30 * s, seed=seed + 7),
+        line((cx + 128 * s, cy - 48 * s), (cx + 136 * s, cy - 70 * s), n=2, seed=seed + 8),
+        line((cx + 158 * s, cy - 70 * s), (cx + 168 * s, cy - 48 * s), n=2, seed=seed + 9),
+        wobble([(cx - 4 * s - 26 * s * math.sin(i / 7), cy - 10 * s - 66 * s * i / 8)
+                for i in range(9)], amp=1.6, seed=seed + 10),                     # tail
+    ]
+
+
 def coin(cx, cy, r, seed=157):
     """Two circles, because one circle is a ball and two are a coin."""
     return [circle(cx, cy, r, seed=seed), circle(cx, cy, r * 0.82, seed=seed + 1)]
@@ -362,11 +381,12 @@ ART = {"short-01-two-numbers": {
     # The 20% goes down FIRST. Beat time is shared by stroke length, and the
     # hopping figure is much the longest element — drawn first it ate three of
     # the hook's four seconds, so the one image worth seeing arrived last.
-    "hook-percent": [T((240, 420), "20%", 150, ACCENT),
-                     T((250, 600), "of what?", 70, GREY), S(person_hop(820, 520))],
+    # The scene first. The question, and the big red number, are the next beat.
+    "hook-cat": [S(person_hop(300, 420)), S(cat(640, 830))],
+    "f2": [T((900, 480), "20%", 150, ACCENT), T((910, 660), "of what?", 70, GREY)],
     # One divider, drawn once, so the two halves are visibly two things.
-    "f2": [S([line((800, 960), (800, 1520), n=12, seed=167)], colour=GREY, width=5)],
-    "f3": [S(coin(430, 1110, 108)), T((355, 1070), "$30", 76),
+    "f3": [S([line((800, 1010), (800, 1520), n=12, seed=167)], colour=GREY, width=5),
+           S(coin(430, 1110, 108)), T((355, 1070), "$30", 76),
            T((300, 1290), "copay", 84), T((300, 1390), "a price", 52, GREY)],
     "f4": [S(pie(1160, 1110, 118, 0.2)), T((930, 1290), "coinsurance", 84),
            T((930, 1390), "20% of ???", 52, GREY)],
