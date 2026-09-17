@@ -447,7 +447,7 @@ ART = {"short-01-two-numbers": {
     # Kept narrow: the shot is set by width, so a bee far off to the side
     # shrinks the figure and the joke with it.
     "hook-bee": [S(person(520, 150, s=1.5)), S(swollen_hand(631, 486, r=62)),
-                 S(bee(800, 230, s=1.4)), T((390, 740), "urgent care", 76, GREY)],
+                 S(bee(800, 230, s=1.4)), T((390, 740), "your doctor", 76, GREY)],
     # The surprise, second line: three rows against two. The gap in the letter
     # sits level with the shot, so the missing row is visible before it is said.
     "h2": [T((180, 920), "the bill", 66), S(box(160, 1010, 700, 1410, seed=227)),

@@ -5,15 +5,36 @@
   "_numbers": "One figure only, the $100 shot. The other rows carry no amounts, because the point is which row is missing, not what the rows add up to.",
   "_accuracy": "Says 'usually', not 'always'. A charge missing from the EOB is most often a claim still in process or one sent at a different time; it can also be something never submitted, which the phone question in h7 catches either way.",
   "variants": {
-    "bee": "A bee stung you, and your hand swelled up like a rubber glove. So, urgent care."
+    "bee": "A bee stung you, and your hand swelled up like a rubber glove. So you go to your doctor."
   },
   "body": [
-    { "id": "h2", "text": "The bill lists three charges. Your insurance letter lists two." },
-    { "id": "h3", "text": "The shot, a hundred dollars, is not on the letter at all." },
-    { "id": "h4", "text": "That is usually not a mistake. It is pending. Your insurance just has not finished with it yet." },
-    { "id": "h5", "text": "Charges can reach your insurance at different times, and one can run weeks behind the rest." },
-    { "id": "h6", "text": "So do not pay that line yet. Wait for the letter that lists it." },
-    { "id": "h7", "text": "Or call and ask one question. Has this been sent to my insurance?" },
-    { "id": "h8", "text": "Check yours before you dispute. Or upload them free at UseClaimRight.com." }
+    {
+      "id": "h2",
+      "text": "The bill lists three charges. Your insurance letter lists two."
+    },
+    {
+      "id": "h3",
+      "text": "The shot, a hundred dollars, is not on the letter at all."
+    },
+    {
+      "id": "h4",
+      "text": "That is usually not a mistake. It is pending. Your insurance just has not finished with it yet."
+    },
+    {
+      "id": "h5",
+      "text": "Charges can reach your insurance at different times, and one can run weeks behind the rest."
+    },
+    {
+      "id": "h6",
+      "text": "So do not pay that line yet. Wait for the letter that lists it."
+    },
+    {
+      "id": "h7",
+      "text": "Or call and ask one question. Has this been sent to my insurance?"
+    },
+    {
+      "id": "h8",
+      "text": "Check yours before you dispute. Or upload them free at UseClaimRight.com."
+    }
   ]
 }

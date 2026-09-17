@@ -327,7 +327,7 @@ a scribble. One foot off the ground is a silhouette that needs no explaining.
 
 ### 4. A charge your insurance has never seen · MADE — 34.9s
 
-**Hook:** *"A bee stung you, and your hand swelled up like a rubber glove. So, urgent care."*
+**Hook:** *"A bee stung you, and your hand swelled up like a rubber glove. So you go to your doctor."*
 **Opens on:** a figure with a balloon of a hand, and the bee that did it.
 **Injury:** a bee sting — small, and it still produces a line nobody can explain.
 
