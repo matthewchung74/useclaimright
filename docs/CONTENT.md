@@ -444,9 +444,9 @@ Short explained the SBC. Linked from the app's "What's an SBC?" box.
 
 **New art added:** `doc` (a sheet with unreadable lines).
 
-### 12. The claim · MADE — 36.2s
+### 12. The claim · MADE — 36.6s
 
-**Hook:** *"You walked into a glass door. Very clean glass. So you see your doctor."*
+**Hook:** *"You walked into a glass door. It was very clean glass. So you see your doctor."*
 **Opens on:** a figure with a bump on the head beside an empty door frame.
 **Injury:** a glass door.
 

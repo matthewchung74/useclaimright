@@ -186,7 +186,7 @@ Then record the video id in the Status table below and in `channel-setup.md`.
 | 3 | You tripped over your cat. Now: copay or coinsurance? | `short-03-copay` | 42.5s | `aaO_pqBPpSs` Public |
 | 4 | A charge on your bill your insurance has never seen | `short-04-never-seen` | 35.4s | `dvOpGw7camA` Private |
 | 11 | The SBC | `short-11-sbc` | 38.2s | not yet uploaded |
-| 12 | The claim | `short-12-claim` | 36.2s | not yet uploaded |
+| 12 | The claim | `short-12-claim` | 36.6s | not yet uploaded |
 | 5–10 | see `docs/CONTENT.md` | — | — | — |
 
 ## Superseded, awaiting removal
