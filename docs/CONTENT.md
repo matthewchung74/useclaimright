@@ -400,8 +400,14 @@ step further from the phrase, and it did not explain who negotiates.)
 
 **Say where a number came from.** An earlier cut said "at twenty percent, that is
 sixty dollars" with no source, which is the same fault as Short 2 v1 implying the
-price had changed. It now says "your plan says you pay twenty percent of it", and
-the board reads "your plan's coinsurance: 20%".
+price had changed. It now says "your plan says you pay twenty percent of it".
+
+**Coinsurance is the percentage, not the dollars.** The 20% is the coinsurance;
+the $60 is your share. The board writes the arithmetic out — *20% coinsurance of
+the $300 allowed, not the $2,000 billed* — so the label cannot be read as a name
+for the $60. Worth knowing when someone checks their own letter: real EOBs print
+a **Coinsurance** column with a dollar figure in it, so the word does double duty
+in the wild even though the plan defines the percentage.
 
 ### 7. A family deductible is not two of yours
 

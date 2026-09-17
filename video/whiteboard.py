@@ -706,8 +706,10 @@ ART = {"short-01-two-numbers": {
            T((260, 2760), "years before you walked in", 54, GREY)],
     "m8": [T((250, 2920), "your share", 58, GREY), S(bar(250, 2990, 30, 90)),
            T((330, 3005), "$60", 76, ACCENT),
-           T((250, 3120), "your plan's coinsurance: 20%", 56, GREY),
-           T((250, 3190), "of the allowed, not the billed", 56, GREY)],
+           # The percentage is the coinsurance; the dollars are your share. Writing
+           # the arithmetic out stops the label reading as a name for the $60.
+           T((250, 3120), "20% coinsurance", 56, GREY),
+           T((250, 3190), "of the $300 allowed, not the $2,000 billed", 56, GREY)],
     "m9": [T((250, 3340), "read the letter", 90),
            T((250, 3450), "before you panic", 90)],
     "m10": [T((300, 3640), "useclaimright.com", 100, ACCENT),
