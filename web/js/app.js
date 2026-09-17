@@ -1128,7 +1128,8 @@ $("confirm-review").onclick = async () => {
       pairUnrelated: unrelatedPair(auditText(data, "bill"), auditText(data, "eob")),
       // Dates and codes cannot see this one: two members of a household at one
       // clinic on one day share both. Only the claim-level patient differs.
-      wrongPerson: wrongPatient(data.patientName, data.eobPatients) });
+      wrongPerson: wrongPatient(data.patientName, data.eobPatients),
+      billUnidentified: unidentifiedBill(data) });
     show("report");
     track("audit_completed", { ...auditShape(data), mode: "single" });
     if (state.eob && !state.eob.saved && $("save-eob").checked) {
@@ -1242,7 +1243,7 @@ const PLAN_TYPES = new Set(["copay_mismatch", "coinsurance_mismatch", "deductibl
 // were charged, what the insurer allowed, what the plan promised.
 const EVIDENCE_SOURCES = [["billQuote", "Bill"], ["eobQuote", "EOB"], ["sbcQuote", "SBC"]];
 
-function renderReport(data, { ocrLow, model, planApplied, planReason, pairUnrelated, wrongPerson, noEob } = {}) {
+function renderReport(data, { ocrLow, model, planApplied, planReason, pairUnrelated, wrongPerson, noEob, billUnidentified } = {}) {
   const { findings = [], totals = {}, occurrenceTable = [] } = data;
   lastReport = { findings, totals, occurrenceTable };
   // Every report render goes through here — a fresh audit and one re-opened from
@@ -1261,6 +1262,7 @@ function renderReport(data, { ocrLow, model, planApplied, planReason, pairUnrela
   $("new-audit").hidden = false;
 
   $("report-caveat").hidden = !ocrLow;
+  $("report-thin-warning").hidden = !billUnidentified;
 
   // Backstop for a mismatched pair that got past the pre-send warning.
   //
@@ -1623,6 +1625,25 @@ function unrelatedPair(billText, eobText) {
   return !rel.related && rel.confident;
 }
 
+// A bill the model could not identify at all: no provider name and no date of
+// service anywhere on it. Both are extracted verbatim and never inferred, so two
+// empties mean the page genuinely carries neither — a fragment of a statement
+// rather than a statement.
+//
+// Worth its own warning because the findings most likely to fire on a fragment
+// are the ones that need a stay to reason about. duplicate_charge asks whether a
+// service was "billed more times than plausibly performed", and without dates
+// there is nothing to measure the count against. On 2026-09-14 a real audit read
+// 843 characters with no provider, no dates, no patient and no statement ID, and
+// reported $3,523 worth disputing — a newborn's nursery stay, billed correctly.
+// The prompt no longer treats missing dates as evidence of duplication, but that
+// fixes one finding type; this says the quiet part for all of them.
+//
+// statementId is deliberately not part of the test: the schema notes it is empty
+// whenever a bill simply prints no such number, which is common and normal.
+const unidentifiedBill = (data) =>
+  !String(data?.provider || "").trim() && !(data?.serviceDates || []).length;
+
 async function openAudit(id) {
   const full = await getDoc(doc(db, `users/${auth.currentUser.uid}/audits/${id}`));
   const data = full.data();
@@ -1641,6 +1662,7 @@ async function openAudit(id) {
     // infer it the same way it infers everything else about the pair: from what
     // the model transcribed. No EOB text means there was no EOB.
     noEob: !auditText(data, 'eob'),
+    billUnidentified: unidentifiedBill(data),
   });
   renderReportUsage(data);
   show("report");

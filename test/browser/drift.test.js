@@ -308,3 +308,28 @@ test("the no-EOB decision is never made by testing an asDoc() wrapper", () => {
     `noEob computed from ${bad.join(", ")} — asDoc() always returns an object, so a ` +
     `truthiness test on payload.eob is always true. Use auditText(data, "eob").`);
 });
+
+// The same lesson as the asDoc test above, one rung further out: a report
+// warning is only worth anything if every path that renders a report computes
+// it. noEob was correct for months and fired on nothing, because one call site
+// had it and the code that ran did not.
+//
+// renderReport is reached three ways — a fresh single audit, an audit re-opened
+// from history, and the signed-out sample. The sample deliberately passes no
+// flags (it is a made-up bill and says so on screen), so the two real paths are
+// the ones that must carry billUnidentified.
+test("every real report path decides whether the bill could be identified", () => {
+  assert.match(APP_JS, /const unidentifiedBill = \(data\) =>\s*\n?\s*!String\(data\?\.provider/,
+    "unidentifiedBill no longer reads provider — re-read this test before trusting it");
+
+  const wired = [...APP_JS.matchAll(/billUnidentified:\s*unidentifiedBill\(data\)/g)].length;
+  assert.equal(wired, 2,
+    `billUnidentified is computed at ${wired} of the 2 real renderReport call sites ` +
+    `(fresh audit, and openAudit from history). A warning wired into one path is a ` +
+    `warning nobody sees on the other.`);
+
+  assert.match(APP_JS, /\$\("report-thin-warning"\)\.hidden = !billUnidentified;/,
+    "report-thin-warning is no longer toggled from billUnidentified");
+  assert.ok(readFileSync(new URL("../../web/app.html", import.meta.url), "utf8")
+    .includes('id="report-thin-warning"'), "report-thin-warning is missing from app.html");
+});
