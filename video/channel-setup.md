@@ -18,9 +18,9 @@ single videos, so replacing a Short does not break them.
 | 1 | 1 | Bill or EOB? Which one says what you actually owe | `l0g-GiNdqbQ` |
 | 2 | 12 | Claim, EOB, bill: the 3 papers one visit makes | `J5W0eRzFsW8` |
 | 3 | 11 | Your SBC: where your plan's prices are written | `D7ZMQ1V1-ts` |
-| 4 | 2 | Why the same visit costs more in January (deductible) | `YKheiL2nerE` |
+| 4 | 2 | January resets your deductible: why the same visit costs more | `YKheiL2nerE` |
 | 5 | 3 | Copay vs coinsurance: why one is fixed and one isn't | `aaO_pqBPpSs` |
-| 6 | 4 | A charge that's not on your EOB? It's probably pending | `dvOpGw7camA` |
+| 6 | 4 | Not on your EOB? The charge is probably pending | `dvOpGw7camA` |
 
 All six are Public as of 2026-09-17. **Titles say what the viewer will learn**,
 not what happens in the video: the hook is the video's job, the title's job is to

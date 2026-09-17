@@ -149,8 +149,14 @@ list:
 Channel `@useclaimright`, playlist **Reading your own medical bill**
 (`PLYCXBRe11FUU`). Studio → **Create** → **Upload videos**, then:
 
-- **Title:** the surprise, in plain words, under about 60 characters. Match the
-  video: when Short 1 changed from hospital to urgent care, its title did too.
+- **Title:** the surprise, in plain words. **The subject goes in the first 35
+  characters**: both Studio and the Shorts feed cut the title at about 38, so
+  whatever explains the subject is what gets cut. "Why the same visit costs more
+  in January (deductible)" arrived as "Why the same visit costs more in J…",
+  losing both the month and the word; "January resets your deductible: why the
+  same visit costs more" survives the cut. Match the video, too: when Short 1
+  changed from hospital to urgent care, its title did as well. Retitling a live
+  video is free and keeps its views and its link.
 - **Description:** five short paragraphs, in this order:
   1. the surprise, in one or two sentences
   2. the explanation, with the jargon named
