@@ -1,0 +1,18 @@
+{
+  "_comment": "Short 12 in docs/CONTENT.md: the claim. Linked from the app's 'What's an EOB?' box, which says an EOB is sent 'after processing a claim' and tells people to look under Claims on their insurer's site.",
+  "_injury": "Walked into a glass door. Very clean glass. The bump is the reason for the visit, and the joke is the second sentence.",
+  "_order": "The story runs down the board in the order the paper moves: doctor, claim, insurance, EOB, bill. 'The order it is meant to go in' is deliberate: Short 4 is about the bill arriving before the answer does.",
+  "_jargon": "Never calls the bill 'the claim' (see docs/CONTENT.md): the claim is what the office sends the insurer, and the EOB is the insurer's answer to it.",
+  "variants": {
+    "door": "You walked into a glass door. Very clean glass. So you see your doctor."
+  },
+  "body": [
+    { "id": "j2", "text": "That one visit makes three pieces of paper, and you only ever get two." },
+    { "id": "j3", "text": "The first is the claim. Your doctor's office sends it to your insurance, not to you." },
+    { "id": "j4", "text": "It lists what they did, in codes, and what they charge for each." },
+    { "id": "j5", "text": "Your insurance answers it with the Explanation of Benefits. What they paid, and what is yours." },
+    { "id": "j6", "text": "Then the bill comes to you, for your part." },
+    { "id": "j7", "text": "Claim, answer, bill. That is the order it is meant to go in. And your insurer's website lists every claim, under Claims." },
+    { "id": "j8", "text": "Check yours before you dispute. Or upload them free at UseClaimRight.com." }
+  ]
+}

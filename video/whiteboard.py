@@ -247,6 +247,34 @@ def clock(cx, cy, r, seed=223):
     return strokes
 
 
+def bump(x, y, r=22, seed=257):
+    """A lump on the head, with the little stars that say it hurt."""
+    strokes = [circle(x, y, r, seed=seed)]
+    for i, (dx, dy) in enumerate(((r * 2.4, -r * 1.2), (r * 3.4, r * 0.4), (r * 1.2, -r * 2.6))):
+        cx, cy, k = x + dx, y + dy, r * 0.45
+        strokes += [line((cx - k, cy), (cx + k, cy), n=2, seed=seed + 2 * i + 1),
+                    line((cx, cy - k), (cx, cy + k), n=2, seed=seed + 2 * i + 2)]
+    return strokes
+
+
+def glass_door(x0, y0, w, h, seed=271):
+    """A frame with two shine marks and nothing else, because the joke is that
+    there is nothing there to see."""
+    return box(x0, y0, x0 + w, y0 + h, seed=seed) + [
+        line((x0 + w * 0.2, y0 + h * 0.3), (x0 + w * 0.45, y0 + h * 0.12), n=3, seed=seed + 4),
+        line((x0 + w * 0.3, y0 + h * 0.36), (x0 + w * 0.55, y0 + h * 0.18), n=3, seed=seed + 5)]
+
+
+def doc(x0, y0, x1, y1, rows=3, seed=281):
+    """A sheet with unreadable body lines: paper, not a particular form."""
+    strokes = box(x0, y0, x1, y1, seed=seed)
+    for i in range(rows):
+        yy = y0 + (y1 - y0) * (i + 1) / (rows + 1)
+        strokes.append(line((x0 + 40, yy), (x0 + (x1 - x0 - 80) * (0.95 - 0.12 * i) + 40, yy),
+                            n=6, seed=seed + 4 + i))
+    return strokes
+
+
 def ice(x, y, w, seed=79):
     """A patch of it. The short marks underneath are what stop the long line
     reading as the ground."""
@@ -470,6 +498,53 @@ ART = {"short-01-two-numbers": {
            T((580, 3220), "to my insurance?", 60)],
     "h8": [T((300, 3490), "useclaimright.com", 100, ACCENT),
            S([line((300, 3620), (1160, 3620), n=14, seed=251)], colour=ACCENT, width=8)],
+}, "short-11-sbc": {
+    # The toe is the swollen_hand shape at the end of a leg: for person(cx,
+    # top, s) the right foot is at (cx + 66s, top + 370s).
+    "hook-toe": [S(person(700, 150, s=1.5)), S(swollen_hand(799, 705, r=34, seed=291)),
+                 T((880, 170), "$?", 120, ACCENT)],
+    "i2": [S(doc(420, 880, 980, 1260, seed=293)), T((1010, 1040), "never opened", 58, GREY)],
+    # Named in the third line, at about ten seconds.
+    "i3": [T((520, 1330), "SBC", 150),
+           T((330, 1540), "Summary of Benefits", 62, GREY),
+           T((330, 1620), "and Coverage", 62, GREY)],
+    # Side by side because they are being compared: two plans, one layout.
+    "i4": [S(doc(300, 1790, 640, 2090, seed=301)), S(doc(900, 1790, 1240, 2090, seed=301)),
+           T((360, 2110), "plan A", 54, GREY), T((960, 2110), "plan B", 54, GREY),
+           T((560, 2200), "same layout", 70)],
+    "i5": [S(box(300, 2340, 1300, 2660, seed=307)),
+           T((400, 2380), "office visit", 62, GREY), T((1010, 2375), "$30", 72),
+           S([line((320, 2500), (1280, 2500), n=10, seed=311)], colour=GREY, width=4)],
+    "i6": [T((400, 2540), "X-ray", 62, GREY), T((1010, 2535), "20%", 72, ACCENT),
+           S(ellipse(800, 2583, 470, 60, seed=313), colour=ACCENT, width=8)],
+    "i7": [S(phone(420, 2760, 210, 340, seed=317)),
+           T((690, 2840), "insurer website", 58), T((690, 2920), "your plan, SBC", 58, GREY)],
+    "i8": [T((330, 3170), "then check the bill", 76)],
+    "i9": [T((300, 3360), "useclaimright.com", 100, ACCENT),
+           S([line((300, 3490), (1160, 3490), n=14, seed=319)], colour=ACCENT, width=8)],
+}, "short-12-claim": {
+    "hook-door": [S(glass_door(860, 120, 340, 620)), S(person(560, 150, s=1.5)),
+                  S(bump(620, 150))],
+    # Three sheets, the first in grey with a question mark: the one you never see.
+    "j2": [S(doc(200, 880, 520, 1180, seed=331), colour=GREY), T((320, 970), "?", 120, GREY),
+           S(doc(640, 880, 960, 1180, seed=337)), S(doc(1080, 880, 1400, 1180, seed=341))],
+    # From here the paper moves down the board in the order it travels.
+    "j3": [S(hospital(650, 1370, 300, 230, seed=347)), T((620, 1620), "doctor's office", 56, GREY),
+           S(arrow((800, 1710), (800, 1810), seed=353)),
+           S(box(600, 1840, 1000, 2100, seed=359), colour=GREY),
+           T((640, 1870), "CLAIM", 74, GREY),
+           S(arrow((800, 2130), (800, 2230), seed=361)), T((610, 2250), "insurance", 84)],
+    "j4": [T((640, 1975), "codes, prices", 52, GREY)],
+    "j5": [S(arrow((800, 2370), (800, 2470), seed=367)), S(box(560, 2500, 1040, 2760, seed=371)),
+           T((600, 2530), "EOB", 76), T((600, 2640), "the answer", 56, GREY)],
+    "j6": [S(arrow((800, 2790), (800, 2890), seed=373)), S(box(560, 2920, 1040, 3160, seed=379)),
+           T((600, 2950), "BILL", 76), T((600, 3060), "your part", 56, GREY)],
+    # The arrows already show the order, so this line draws where to see your
+    # own claims rather than restating it.
+    "j7": [S(phone(330, 3210, 180, 290, seed=389)),
+           T((570, 3250), "insurer website", 70), T((570, 3340), "Claims", 80, ACCENT)],
+    "j8": [T((300, 3540), "useclaimright.com", 100, ACCENT),
+           S([line((300, 3670), (1160, 3670), n=14, seed=383)], colour=ACCENT, width=8)],
 }}
 
 # Beats that pull back to show everything drawn so far, instead of the usual

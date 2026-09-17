@@ -427,6 +427,42 @@ in-network hospital (the anaesthetist nobody chose — high incidence, and the N
 Surprises Act means it needs care), and a free annual physical that arrives with
 a bill because a symptom got mentioned.
 
+### 11. The SBC · MADE — 38.2s
+
+**Hook:** *"You stubbed your toe so hard you are sure it is broken. Before you go
+in, one question. What will this cost?"*
+**Opens on:** a figure with a throbbing toe and a red "$?".
+**Injury:** a stubbed toe.
+
+**Teaching beat:** your plan already wrote the prices down, in the **Summary of
+Benefits and Coverage**. Every plan has one in the same legal layout; find the
+row for what you need ($30 office visit, 20% X-ray, the same figures as Short 3),
+and find the PDF on your insurer's website under your plan.
+
+**Why it was added:** the app asks for three documents (bill, EOB, SBC) and no
+Short explained the SBC. Linked from the app's "What's an SBC?" box.
+
+**New art added:** `doc` (a sheet with unreadable lines).
+
+### 12. The claim · MADE — 36.2s
+
+**Hook:** *"You walked into a glass door. Very clean glass. So you see your doctor."*
+**Opens on:** a figure with a bump on the head beside an empty door frame.
+**Injury:** a glass door.
+
+**Teaching beat:** one visit makes three pieces of paper and you only get two.
+The **claim** goes from the doctor's office to your insurance; the EOB is the
+insurance's answer; the bill comes to you last, for your part. That is the order
+it is meant to go in (Short 4 is what happens when it is not), and every claim is
+listed on your insurer's website under Claims.
+
+**Why it was added:** "claim" is the word on every insurer's website and in the
+product's name, and nothing explained it. Keeps the rule above: the bill is never
+called the claim. Linked from the app's "What's an EOB?" box.
+
+**New art added:** `bump`, `glass_door`. The paper moves down the board in the
+order it travels.
+
 ## Order, and why it is short
 
 **1 is made. Publish it. Then 2, then 4. Then stop and look.**
@@ -459,6 +495,8 @@ image, and no injury repeats:
 | 8 | six boxes, five ticked | bad back |
 | 9 | two figures with matching plasters | flu shots |
 | 10 | one line and an enormous number | bandaged head to toe |
+| 11 | a throbbing toe and "$?" | stubbed toe |
+| 12 | a bump beside an empty door frame | glass door |
 
 ## What we still do not know
 

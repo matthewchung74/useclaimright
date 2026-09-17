@@ -1,0 +1,19 @@
+{
+  "_comment": "Short 11 in docs/CONTENT.md: the Summary of Benefits and Coverage. Linked from the app's 'What's an SBC?' box.",
+  "_injury": "A stubbed toe, so hard you are sure it is broken. It gives the question the SBC answers a reason to be asked: before you go in, what will this cost?",
+  "_numbers": "$30 office visit and 20% for an X-ray, the same figures as Short 3, so a viewer who has seen both recognises the plan. One figure per line.",
+  "_accuracy": "'The same layout, by law': the Affordable Care Act requires every plan to give an SBC in a uniform federal template. 'A short PDF': the template caps it at four double-sided pages.",
+  "variants": {
+    "toe": "You stubbed your toe so hard you are sure it is broken. Before you go in, one question. What will this cost?"
+  },
+  "body": [
+    { "id": "i2", "text": "Your insurance already wrote that down, in a document you have probably never opened." },
+    { "id": "i3", "text": "It is called the Summary of Benefits and Coverage. The SBC." },
+    { "id": "i4", "text": "Every plan has one, and by law they all use the same layout." },
+    { "id": "i5", "text": "Find the row for what you need. An office visit, thirty dollars." },
+    { "id": "i6", "text": "An X-ray, twenty percent." },
+    { "id": "i7", "text": "Find yours on your insurer's website, under your plan. It is a short PDF." },
+    { "id": "i8", "text": "Then when the bill arrives, you already know what it should say." },
+    { "id": "i9", "text": "Check yours before you dispute. Or upload them free at UseClaimRight.com." }
+  ]
+}
