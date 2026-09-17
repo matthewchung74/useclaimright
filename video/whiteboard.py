@@ -383,6 +383,35 @@ def tick(x, y, s=1.0, seed=503):
                    amp=1.6, seed=seed)]
 
 
+def person_wrapped(cx, top, s=1.0, seed=541):
+    """Bandaged head to toe. The wrapping has to be DENSE to read at phone size:
+    a first pass drew three faint strokes and the figure looked unhurt."""
+    r = 46 * s
+    hy = top + r
+    sh = (cx, hy + r + 46 * s)
+    hip = (cx, hy + r + 150 * s)
+    arms = [(cx - 74 * s, sh[1] + 86 * s), (cx + 74 * s, sh[1] + 86 * s)]
+    legs = [(cx - 66 * s, hip[1] + 128 * s), (cx + 66 * s, hip[1] + 128 * s)]
+    st = [circle(cx, hy, r, seed=seed), line((cx, hy + r), hip, seed=seed + 1),
+          line(sh, arms[0], seed=seed + 2), line(sh, arms[1], seed=seed + 3),
+          line(hip, legs[0], seed=seed + 4), line(hip, legs[1], seed=seed + 5)]
+    for i, f in enumerate((-0.5, -0.15, 0.2, 0.55)):          # head, wrapped over
+        y = hy + r * f
+        dx = r * math.sqrt(max(0.0, 1 - f * f)) * 0.99
+        st.append(line((cx - dx, y - 5 * s), (cx + dx, y + 5 * s), n=3, seed=seed + 6 + i))
+    for i in range(5):                                        # body
+        y = (hy + r) + (hip[1] - hy - r) * (0.12 + 0.19 * i)
+        st.append(line((cx - 34 * s, y - 4 * s), (cx + 34 * s, y + 6 * s), n=3, seed=seed + 12 + i))
+    for i, (ax, ay) in enumerate(arms + legs):                # limbs, twice each
+        ox, oy = (cx, sh[1]) if i < 2 else (cx, hip[1])
+        for k, f in enumerate((0.35, 0.72)):
+            mx, my = ox + (ax - ox) * f, oy + (ay - oy) * f
+            st.append(line((mx - 20 * s, my - 12 * s), (mx + 20 * s, my + 12 * s),
+                           n=3, seed=seed + 20 + 2 * i + k))
+    return st
+
+
+
 def ice(x, y, w, seed=79):
     """A patch of it. The short marks underneath are what stop the long line
     reading as the ground."""
@@ -748,6 +777,34 @@ ART = {"short-01-two-numbers": {
            T((340, 3090), "your EOB", 56, GREY), T((690, 3270), "listed once", 62, ACCENT)],
     "n8": [T((300, 3520), "useclaimright.com", 100, ACCENT),
            S([line((300, 3650), (1160, 3650), n=14, seed=523)], colour=ACCENT, width=8)],
+}, "short-10-itemized": {
+    # The figure and the bill together: everything that happened, and the one
+    # line that is supposed to describe it.
+    "hook-bandaged": [S(person_wrapped(430, 170, s=1.55)),
+                      S(box(760, 400, 1420, 760, seed=547)),
+                      T((800, 440), "the bill", 52, GREY),
+                      T((800, 530), "hospital services", 58, GREY),
+                      T((800, 630), "$9,000", 104)],
+    "o2": [S(ellipse(1090, 580, 330, 150, seed=551), colour=ACCENT, width=8),
+           T((820, 830), "nothing here to check", 64, ACCENT)],
+    # The same visit, itemised: the list is long on purpose.
+    "o3": [T((250, 1020), "ask for the itemized bill", 84),
+           S(doc(250, 1130, 1250, 1830, rows=9, seed=557)),
+           T((290, 1150), "same visit, every charge, with its code", 52, GREY)],
+    "o4": [S(phone(250, 1950, 190, 310, seed=563)),
+           S(bubble(500, 1930, 900, 300, seed=569)),
+           T((540, 1970), "Please send an itemized", 62),
+           T((540, 2060), "statement for this visit.", 62)],
+    "o5": [T((250, 2400), "your own record", 74),
+           T((250, 2510), "you can ask, usually free", 58, GREY)],
+    "o6": [S(doc(250, 2660, 700, 3010, rows=4, seed=571)),
+           S(doc(800, 2660, 1250, 3010, rows=4, seed=577)),
+           T((250, 3040), "the bill", 54, GREY), T((800, 3040), "your EOB", 54, GREY),
+           S(arrow((720, 2830), (780, 2830), seed=587))],
+    "o7": [T((250, 3200), "one number tells you nothing", 72),
+           T((250, 3300), "a list tells you where to look", 72, ACCENT)],
+    "o8": [T((300, 3500), "useclaimright.com", 100, ACCENT),
+           S([line((300, 3630), (1160, 3630), n=14, seed=593)], colour=ACCENT, width=8)],
 }}
 
 # Beats that pull back to show everything drawn so far, instead of the usual

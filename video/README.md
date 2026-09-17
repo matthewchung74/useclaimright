@@ -196,7 +196,8 @@ Then record the video id in the Status table below and in `channel-setup.md`.
 | 7 | 5 | Balance billing: the sentence to say | `short-05-phone-call` | 45.4s | `nBb35s9oAJM` Public |
 | 8 | 6 | The allowed amount | `short-06-sticker-price` | 50.7s | `wbxIFh5_97c` Public |
 | 9 | 9 | Two identical charges? Not always a duplicate | `short-09-duplicate` | 37.8s | `N4S7QEC_7M8` Public |
-| — | 7, 8, 10 | see `docs/CONTENT.md` | — | — | — |
+| — | 10 | One line, no explanation (itemized bill) | `short-10-itemized` | 34.6s | not yet uploaded |
+| — | 7, 8 | see `docs/CONTENT.md` | — | — | — |
 
 **`#` is the number in `docs/CONTENT.md`; `Order` is the playlist's teaching
 order.** They differ on purpose: 11 and 12 were written last and belong second

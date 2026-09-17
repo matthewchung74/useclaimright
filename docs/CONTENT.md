@@ -470,30 +470,33 @@ that only ever finds problems is a tool nobody believes; the Short that says
 do that work in the first shot: the reason there are two charges is standing
 right there.
 
-### 10. One line, no explanation
+### 10. One line, no explanation · MADE — 34.6s
 
-**Hook:** *"Your bill has one line on it. Ask for the one with all of them."*
-**Opens on:** a sheet with a single line and an enormous number.
-**Injury:** wrapped head to toe in bandages, unexplained — because the bill does
-not explain either.
+**Hook:** *"You are wrapped head to toe. The bill is one line. Nine thousand dollars."*
+**Opens on:** a bandaged figure, and a bill whose only line says "hospital services".
+**Injury:** wrapped head to toe, unexplained — because the bill does not explain either.
 
-**Teaching beat:** a summary bill cannot be checked. The **itemized** bill is the
-one with the codes and the line items, you are entitled to ask for it, and it is
-the document every other Short in this series assumes you have.
+**Teaching beat:** a summary bill cannot be checked. Ask for the **itemized** bill:
+same visit, every charge, with its code. Call the number on the bill and say
+"please send an itemized statement for this visit". Then it can be held next to
+the EOB, line by line.
 
-**New art:** a bandaged figure, a long itemized list unrolling.
+**New art added:** `person_wrapped`. Reuses `doc` as the long itemized list and
+`bubble` from Short 5 for the words to say.
 
-**Replaces "Three plans, one booklet"**, which was dropped for weak subject
-matter rather than format. That one was really about our own plan-selection flow
-— a problem people have with the app, not a problem they have with their mail.
-This one is the single most recommended first action in every bill-dispute guide,
-it is trivially visual, and it is on-strategy: an itemized bill is the document
-that makes the product work at all.
+**The prerequisite for the whole series.** Every other Short assumes you are
+holding an itemized bill; this is the one that tells you how to get one. It is
+also the single most recommended first action in every bill-dispute guide.
 
-**On the bench, if the series gets past three:** out-of-network care inside an
-in-network hospital (the anaesthetist nobody chose — high incidence, and the No
-Surprises Act means it needs care), and a free annual physical that arrives with
-a bill because a symptom got mentioned.
+**Bandages have to be dense to read.** The first cut drew three faint wrapping
+strokes and the figure looked unhurt at phone size. It now has four across the
+head, five down the body and two on each limb — the same lesson as the sling in
+Short 5, and worth remembering for any art that is "a figure, but modified".
+
+**Hedged on purpose:** "you are entitled to ask, and it is usually free". Providers
+generally supply an itemized statement on request and normally do not charge, but
+there is no single national rule, so the video says *ask* — which is true
+everywhere — rather than promising free.
 
 ### 11. The SBC · MADE — 38.2s
 

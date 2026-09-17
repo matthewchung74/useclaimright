@@ -1,0 +1,18 @@
+{
+  "_comment": "Short 10 in docs/CONTENT.md: a summary bill cannot be checked; ask for the itemized one. The document every other Short in the series assumes you already have.",
+  "_injury": "Wrapped head to toe, unexplained — because the bill does not explain either.",
+  "_numbers": "One: $9,000 on a single line. The point is that one number tells you nothing, so a second number would work against the video.",
+  "_accuracy": "'Usually free' rather than 'free': providers generally supply an itemized statement on request and normally do not charge, but there is no single national rule, so the line hedges. It says ask, which is true everywhere.",
+  "variants": {
+    "bandaged": "You are wrapped head to toe. The bill is one line. Nine thousand dollars."
+  },
+  "body": [
+    { "id": "o2", "text": "One line cannot be checked. Not by you, and not by anyone." },
+    { "id": "o3", "text": "So ask for the itemized bill. Same visit, every charge listed, with its code." },
+    { "id": "o4", "text": "Call the number on the bill and say: please send an itemized statement for this visit." },
+    { "id": "o5", "text": "It is a record of your own care. You are entitled to ask, and it is usually free." },
+    { "id": "o6", "text": "Then you can hold it next to your insurance letter, line by line." },
+    { "id": "o7", "text": "One number tells you nothing. A list tells you where to look." },
+    { "id": "o8", "text": "Check yours before you dispute. Or upload them free at UseClaimRight.com." }
+  ]
+}
