@@ -805,6 +805,35 @@ ART = {"short-01-two-numbers": {
            T((250, 3300), "a list tells you where to look", 72, ACCENT)],
     "o8": [T((300, 3500), "useclaimright.com", 100, ACCENT),
            S([line((300, 3630), (1160, 3630), n=14, seed=593)], colour=ACCENT, width=8)],
+}, "short-13-charity-care": {
+    # The number is the shock and the hospital is the setting; no villain in the
+    # drawing, because the video is about using a policy, not accusing anyone.
+    "hook-stone": [S(person_hurt(420, 200, s=1.3)), S(hospital(880, 300, 340, 260, seed=601)),
+                   T((900, 620), "one night", 58, GREY),
+                   T((420, 760), "$4,000", 130, ACCENT)],
+    "p2": [T((250, 980), "before the payment plan", 72),
+           T((250, 1080), "ask one question", 72)],
+    "p3": [S(bubble(250, 1220, 1000, 300, seed=607)),
+           T((300, 1270), "Does this hospital have a", 62),
+           T((300, 1360), "financial assistance policy?", 62)],
+    "p4": [T((250, 1680), "nonprofit hospital?", 74),
+           T((250, 1790), "it must have one", 66, ACCENT),
+           T((250, 1880), "and must say who qualifies", 56, GREY)],
+    "p5": [T((250, 2040), "charity care", 104),
+           S([line((250, 2180), (900, 2180), n=12, seed=613)], width=8),
+           T((250, 2220), "the old name for it", 54, GREY),
+           T((250, 2330), "cuts the bill, sometimes clears it", 60, ACCENT)],
+    "p6": [T((250, 2490), "goes by household income", 64),
+           T((250, 2580), "limits are higher than", 56, GREY),
+           T((250, 2650), "people expect", 56, GREY)],
+    "p7": [S(phone(250, 2800, 190, 310, seed=617)),
+           T((500, 2830), "ask for the policy", 66),
+           T((500, 2920), "ask how to apply", 66),
+           T((500, 3030), "after the bill arrives is fine", 54, GREY)],
+    "p8": [T((300, 3260), "general information,", 54, GREY),
+           T((300, 3340), "not legal or medical advice", 54, GREY),
+           T((300, 3460), "useclaimright.com", 100, ACCENT),
+           S([line((300, 3590), (1160, 3590), n=14, seed=619)], colour=ACCENT, width=8)],
 }}
 
 # Beats that pull back to show everything drawn so far, instead of the usual

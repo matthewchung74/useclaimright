@@ -1,0 +1,19 @@
+{
+  "_comment": "Short 13 in docs/CONTENT.md: financial assistance, also called charity care. Added on evidence — charity_care_eligible was the third most common finding across 68 audits (11), and it is the only one where the whole bill can go away.",
+  "_injury": "A kidney stone and one night in the emergency room: unplanned, expensive, and nobody's fault.",
+  "_numbers": "One: $4,000. The policy's own thresholds are deliberately not given, because they differ by hospital and a wrong number here would send someone away who qualifies.",
+  "_accuracy": "Nonprofit hospitals — 501(c)(3) — are required to have a written financial assistance policy, to publicise it, and to say who qualifies. That is the claim the video makes. It does NOT promise anyone qualifies, does not quote income limits, and says 'ask' rather than 'you will get'. The application window is usually months after the first bill, so 'you can ask after the bill arrives' is safe; 'ask before you agree to a payment plan' is practical advice, not a legal claim.",
+  "_tone": "No villain. The hospital is not accused of anything: the policy exists, and the video is about using it.",
+  "variants": {
+    "stone": "A kidney stone. One night in the emergency room. Four thousand dollars."
+  },
+  "body": [
+    { "id": "p2", "text": "Before you agree to a payment plan, ask one question." },
+    { "id": "p3", "text": "Does this hospital have a financial assistance policy?" },
+    { "id": "p4", "text": "If it is a nonprofit hospital, it has to have one, and it has to tell you who qualifies." },
+    { "id": "p5", "text": "The old name for it is charity care. It can cut a bill, and sometimes it erases it." },
+    { "id": "p6", "text": "It goes by household income, and the limits are usually higher than people expect." },
+    { "id": "p7", "text": "You can ask after the bill arrives. Ask for the policy, and ask how to apply." },
+    { "id": "p8", "text": "Check yours before you dispute. Or upload them free at UseClaimRight.com." }
+  ]
+}

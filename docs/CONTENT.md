@@ -534,6 +534,32 @@ called the claim. Linked from the app's "What's an EOB?" box.
 **New art added:** `bump`, `glass_door`. The paper moves down the board in the
 order it travels.
 
+### 13. Financial assistance (charity care) · MADE — 36.9s
+
+**Hook:** *"A kidney stone. One night in the emergency room. Four thousand dollars."*
+**Opens on:** a doubled-over figure, a hospital, and $4,000 in red.
+**Injury:** a kidney stone — unplanned, expensive, nobody's fault.
+
+**Teaching beat:** before agreeing to a payment plan, ask whether the hospital has
+a **financial assistance policy**. A nonprofit hospital has to have one and has to
+say who qualifies. The old name is **charity care**; it can cut a bill and
+sometimes clears it. It goes by household income, the limits are usually higher
+than people expect, and you can ask after the bill has arrived.
+
+**Added to the plan on evidence.** `charity_care_eligible` was the third most
+common finding across 68 audits (11), behind allowed-amount (53) and duplicates
+(16) — and it is the only finding where the whole bill can go away. The product
+already surfaces it as an advisory finding; nothing explained it.
+
+**What it deliberately does not say.** No income thresholds and no promise that
+anyone qualifies: the limits differ by hospital, and a wrong number here would
+send away someone who would have got help. It says *ask*, three times. There is
+also no villain — the hospital is not accused of anything, because the policy
+exists and the video is about using it. The disclaimer is drawn, as in Short 5.
+
+**New art added:** none. Reuses `person_hurt`, `hospital`, `bubble` and `phone` —
+the compounding the art library was built for.
+
 ## Order, and why it is short
 
 **1 is made. Publish it. Then 2, then 4. Then stop and look.**
