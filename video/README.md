@@ -6,7 +6,7 @@ from one `lines.json` and the art in `whiteboard.py`, so changing a line changes
 the video and nothing drifts.
 
 This file is **how** to make and publish one. **Why** they look this way, the
-house style, and the plan for all ten live in `docs/CONTENT.md`. The channel
+house style, and the plan for every Short live in `docs/CONTENT.md`. The channel
 itself is recorded in `channel-setup.md`.
 
     video/
@@ -105,7 +105,8 @@ line id. Each line gets a list of elements, drawn in order while it is spoken.
 - **A whiteboard cannot un-draw.** "Before" and "after" are two drawings.
 - **Shapes to reuse:** `person`, `person_hurt`, `person_down`, `person_hop`,
   `cat`, `bee`, `swollen_hand`, `hospital`, `envelope`, `phone`, `bucket`,
-  `bucket_fill`, `ice`, `coin`, `pie`, `clock`, `arrow`, `box`, `ellipse` (for
+  `bucket_fill`, `ice`, `coin`, `pie`, `clock`, `doc`, `bump`, `glass_door`,
+  `arrow`, `box`, `ellipse` (for
   circling), `squiggle`, `line`, `circle`. Elements: `S(...)` for strokes,
   `T(xy, text, size, colour)` for handwriting, `Sheet` (a page sliding out of an
   envelope), `Spin` (art that rotates, optionally draining), and `Coins`
