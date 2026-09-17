@@ -193,9 +193,9 @@ Then record the video id in the Status table below and in `channel-setup.md`.
 | 4 | 2 | The January reset | `short-02-january` | 34.5s | `YKheiL2nerE` Public |
 | 5 | 3 | Copay vs coinsurance | `short-03-copay` | 42.5s | `aaO_pqBPpSs` Public |
 | 6 | 4 | A charge not on your EOB | `short-04-never-seen` | 35.4s | `dvOpGw7camA` Public |
-| 7 | 5 | Balance billing: the sentence to say | `short-05-phone-call` | 45.4s | `nBb35s9oAJM` Private |
-| 8 | 6 | The allowed amount | `short-06-sticker-price` | 50.7s | `wbxIFh5_97c` Private |
-| — | 9 | Same day, same code, not a duplicate | `short-09-duplicate` | 37.8s | not yet uploaded |
+| 7 | 5 | Balance billing: the sentence to say | `short-05-phone-call` | 45.4s | `nBb35s9oAJM` Public |
+| 8 | 6 | The allowed amount | `short-06-sticker-price` | 50.7s | `wbxIFh5_97c` Public |
+| 9 | 9 | Two identical charges? Not always a duplicate | `short-09-duplicate` | 37.8s | `N4S7QEC_7M8` Public |
 | — | 7, 8, 10 | see `docs/CONTENT.md` | — | — | — |
 
 **`#` is the number in `docs/CONTENT.md`; `Order` is the playlist's teaching
