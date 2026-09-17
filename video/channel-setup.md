@@ -26,8 +26,11 @@ single videos, so replacing a Short does not break them.
 | 9 | 9 | Two identical charges? Not always a duplicate | `N4S7QEC_7M8` | Public |
 | 10 | 10 | Ask for the itemized bill: one line can't be checked | `fkRKqSXxDBQ` | Public |
 | 11 | 13 | Charity care: the question to ask before a payment plan | `vfln_dcCGWQ` | Public |
+| 12 | 7 | Family deductible: it isn't two of yours added up | `mHDQy70sc9o` | Public |
+| 13 | 8 | Covered visits run out, and nobody counts them for you | `YdNgvwyEhvs` | Public |
 
-All eleven are Public as of 2026-09-17. **Titles say what the viewer will learn**,
+All thirteen are Public as of 2026-09-17. The series is complete: every Short in
+`docs/CONTENT.md` is made and live. **Titles say what the viewer will learn**,
 not what happens in the video: the hook is the video's job, the title's job is to
 be picked out of a feed by someone with that exact question.
 
