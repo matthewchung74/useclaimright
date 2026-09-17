@@ -1,0 +1,19 @@
+{
+  "_comment": "Short 4 in docs/CONTENT.md: a charge your insurance has never seen. The first line is carried in `variants` because tts.mjs treats that as the hook.",
+  "_injury": "A bee sting: small, and it still produces a line nobody can explain. The swollen hand is the joke and the reason for the visit in one line.",
+  "_lessons": "Written after the 2026-09-17 rewrites. Opens on the surprise (three charges on the bill, two on the letter) in the second line; names the word, pending, by about 0:12 and defines it in the same breath; one idea (timing), no second concept; top to bottom.",
+  "_numbers": "One figure only, the $100 shot. The other rows carry no amounts, because the point is which row is missing, not what the rows add up to.",
+  "_accuracy": "Says 'usually', not 'always'. A charge missing from the EOB is most often a claim still in process or one sent at a different time; it can also be something never submitted, which the phone question in h7 catches either way.",
+  "variants": {
+    "bee": "A bee stung you, and your hand swelled up like a rubber glove. So, urgent care."
+  },
+  "body": [
+    { "id": "h2", "text": "The bill lists three charges. Your insurance letter lists two." },
+    { "id": "h3", "text": "The shot, a hundred dollars, is not on the letter at all." },
+    { "id": "h4", "text": "That is usually not a mistake. It is pending. Your insurance just has not finished with it yet." },
+    { "id": "h5", "text": "Charges can reach your insurance at different times, and one can run weeks behind the rest." },
+    { "id": "h6", "text": "So do not pay that line yet. Wait for the letter that lists it." },
+    { "id": "h7", "text": "Or call and ask one question. Has this been sent to my insurance?" },
+    { "id": "h8", "text": "Check yours before you dispute. Or upload them free at UseClaimRight.com." }
+  ]
+}

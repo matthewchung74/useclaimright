@@ -122,7 +122,7 @@ build artefact.
 | 1 | Two numbers — the bill and the letter | `short-01-two-numbers` | ✅ 42.1s (v2) | v2 uploaded, Private (v1 Public, to delete) |
 | 2 | The January reset (deductible) | `short-02-january` | ✅ 34.5s (v2) | v2 uploaded, Private (v1 to delete) |
 | 3 | Copay or coinsurance | `short-03-copay` | ✅ 42.5s | uploaded, Private |
-| 4 | A charge your insurance has never seen | — | — | — |
+| 4 | A charge your insurance has never seen | `short-04-never-seen` | ✅ 34.9s | not yet — checklist |
 | 5–10 | see `docs/CONTENT.md` | — | — | — |
 
 **`short-NN-` matches the number in `docs/CONTENT.md`.** It briefly did not:

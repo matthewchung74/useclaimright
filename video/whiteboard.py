@@ -209,6 +209,43 @@ def pie(cx, cy, r, frac, seed=163):
     return edge
 
 
+def bee(cx, cy, s=1.0, seed=197):
+    """Striped body, two wings, a stinger, and a looping flight path behind it
+    so it reads as a bee in motion rather than a striped oval."""
+    return (ellipse(cx, cy, 44 * s, 28 * s, seed=seed)
+            + ellipse(cx - 8 * s, cy - 48 * s, 20 * s, 26 * s, seed=seed + 3)
+            + ellipse(cx + 16 * s, cy - 44 * s, 18 * s, 24 * s, seed=seed + 4)) + [
+            line((cx - 12 * s, cy - 26 * s), (cx - 12 * s, cy + 26 * s), n=3, seed=seed + 1),
+            line((cx + 10 * s, cy - 26 * s), (cx + 10 * s, cy + 26 * s), n=3, seed=seed + 2),
+            line((cx - 44 * s, cy), (cx - 70 * s, cy + 6 * s), n=2, seed=seed + 5),
+            # The trail leaves from behind the bee and never crosses it.
+            wobble([(cx + 70 * s + 9 * s * t, cy - 6 * s * t + 22 * s * math.sin(t * 0.9))
+                    for t in range(0, 13)], amp=1.5, seed=seed + 6)]
+
+
+def swollen_hand(x, y, r=40, seed=211):
+    """A balloon of a hand with throb marks. Placed at the end of a person()'s
+    arm: for person(cx, top, s) the right hand is at (cx + 74s, top + 224s)."""
+    return [circle(x, y, r, seed=seed)] + [
+        line((x + (r + 12) * math.cos(a), y + (r + 12) * math.sin(a)),
+             (x + (r + 34) * math.cos(a), y + (r + 34) * math.sin(a)), n=2, seed=seed + i + 1)
+        for i, a in enumerate((-1.2, -0.4, 0.4))]
+
+
+def clock(cx, cy, r, seed=223):
+    """Face, twelve ticks, two hands. A clock rather than a calendar because
+    the point is 'later', not a date."""
+    strokes = [circle(cx, cy, r, seed=seed)]
+    for i in range(12):
+        a = i * math.pi / 6
+        k = 0.78 if i % 3 else 0.68
+        strokes.append(line((cx + r * k * math.cos(a), cy + r * k * math.sin(a)),
+                            (cx + r * 0.9 * math.cos(a), cy + r * 0.9 * math.sin(a)), n=2, seed=seed + i + 1))
+    strokes.append(line((cx, cy), (cx, cy - r * 0.6), n=4, seed=seed + 20))
+    strokes.append(line((cx, cy), (cx + r * 0.45, cy + r * 0.2), n=4, seed=seed + 21))
+    return strokes
+
+
 def ice(x, y, w, seed=79):
     """A patch of it. The short marks underneath are what stop the long line
     reading as the ground."""
@@ -404,6 +441,34 @@ ART = {"short-01-two-numbers": {
            T((430, 2400), "scans", 54, GREY), T((880, 2400), "20%", 54)],
     "f9": [T((330, 2640), "useclaimright.com", 96, ACCENT),
            S([line((330, 2770), (1160, 2770), n=14, seed=191)], colour=ACCENT, width=8)],
+}, "short-04-never-seen": {
+    # One column, top to bottom. The two lists are the one place things sit
+    # side by side, because they are being compared.
+    # Kept narrow: the shot is set by width, so a bee far off to the side
+    # shrinks the figure and the joke with it.
+    "hook-bee": [S(person(520, 150, s=1.5)), S(swollen_hand(631, 486, r=62)),
+                 S(bee(800, 230, s=1.4)), T((390, 740), "urgent care", 76, GREY)],
+    # The surprise, second line: three rows against two. The gap in the letter
+    # sits level with the shot, so the missing row is visible before it is said.
+    "h2": [T((180, 920), "the bill", 66), S(box(160, 1010, 700, 1410, seed=227)),
+           T((200, 1070), "visit", 60, GREY), T((200, 1170), "shot $100", 64),
+           T((200, 1290), "bandage", 60, GREY),
+           T((920, 920), "insurance letter", 66), S(box(900, 1010, 1440, 1410, seed=229)),
+           T((940, 1070), "visit", 60, GREY), T((940, 1290), "bandage", 60, GREY)],
+    "h3": [S(ellipse(370, 1208, 215, 62), colour=ACCENT, width=8),
+           T((1130, 1150), "?", 120, ACCENT)],
+    "h4": [T((380, 1520), "pending", 130),
+           S([line((380, 1680), (880, 1680), n=12, seed=233)], width=8),
+           T((380, 1720), "not finished yet", 58, GREY)],
+    "h5": [S(clock(640, 2030, 170)), T((880, 1990), "weeks", 80, GREY)],
+    "h6": [S(envelope(560, 2590, 480, 280, seed=239)),
+           Sheet(615, 2300, 370, 310, "shot $100", INK),
+           T((440, 2910), "don't pay it yet", 72, ACCENT)],
+    "h7": [S(phone(300, 3070, 210, 340, seed=241)),
+           T((580, 3140), "has this been sent", 60),
+           T((580, 3220), "to my insurance?", 60)],
+    "h8": [T((300, 3490), "useclaimright.com", 100, ACCENT),
+           S([line((300, 3620), (1160, 3620), n=14, seed=251)], colour=ACCENT, width=8)],
 }}
 
 # Beats that pull back to show everything drawn so far, instead of the usual

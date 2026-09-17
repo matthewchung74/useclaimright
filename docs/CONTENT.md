@@ -325,16 +325,24 @@ A drawing lesson from it: the injury was first drawn as someone sitting holding
 their ankle, and a seated stick figure is a pile of crossing lines that reads as
 a scribble. One foot off the ground is a silhouette that needs no explaining.
 
-### 4. A charge your insurance has never seen
+### 4. A charge your insurance has never seen · MADE — 34.9s
 
-**Hook:** *"There is a line on your bill your insurance has never seen."*
-**Opens on:** two lists side by side, one row longer than the other.
+**Hook:** *"A bee stung you, and your hand swelled up like a rubber glove. So, urgent care."*
+**Opens on:** a figure with a balloon of a hand, and the bee that did it.
 **Injury:** a bee sting — small, and it still produces a line nobody can explain.
 
-**Teaching beat:** usually **timing, not fraud** — they have not finished
-processing it. Do not pay it, do not panic, ask.
+**Teaching beat:** the bill lists three charges and the insurance letter lists
+two. The missing one is usually **pending**, not wrong: charges reach your
+insurance at different times. Don't pay that line yet; wait for the letter that
+lists it, or ask "has this been sent to my insurance?"
 
-**New art:** two lists, a clock.
+**New art added:** `bee`, `swollen_hand`, `clock`, and two lists as boxes of rows.
+
+First Short written after the "Before it goes public" checklist and the
+2026-09-17 rewrites. The surprise (three rows against two) is the second line;
+"pending" is named and defined by about 0:12; one idea, timing, with no second
+concept; one number, the $100 shot; top to bottom. The gap in the letter's list
+sits level with the shot, so the missing row is visible before it is said.
 
 ### 5. The phone call
 
