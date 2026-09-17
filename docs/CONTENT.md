@@ -365,19 +365,26 @@ future Short that tells someone not to pay something does the same.
 reads it as letters either way, and "E O B" made the caption break the letters
 across lines.
 
-### 6. The sticker price is fiction
+### 6. The sticker price is fiction · MADE — 35.1s
 
-**Hook:** *"A splinter. Two thousand dollars."*
-**Opens on:** three bars of wildly different heights.
+**Hook:** *"A splinter. One pair of tweezers. The bill says two thousand dollars."*
+**Opens on:** a fingertip with a splinter, a pair of tweezers, and $2,000 in red.
 **Injury:** a splinter — the gap between the injury and the number is the joke.
 
-**Teaching beat:** billed, allowed, your share — three different numbers, and
-only one is real. The allowed amount is the only one worth arguing about.
+**Teaching beat:** billed $2,000, allowed $300, your share $60. Only the allowed
+amount is real; your share comes out of that, not out of the sticker price. The
+$2,000 exists so there is something to discount.
 
-**New art:** three bars.
+**New art added:** `bar` (one bar of a chart), `finger`, `tweezers`.
 
-The strongest visual in the set. A candidate to bring forward if Short 2 or 4
-turns out to be harder to draw than it looks.
+**The bars are drawn to scale** — 1000px, 150px and 30px — so the sticker price
+looks as absurd as it is. The scale is the argument, so it is not fudged to make
+the last bar easier to label.
+
+**What it deliberately does not do.** Short 1 is which paper is which and Short 5
+is being billed for the discount; this one only sorts out which of the three
+numbers is real, and never mentions disputing anything. The 20% is the same 20%
+as Short 3, so the plan stays consistent across the series.
 
 ### 7. A family deductible is not two of yours
 

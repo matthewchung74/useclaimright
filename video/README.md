@@ -194,7 +194,8 @@ Then record the video id in the Status table below and in `channel-setup.md`.
 | 5 | 3 | Copay vs coinsurance | `short-03-copay` | 42.5s | `aaO_pqBPpSs` Public |
 | 6 | 4 | A charge not on your EOB | `short-04-never-seen` | 35.4s | `dvOpGw7camA` Public |
 | 7 | 5 | Balance billing: the sentence to say | `short-05-phone-call` | 45.4s | `nBb35s9oAJM` Private |
-| — | 6–10 | see `docs/CONTENT.md` | — | — | — |
+| — | 6 | The sticker price is fiction | `short-06-sticker-price` | 35.1s | not yet uploaded |
+| — | 7–10 | see `docs/CONTENT.md` | — | — | — |
 
 **`#` is the number in `docs/CONTENT.md`; `Order` is the playlist's teaching
 order.** They differ on purpose: 11 and 12 were written last and belong second
