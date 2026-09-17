@@ -188,6 +188,28 @@ through Whisper; `UseClaimRight.com` comes back as one word and the lowercase
 form spells out. That loop costs nothing and should be used on every domain,
 abbreviation and dollar figure.
 
+### Before it goes public
+
+YouTube cannot replace a video's file. Every fix after publishing is a new
+upload, the views stay behind on the old one, the old one has to be deleted by
+hand, and every link to it breaks: Short 1's LinkedIn comment pointed at a
+video that no longer exists. Both rewrites on 2026-09-17 would have been caught
+by this list, so run it before anything goes Public:
+
+1. **Check a still from the end of every line.** Clipped text, a black bar at
+   the board edge and a half-framed comparison all hid in playback and were
+   obvious in stills. Seconds per line.
+2. **Keep the previous cut beside the new one** as `<name>-v1.mp4` and watch
+   them back to back. The difference is obvious side by side and easy to
+   argue yourself out of from memory.
+3. **Upload Private.**
+4. **Have someone who does not know the subject watch it once.** Not a
+   reviewer who knows what a deductible is: every rule in the house style was
+   followed by Short 2 v1, and one viewing by someone new still found it hard
+   to follow. Ask what the video said, not whether they liked it.
+5. **Only then publish**, and link to the playlist rather than a single video
+   so a later replacement does not break the link.
+
 ### The art library, which compounds
 
 `video/whiteboard.py` holds the shapes. After Short 1: `person`, `person_hurt`,
