@@ -26,7 +26,7 @@ Replaced cuts still to delete by hand once their replacements are Public:
 Short 1 v1 "Your hospital and your insurance don't talk to each other"
 (`GVPbBuHbwBg`, Public, 12 views) and Short 2 v1 (`w64EEe5ZBqM`, Private).
 
-All four are set to not made for kids. YouTube classifies them as Shorts from
+All of them are set to not made for kids. YouTube classifies them as Shorts from
 the 1080×1920 frame and the length, so no #Shorts tag is needed.
 
 ## Profile
