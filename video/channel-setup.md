@@ -19,6 +19,8 @@ single videos, so replacing a Short does not break them.
 | 2 | Your body doesn't know it's January. Your insurance does. | `YKheiL2nerE` | Private, waiting to go Public |
 | 3 | You tripped over your cat. Now: copay or coinsurance? | `aaO_pqBPpSs` | Public since 2026-09-17 |
 | 4 | A charge on your bill your insurance has never seen | `dvOpGw7camA` | Private, waiting on a first-time viewer |
+| 11 | Your plan already told you what it costs (SBC) | `D7ZMQ1V1-ts` | Private, waiting on a first-time viewer |
+| 12 | One visit, three pieces of paper. You only see two (claim) | `J5W0eRzFsW8` | Private, waiting on a first-time viewer |
 
 Replaced cuts still to delete by hand once their replacements are Public:
 Short 1 v1 "Your hospital and your insurance don't talk to each other"
