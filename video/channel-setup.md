@@ -13,18 +13,24 @@ Playlist **Reading your own medical bill**, `PLYCXBRe11FUU`, Public and sorted
 manually. Every Short goes in it, and links point at the playlist rather than at
 single videos, so replacing a Short does not break them.
 
-| # | Title | Id | State |
+| Order | # | Title | Id |
 |---|---|---|---|
-| 1 | Urgent care and your insurance don't talk to each other | `l0g-GiNdqbQ` | Private, waiting to go Public |
-| 2 | Your body doesn't know it's January. Your insurance does. | `YKheiL2nerE` | Private, waiting to go Public |
-| 3 | You tripped over your cat. Now: copay or coinsurance? | `aaO_pqBPpSs` | Public since 2026-09-17 |
-| 4 | A charge on your bill your insurance has never seen | `dvOpGw7camA` | Private, waiting on a first-time viewer |
-| 11 | Your plan already told you what it costs (SBC) | `D7ZMQ1V1-ts` | Private, waiting on a first-time viewer |
-| 12 | One visit, three pieces of paper. You only see two (claim) | `J5W0eRzFsW8` | Private, waiting on a first-time viewer |
+| 1 | 1 | Bill or EOB? Which one says what you actually owe | `l0g-GiNdqbQ` |
+| 2 | 12 | Claim, EOB, bill: the 3 papers one visit makes | `J5W0eRzFsW8` |
+| 3 | 11 | Your SBC: where your plan's prices are written | `D7ZMQ1V1-ts` |
+| 4 | 2 | Why the same visit costs more in January (deductible) | `YKheiL2nerE` |
+| 5 | 3 | Copay vs coinsurance: why one is fixed and one isn't | `aaO_pqBPpSs` |
+| 6 | 4 | A charge that's not on your EOB? It's probably pending | `dvOpGw7camA` |
 
-Replaced cuts still to delete by hand once their replacements are Public:
-Short 1 v1 "Your hospital and your insurance don't talk to each other"
-(`GVPbBuHbwBg`, Public, 12 views) and Short 2 v1 (`w64EEe5ZBqM`, Private).
+All six are Public as of 2026-09-17. **Titles say what the viewer will learn**,
+not what happens in the video: the hook is the video's job, the title's job is to
+be picked out of a feed by someone with that exact question.
+
+**Playlist order is the teaching order, not the making order.** Which paper is
+which, then how the three papers travel, then where the plan's prices are
+written, then the three ways a number is arrived at (deductible, copay and
+coinsurance, pending). The two replaced v1 cuts were deleted on 2026-09-17, and
+the stale playlist entry they left behind has been removed.
 
 All of them are set to not made for kids. YouTube classifies them as Shorts from
 the 1080×1920 frame and the length, so no #Shorts tag is needed.

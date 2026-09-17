@@ -179,15 +179,19 @@ Then record the video id in the Status table below and in `channel-setup.md`.
 
 ## Status
 
-| # | Short | Folder | Length | YouTube |
-|---|---|---|---|---|
-| 1 | Urgent care and your insurance don't talk to each other | `short-01-two-numbers` | 42.1s (v2) | `l0g-GiNdqbQ` Private; v1 `GVPbBuHbwBg` Public, to delete |
-| 2 | Your body doesn't know it's January | `short-02-january` | 34.5s (v2) | `YKheiL2nerE` Private; v1 `w64EEe5ZBqM` Private, to delete |
-| 3 | You tripped over your cat. Now: copay or coinsurance? | `short-03-copay` | 42.5s | `aaO_pqBPpSs` Public |
-| 4 | A charge on your bill your insurance has never seen | `short-04-never-seen` | 35.4s | `dvOpGw7camA` Private |
-| 11 | The SBC | `short-11-sbc` | 38.2s | `D7ZMQ1V1-ts` Private |
-| 12 | The claim | `short-12-claim` | 36.6s | `J5W0eRzFsW8` Private |
-| 5–10 | see `docs/CONTENT.md` | — | — | — |
+| Order | # | Short | Folder | Length | YouTube |
+|---|---|---|---|---|---|
+| 1 | 1 | Bill or EOB? | `short-01-two-numbers` | 42.1s | `l0g-GiNdqbQ` Public |
+| 2 | 12 | Claim, EOB, bill | `short-12-claim` | 36.6s | `J5W0eRzFsW8` Public |
+| 3 | 11 | Your SBC | `short-11-sbc` | 38.2s | `D7ZMQ1V1-ts` Public |
+| 4 | 2 | The January reset | `short-02-january` | 34.5s | `YKheiL2nerE` Public |
+| 5 | 3 | Copay vs coinsurance | `short-03-copay` | 42.5s | `aaO_pqBPpSs` Public |
+| 6 | 4 | A charge not on your EOB | `short-04-never-seen` | 35.4s | `dvOpGw7camA` Public |
+| — | 5–10 | see `docs/CONTENT.md` | — | — | — |
+
+**`#` is the number in `docs/CONTENT.md`; `Order` is the playlist's teaching
+order.** They differ on purpose: 11 and 12 were written last and belong second
+and third, because everything after them assumes you know which paper is which.
 
 ## Superseded, awaiting removal
 
