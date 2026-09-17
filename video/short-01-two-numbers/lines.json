@@ -6,15 +6,46 @@
     "cold-open": "This is you."
   },
   "body": [
-    { "id": "d2", "text": "This is you at two in the morning." },
-    { "id": "d3", "text": "You go to the hospital. They fix you. You go home. Nice." },
-    { "id": "d4", "text": "Three weeks later, two envelopes turn up." },
-    { "id": "d5", "text": "The hospital wants $800. Your insurance says $150." },
-    { "id": "d6", "text": "Same visit, same day, $650 apart." },
-    { "id": "d7", "text": "The one from the hospital is the bill. Its formal name is the itemized statement." },
-    { "id": "d8", "text": "The one from your insurance is not a bill. It is the Explanation of Benefits, and it says so right at the top." },
-    { "id": "d9", "text": "That one tells you what you actually owe." },
-    { "id": "d10", "text": "So if the bill asks for more, that is a phone call before it is a payment." },
-    { "id": "d11", "text": "Check yours before you dispute. Or upload them free at UseClaimRight.com." }
-  ]
+    {
+      "id": "d2",
+      "text": "It is two in the morning, and you feel terrible."
+    },
+    {
+      "id": "d3",
+      "text": "So you go to urgent care. They fix you. You go home. Nice."
+    },
+    {
+      "id": "d4",
+      "text": "Three weeks later, two envelopes turn up."
+    },
+    {
+      "id": "d5",
+      "text": "Urgent care wants $800. Your insurance says $150."
+    },
+    {
+      "id": "d6",
+      "text": "Same visit, same day, $650 apart."
+    },
+    {
+      "id": "d7",
+      "text": "The one from urgent care is the bill. Its formal name is the itemized statement."
+    },
+    {
+      "id": "d8",
+      "text": "The one from your insurance is not a bill. It is the Explanation of Benefits, and it says so right at the top."
+    },
+    {
+      "id": "d9",
+      "text": "That one tells you what you actually owe."
+    },
+    {
+      "id": "d10",
+      "text": "So if the bill asks for more, that is a phone call before it is a payment."
+    },
+    {
+      "id": "d11",
+      "text": "Check yours before you dispute. Or upload them free at UseClaimRight.com."
+    }
+  ],
+  "_v2": "2026-09-17: the 2 a.m. line now says why (you feel terrible, so you go to urgent care), and the drawing runs top to bottom instead of zig-zagging across the board."
 }

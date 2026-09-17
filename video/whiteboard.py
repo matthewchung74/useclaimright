@@ -36,7 +36,7 @@ HERE = Path(__file__).resolve().parent
 W, H, FPS = 1080, 1920, 15
 # The board is wider than the frame: the story runs left to right across it and
 # the camera moves to whatever is being drawn.
-BW, BH = 1600, 3000
+BW, BH = 1600, 3700
 BOARD, INK, ACCENT, GREY = (253, 253, 251), (34, 38, 42), (190, 54, 54), (150, 158, 164)
 PEN_W = 7
 
@@ -313,31 +313,35 @@ def Sheet(x0, y0, w, h, text, colour=INK, rise=300):
 
 
 ART = {"short-01-two-numbers": {
-    "hook-cold-open": [S(person(210, 620)), T((330, 760), "you", 72, GREY)],
-    "d2": [S(person_hurt(600, 700)), S(squiggle(560, 630, 150), squiggle(740, 630, 150)),
-           T((580, 470), "2 a.m.", 86)],
-    "d3": [S(arrow((830, 900), (1010, 900))), S(hospital(1070, 760, 320, 270))],
-    "d4": [S(envelope(180, 1500, 420, 260)), S(envelope(760, 1500, 420, 260))],
+    # v2 reads top to bottom. v1 ran left to right across the board, so the
+    # camera swung sideways, then down, then sideways again; one direction is
+    # easier to follow on a phone.
+    "hook-cold-open": [S(person(620, 150)), T((740, 300), "you", 72, GREY)],
+    # Why this is you at 2 a.m.: you feel terrible. v1 said the time and left
+    # the viewer to guess what had happened.
+    "d2": [T((820, 860), "2 a.m.", 86), S(person_hurt(640, 800)),
+           S(squiggle(540, 745, 130), squiggle(700, 745, 130))],
+    "d3": [S(arrow((680, 1170), (680, 1310))), S(hospital(520, 1400, 320, 270)),
+           T((545, 1690), "urgent care", 66)],
+    "d4": [S(envelope(180, 2150, 420, 260)), S(envelope(760, 2150, 420, 260))],
     # Round numbers on purpose. The real fixtures say $845.00 and $186.35 and
     # the whole product is built on those, but nobody holds two decimal places
-    # in their head off a feed — and this drawing is illustrating the shape of
+    # in their head off a feed, and this drawing is illustrating the shape of
     # the problem, not quoting a document.
-    "d5": [Sheet(215, 1260, 350, 310, "$800", ACCENT),
-           Sheet(795, 1260, 350, 310, "$150", INK)],
-    "d6": [T((450, 1860), "$650 apart", 104, ACCENT),
-           S([line((450, 1985), (930, 1985), n=10, seed=44)], colour=ACCENT, width=8)],
-    # Which envelope is which — the question a beginner actually has. The answer
+    "d5": [Sheet(215, 1910, 350, 310, "$800", ACCENT),
+           Sheet(795, 1910, 350, 310, "$150", INK)],
+    "d6": [T((450, 2460), "$650 apart", 104, ACCENT),
+           S([line((450, 2585), (930, 2585), n=10, seed=44)], colour=ACCENT, width=8)],
+    # Which envelope is which: the question a beginner actually has. The answer
     # is who sent it, so the labels go under the papers they belong to.
-    # The jargon goes under the plain word, not instead of it. Someone holding
-    # the paper needs to recognise the phrase printed on it, but the plain word
-    # is what makes the video make sense.
-    "d7": [T((225, 2090), "the bill", 84), T((205, 2190), "itemized statement", 54, GREY)],
-    "d8": [T((790, 2090), "NOT a bill", 84),
-           T((730, 2190), "Explanation of Benefits", 54, GREY)],
-    "d9": [S(ellipse(970, 1468, 140, 74), colour=ACCENT, width=8)],
-    "d10": [S(phone(430, 2280, 210, 340)), T((700, 2400), "call first", 84)],
-    "d11": [T((300, 2700), "useclaimright.com", 100, ACCENT),
-            S([line((300, 2830), (1160, 2830), n=14, seed=71)], colour=ACCENT, width=8)],
+    # The jargon goes under the plain word, not instead of it.
+    "d7": [T((225, 2690), "the bill", 84), T((205, 2790), "itemized statement", 54, GREY)],
+    "d8": [T((790, 2690), "NOT a bill", 84),
+           T((730, 2790), "Explanation of Benefits", 54, GREY)],
+    "d9": [S(ellipse(970, 2118, 140, 74), colour=ACCENT, width=8)],
+    "d10": [S(phone(430, 2920, 210, 340)), T((700, 3040), "call first", 84)],
+    "d11": [T((300, 3360), "useclaimright.com", 100, ACCENT),
+            S([line((300, 3490), (1160, 3490), n=14, seed=71)], colour=ACCENT, width=8)],
 }, "short-02-january": {
     # The date goes above the figure, not beside it: side by side the pair is
     # wide and short, and a wide-and-short shot in a 9:16 frame is mostly white.

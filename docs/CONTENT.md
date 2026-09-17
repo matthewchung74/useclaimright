@@ -153,6 +153,16 @@ only for novelty is a wasted first second.
 not one drawing modified. "This is you" and "this is you at 2 a.m." are two stick
 figures, which is also the funnier read.
 
+**The story runs top to bottom.** One direction, down the board, so the camera
+only ever moves one way. Side by side is fine *within* a beat, where two things
+are being compared (two envelopes, two buckets), but the story itself does not
+zig-zag. Short 1 v1 ran left to right, then down, then sideways again, and it was
+harder to follow for it.
+
+**Say why, not just when.** "This is you at 2 a.m." left the viewer to guess what
+had happened. "It is two in the morning, and you feel terrible, so you go to
+urgent care" gives the drawing a reason.
+
 **The camera holds two beats** — the line being drawn and the one before it.
 Framing only the current strokes cuts the previous drawing in half; framing
 everything drawn so far shrinks the art as the story grows.
