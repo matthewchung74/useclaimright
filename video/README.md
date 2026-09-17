@@ -187,7 +187,7 @@ Then record the video id in the Status table below and in `channel-setup.md`.
 | 4 | 2 | The January reset | `short-02-january` | 34.5s | `YKheiL2nerE` Public |
 | 5 | 3 | Copay vs coinsurance | `short-03-copay` | 42.5s | `aaO_pqBPpSs` Public |
 | 6 | 4 | A charge not on your EOB | `short-04-never-seen` | 35.4s | `dvOpGw7camA` Public |
-| — | 5 | The phone call | `short-05-phone-call` | 41.2s | not yet uploaded |
+| — | 5 | The phone call | `short-05-phone-call` | 45.4s | not yet uploaded |
 | — | 6–10 | see `docs/CONTENT.md` | — | — | — |
 
 **`#` is the number in `docs/CONTENT.md`; `Order` is the playlist's teaching

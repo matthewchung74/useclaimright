@@ -37,7 +37,7 @@ HERE = Path(__file__).resolve().parent
 W, H, FPS = 1080, 1920, 15
 # The board is wider than the frame: the story runs left to right across it and
 # the camera moves to whatever is being drawn.
-BW, BH = 1600, 3700
+BW, BH = 1600, 4050
 BOARD, INK, ACCENT, GREY = (253, 253, 251), (34, 38, 42), (190, 54, 54), (150, 158, 164)
 PEN_W = 7
 
@@ -588,32 +588,36 @@ ART = {"short-01-two-numbers": {
 }, "short-05-phone-call": {
     "hook-sling": [S(ladder(300, 180, 150, 520)), S(person_sling(760, 240, s=1.4)),
                    T((980, 300), "ouch", 70, GREY)],
-    # The word and its limit in the same breath, at about twelve seconds. The
-    # limit is not a footnote: out of network this Short does not apply.
-    "k2": [T((280, 900), "balance billing", 120),
-           S([line((280, 1050), (1180, 1050), n=14, seed=421)], width=8),
-           T((280, 1090), "in network: not allowed", 62, ACCENT)],
-    "k3": [S(box(200, 1260, 680, 1540, seed=423)), T((240, 1300), "the bill", 52, GREY),
-           T((240, 1380), "$1,000", 96)],
-    "k4": [S(box(880, 1260, 1360, 1540, seed=427)), T((920, 1300), "your EOB", 52, GREY),
-           T((920, 1380), "allowed $400", 70)],
-    # The gap between the two boxes is the discount, so it is drawn between them.
-    "k5": [S(arrow((690, 1620), (870, 1620), seed=431)), T((600, 1680), "$600", 110, ACCENT),
-           T((430, 1810), "the network discount", 62, GREY)],
-    "k6": [T((430, 1930), "comes off the bill", 74),
-           T((430, 2020), "not on to you", 74, ACCENT)],
-    "k7": [S(phone(260, 2180, 200, 330, seed=433))],
+    # A beat of its own, so the fall and the sling are not fighting the
+    # paperwork for the same four seconds.
+    "k2": [S(hospital(660, 900, 300, 230, seed=443)), T((640, 1160), "the clinic", 62, GREY)],
+    # The series' image for paperwork arriving, as in Short 1: envelopes first,
+    # then the pages slide out of them.
+    "k3": [S(envelope(200, 1560, 420, 260, seed=447)), S(envelope(760, 1560, 420, 260, seed=449))],
+    "k4": [Sheet(255, 1320, 350, 310, "$400", INK), T((215, 1870), "your EOB", 56, GREY),
+           T((215, 1950), "allowed", 56, GREY)],
+    "k5": [Sheet(815, 1320, 350, 310, "$1,000", ACCENT),
+           T((790, 1870), "the clinic's bill", 56, GREY)],
+    "k6": [T((280, 2090), "balance billing", 120),
+           S([line((280, 2240), (1180, 2240), n=14, seed=421)], width=8),
+           T((280, 2280), "in network: not allowed", 62, ACCENT)],
+    "k7": [S(arrow((690, 2420), (870, 2420), seed=431)), T((600, 2470), "$600", 110, ACCENT),
+           T((420, 2600), "the network discount", 62, GREY)],
+    "k8": [T((430, 2720), "comes off the bill", 74),
+           T((430, 2810), "not on to you", 74, ACCENT)],
+    "k9": [S(phone(260, 2960, 200, 330, seed=433))],
     # The payload: the words to say, big enough to read off a phone screen.
-    "k8": [S(bubble(540, 2150, 940, 420)),
-           T((580, 2190), "I'm in network.", 66),
-           T((580, 2290), "My EOB says what I owe.", 66),
-           T((580, 2390), "Please correct the balance.", 66),
-           T((560, 2660), "out of network, the rules differ", 56, GREY)],
+    "k10": [S(bubble(540, 2930, 940, 420)),
+            T((580, 2970), "I'm in network.", 66),
+            T((580, 3070), "My EOB says what I owe.", 66),
+            T((580, 3170), "Please correct the balance.", 66),
+            T((560, 3440), "out of network, the rules differ", 56, GREY)],
     # Drawn, not left to the description: this Short tells someone not to pay.
-    "k9": [T((300, 2820), "general information,", 52, GREY),
-           T((300, 2890), "not legal or medical advice", 52, GREY),
-           T((300, 3020), "useclaimright.com", 100, ACCENT),
-           S([line((300, 3150), (1160, 3150), n=14, seed=439)], colour=ACCENT, width=8)],
+    "k11": [T((300, 3540), "general information,", 60, GREY),
+            T((300, 3620), "not legal or medical advice", 60, GREY),
+            T((300, 3740), "useclaimright.com", 100, ACCENT),
+            S([line((300, 3870), (1160, 3870), n=14, seed=439)], colour=ACCENT, width=8)],
+
 }}
 
 # Beats that pull back to show everything drawn so far, instead of the usual

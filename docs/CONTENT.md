@@ -328,10 +328,9 @@ First Short written after the "Before it goes public" checklist and the
 concept; one number, the $100 shot; top to bottom. The gap in the letter's list
 sits level with the shot, so the missing row is visible before it is said.
 
-### 5. The phone call · MADE — 41.2s
+### 5. The phone call · MADE — 45.4s
 
-**Hook:** *"You fell off a ladder and broke your arm. Insurance paid its share.
-Then the clinic billed you for the rest."*
+**Hook:** *"You fell off a ladder and broke your arm."*
 **Opens on:** a ladder, and a figure with an arm in a sling.
 **Injury:** a broken arm — already treated, now arguing.
 
@@ -341,6 +340,13 @@ comes off the bill; it does not come to you. That is **balance billing**, and in
 network it is not allowed. The payload is the sentence to read down the phone:
 
 > I'm in network. My EOB says what I owe. Please correct the balance.
+
+**Give each image its own beat.** The first cut put the fall, the insurance
+paying and the clinic billing into one hook, and the drawing had no room to land.
+Now the fall is the hook, the clinic is a line of its own, and the two documents
+arrive on a third — as **envelopes with the pages sliding out**, the series' image
+for paperwork turning up, established in Short 1. The two numbers are then side by
+side before the argument starts.
 
 **New art added:** `person_sling`, `ladder`, `bubble` (a speech bubble, for words
 meant to be said out loud rather than read).
