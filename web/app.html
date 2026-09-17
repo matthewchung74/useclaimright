@@ -93,6 +93,9 @@
   /* A link out to the 40-second explainer for whatever this box is about.
      Muted, so it reads as an offer rather than a detour out of the upload. */
   details.explain .watch{margin-top:12px;font-size:13.5px;color:var(--ink-soft)}
+  /* Say it is a video. Without the play mark and the word "watch", these read
+     as another page of reading, which is the opposite of the offer. */
+  .play{color:var(--brand);font-size:11px;vertical-align:1px;margin-right:3px}
   /* usage tracker */
   .usage-card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin:10px 0;display:flow-root}
   .usage-head{display:flex;justify-content:space-between;align-items:center;gap:10px}
@@ -483,7 +486,7 @@
         <p>A standard 4–8 page document every plan must provide — a grid of what you pay per visit type.
         Find it: your insurer's website → your plan → “Summary of Benefits and Coverage” (PDF);
         your enrollment packet or open-enrollment email; or ask HR.</p>
-        <p class="watch">Never opened one? <a href="https://youtube.com/shorts/D7ZMQ1V1-ts" target="_blank" rel="noopener">Your SBC, in 39 seconds →</a></p>
+        <p class="watch">Never opened one? <span class="play">▶</span><a href="https://youtube.com/shorts/D7ZMQ1V1-ts" target="_blank" rel="noopener">Watch: what an SBC is and where to find it</a> — 39-second video</p>
       </details>
       <div id="onboarding-error" class="error" hidden></div>
       <p style="text-align:center;margin-top:18px"><a href="#" id="skip-onboarding" style="font-size:14px">Skip for now — audit a bill first</a></p>
@@ -524,8 +527,9 @@
          about them: nobody counts your visits for you, and a family deductible
          is not two of yours. Both are 40 seconds. -->
     <p class="muted" style="margin-bottom:12px;font-size:13.5px">
-      <a href="https://youtube.com/shorts/YdNgvwyEhvs" target="_blank" rel="noopener">Why covered visits run out without warning</a> ·
-      <a href="https://youtube.com/shorts/mHDQy70sc9o" target="_blank" rel="noopener">A family deductible isn't two of yours</a>
+      <span class="play">▶</span>Short videos, under a minute each:
+      <a href="https://youtube.com/shorts/YdNgvwyEhvs" target="_blank" rel="noopener">why covered visits run out without warning</a> ·
+      <a href="https://youtube.com/shorts/mHDQy70sc9o" target="_blank" rel="noopener">a family deductible isn't two of yours</a>
     </p>
     <div id="bills-error" class="error" hidden></div>
     <div id="plan-card"></div>
@@ -594,7 +598,7 @@
       <!-- The link goes where the itemized bill is asked for, not in the EOB
            box further down: someone who only has a summary bill is stuck HERE. -->
       <p class="muted" style="margin:-4px 0 10px 34px;font-size:13.5px">Only got a one-line bill?
-        <a href="https://youtube.com/shorts/fkRKqSXxDBQ" target="_blank" rel="noopener">How to ask for the itemized one →</a></p>
+        <span class="play">▶</span><a href="https://youtube.com/shorts/fkRKqSXxDBQ" target="_blank" rel="noopener">Watch: how to ask for the itemized one</a> — 35-second video</p>
       <div class="dropzones" style="grid-template-columns:1fr">
         <label class="dz" id="dz-bill">
           <span class="ico">🧾</span>
@@ -647,7 +651,7 @@
           <li><b>Don't confuse it with the bill:</b> the bill comes from the <i>hospital or doctor</i> and asks for money; the EOB comes from <i>insurance</i> and says what you should owe.</li>
         </ul>
         <p><b>The itemized bill</b> comes from your provider: their portal → <i>Billing</i> → request or download the <i>itemized statement</i> (line-by-line charges with codes — not just a total).</p>
-        <p class="watch">Drawn explainers, about 40 seconds each:
+        <p class="watch"><span class="play">▶</span>Short videos, about 40 seconds each:
           <a href="https://youtube.com/shorts/l0g-GiNdqbQ" target="_blank" rel="noopener">which paper is which</a> ·
           <a href="https://youtube.com/shorts/J5W0eRzFsW8" target="_blank" rel="noopener">claim, EOB, bill</a></p>
       </details>
