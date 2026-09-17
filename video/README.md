@@ -1,136 +1,196 @@
-# Video scripts
+# Making a Short
 
-One folder per video, named by its number in `docs/CONTENT.md` — not by shooting
-order, which changes. The plan, the audience rules and the adversarial review of
-all of it live in that document; this directory holds only what gets said and
-what is on screen.
+35-45 second whiteboard explainers about reading your own medical paperwork,
+drawn stroke by stroke while a voice reads the script. Everything is generated
+from one `lines.json` and the art in `whiteboard.py`, so changing a line changes
+the video and nothing drifts.
+
+This file is **how** to make and publish one. **Why** they look this way, the
+house style, and the plan for all ten live in `docs/CONTENT.md`. The channel
+itself is recorded in `channel-setup.md`.
 
     video/
-      channel-setup.md              ← name, handle, description, keywords
-      superseded-document-short/
-        scripts.md                  ← one body, three hooks, as an experiment
-      05-eob-is-not-a-bill/
-        script.md                   ← spoken line, screen state, cuts, disclaimer
+      README.md           ← this: setup, making, checking, publishing
+      channel-setup.md    ← the channel as configured, and what is deliberately empty
+      tts.mjs             ← script → voice (Cloud TTS)
+      align.py            ← voice → word timings (local whisper.cpp)
+      whiteboard.py       ← all the art, and the renderer
+      captions.py         ← karaoke captions and the voice track
+      short-NN-<name>/
+        lines.json        ← the script: the only file per Short that is committed
+        audio/            ← built: one .wav per line, timings.json
+        <name>.mp4        ← built: the video
+        stills.png        ← built: the last frame of every line, for checking
 
-## Order
+`NN` is the Short's number in `docs/CONTENT.md`, not the order it was made in.
+Everything except `lines.json` is gitignored and rebuilds from it.
 
-**Publish Short 1, then make 2 and 4, then stop and look.** Three, not ten — the
-channel is empty, so there is no evidence yet that a drawing holds a swipe any
-better than a document did. `docs/CONTENT.md` has the ten and the reasoning.
+## One-time setup
 
-The format changed on 2026-09-15. It was three-to-five-minute screen recordings
-of real documents; it is now 35-45 second whiteboard Shorts, drawn. The short
-version of why: a real document is not legible at phone size, and cropping it
-until it is destroys the recognition that was the only reason to show it. The
-long version, with the frames that made the case, is in `docs/CONTENT.md`.
+macOS, because the art is written in Bradley Hand Bold and the captions in Arial
+Bold, both from `/System/Library/Fonts/Supplemental/`.
 
-**The measured position** (`docs/CONTENT.md`) is that YouTube search volume for
-this subject is Low by YouTube's own labels, three ways of measuring agree, and
-the intent lives on Google instead. Video here is a cheap bet placed alongside a
-written page, not instead of one.
-
-## Channel
-
-Not created yet. `channel-setup.md` holds the name, handle, description and
-keywords ready to paste — and the reason to create it before making anything,
-which is that **YouTube Studio's Research tab is the only free source of real
-search-volume figures** and is gated behind having a channel.
-
-## Before shooting anything
-
-~~The premise is unverified.~~ **Measured 2026-09-14 and it did not hold** — see
-`docs/CONTENT.md`. Trends, autocomplete and YouTube Studio all report Low volume,
-and YouTube does not recognise "explanation of benefits" as an insurance topic at
-all. What remains is feed distribution, which is what the Shorts experiment
-tests.
-
-## Making one
-
-Three commands, all generated, nothing by hand:
-
-    node video/tts.mjs superseded-document-short      # WAVs, Cloud TTS (en-US-Studio-Q)
-    python3 video/align.py superseded-document-short  # measure the word timings, locally
-    python3 video/render.py superseded-document-short # every frame, then the mux -> 1-number.mp4
-
-`--variant 2-contradiction` cuts a different hook against the same body. The
-whiteboard films the same way, with `whiteboard.py` in place of `render.py`.
-
-**Why there is an alignment step.** The captions need to know when each word
-starts. Cloud TTS will tell you directly — an SSML `<mark>` before every word,
-timepoints back — but only for Neural2, Wavenet and Standard. Studio voices
-reject `<mark>` and Chirp3-HD returns an empty array, and those are the voices
-worth listening to. So `tts.mjs` sends marks when the voice takes them and plain
-text when it does not, and `align.py` measures the timings afterwards with
-whisper.cpp on this machine. Nothing is uploaded; it takes a second or two a
-line. It is forced alignment, not transcription — the script is known, so
-Whisper's output is matched against it and a misheard word still gets a sensible
-time from its neighbours.
-
-    brew install whisper-cpp
+    brew install ffmpeg whisper-cpp
+    pip3 install pillow
     curl -L --create-dirs -o ~/.cache/whisper/ggml-base.en.bin \
       https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.en.bin
 
-Every body beat is one slide — which document this is, the whole page, the
-circled part blown up, the caption:
+Node 18 or newer, with no `npm install`: `tts.mjs` uses only built-ins. It calls
+Cloud Text-to-Speech with `gcloud auth print-access-token`, so `gcloud` has to be
+signed in to an account with access to the `useclaimright` project, and the
+Text-to-Speech API has to be enabled there. No Gemini key is involved; Gemini
+TTS was tried first and dropped as too unreliable.
 
-    THE BILL
-    [ the whole page, uncropped, circled where the figure is ]
-    [ that same region again, big enough to read on a phone ]
-    the word being spoken, in near-black
+## Making one
 
-The page is never cropped to the row being discussed. A strip of table is not a
-bill, and the point of showing the document at all is that a viewer recognises
-their own paperwork — so the zoom is a second panel rather than a camera move,
-and the circle is drawn in both panels at once so the eye connects them.
+### 1. Write `lines.json`
 
-Everything is driven by `audio/timings.json`: the karaoke highlight, the callout
-landing, and the circle closing as the figure is spoken. Rewrite a line and the
-frames that carry it change length; nothing else drifts.
+    {
+      "_injury": "why this injury, and why it earns its place",
+      "_numbers": "why these figures",
+      "variants": { "bee": "A bee stung you, and your hand swelled up like a rubber glove. So you go to your doctor." },
+      "body": [
+        { "id": "h2", "text": "The bill lists three charges. Your insurance letter lists two." },
+        ...
+        { "id": "h8", "text": "Check yours before you dispute. Or upload them free at UseClaimRight.com." }
+      ]
+    }
 
-Callout edges are snapped to row and column gaps measured with
-`pdftotext -bbox`, so nothing is ever sliced mid-character. Change a fixture and
-the boxes in `render.py` have to be re-measured. The patient's SSN is painted
-out — it is a canary in a fake fixture, but an SSN on screen in a video about
-medical bills reads as careless.
+- **`variants` holds the hook**, the first line, as a single entry. Its art key
+  is `hook-<name>`.
+- **Body ids must be unique across every Short**, not just this one: all the
+  art lives in one dictionary, and `whiteboard.py` refuses to run on a duplicate.
+  Each Short takes its own letter (`d`, `g`, `f`, `h`, and so on).
+- **`_` fields are notes to the next person.** Record the reason behind any
+  choice someone might undo.
+- **Write the domain `UseClaimRight.com`.** The voice spells lowercase
+  `useclaimright.com` out letter by letter. Check any new domain, abbreviation or
+  unusual figure the same way: synthesise it, and listen or run it through
+  `align.py`.
 
-## Conventions
+Before drawing anything, check the script against the style in
+`docs/CONTENT.md`. The rules that mattered most in practice:
 
-**Format.** Screen recording of a document with a cursor. No face. Three to five
-minutes. One idea per video.
+- open on the surprise the viewer already has, not the mechanism that explains it
+- name the word within the first ten seconds and define it in the same breath
+- one idea: anything that belongs to another Short stays out
+- say *why* a scene happens, not just when
+- round numbers, and one number per line
 
-**Language.** Jargon in the title, because that is what gets searched. Plain
-language from the first word spoken. The table of words to avoid is in
-`docs/CONTENT.md` — the short version is that if the app's own interface does not
-use the word, the soundtrack should not either.
+### 2. Voice and timings
 
-**One number at a time.** Introduce only the figures the video needs, and only
-when it needs them.
+    node video/tts.mjs short-04-never-seen      # audio/*.wav, voice en-US-Studio-Q
+    python3 video/align.py short-04-never-seen  # replaces estimated timings with measured ones
 
-**What can be filmed.** `/app?sample=1` and anything under `test-fixtures/`
-except `private/`. The carrier documents in `test-fixtures/carrier/` can be read
-from on screen with attribution but not republished. Nobody's real bill or EOB,
-ever, scrubbed or not.
+Run both after **any** change to a line. `tts.mjs` alone writes estimated word
+timings, because Studio voices do not return them; `align.py` measures the real
+ones locally with whisper.cpp. It is forced alignment against the known script,
+not transcription, so a misheard word still gets a sensible time. Nothing is
+uploaded.
 
-**Recordings are not committed.** Add `.mov`/`.mp4`/`.png` exports to
-`.gitignore` rather than the repo — the scripts are the source, the video is a
-build artefact.
+### 3. Draw
+
+The art is the `ART` dictionary in `whiteboard.py`, keyed by folder, then by
+line id. Each line gets a list of elements, drawn in order while it is spoken.
+
+- **The board is 1600 × 3700 and the story runs down it in one column.** Side
+  by side only when two things are being compared, like two envelopes or two
+  lists. The camera follows the drawing, and a zig-zag makes it swing.
+- **A line's time is shared out by stroke length, in list order.** A long
+  drawing listed first eats the line, so put the thing the viewer must see
+  first.
+- **The camera frames this line and the one before.** For a line that needs
+  everything on screen, such as a summary comparing both halves, add its id to
+  `FRAME_ALL`.
+- **A whiteboard cannot un-draw.** "Before" and "after" are two drawings.
+- **Shapes to reuse:** `person`, `person_hurt`, `person_down`, `person_hop`,
+  `cat`, `bee`, `swollen_hand`, `hospital`, `envelope`, `phone`, `bucket`,
+  `bucket_fill`, `ice`, `coin`, `pie`, `clock`, `arrow`, `box`, `ellipse` (for
+  circling), `squiggle`, `line`, `circle`. Elements: `S(...)` for strokes,
+  `T(xy, text, size, colour)` for handwriting, `Sheet` (a page sliding out of an
+  envelope), `Spin` (art that rotates, optionally draining), and `Coins`
+  (dollar signs falling together).
+- **New shapes go with the others**, as functions returning a list of strokes
+  (each stroke a list of points), with a docstring saying what makes them read
+  as the thing.
+
+### 4. Render
+
+    python3 video/whiteboard.py short-04-never-seen
+
+This writes `<name>.mp4` and `stills.png` (the name is the folder minus
+`short-NN-`), then deletes the frames. Pass `--keep-frames` to keep them. A
+render takes a minute or two.
+
+**Open `stills.png` every time.** It is step 1 of the checklist below, and it is
+how every layout bug so far was found.
+
+## Before it goes public
+
+YouTube cannot swap the file on a video. Every fix after publishing means a new
+upload, losing the views, deleting the old one by hand, and fixing every link
+that pointed at it. Both rewrites on 2026-09-17 would have been caught by this
+list:
+
+1. **Check `stills.png`.** Clipped text, black edges and half-framed
+   comparisons hide in playback and are obvious in stills.
+2. **When remaking a Short, keep the previous cut** as `<name>-v1.mp4` and
+   watch them back to back.
+3. **Upload Private.**
+4. **Have someone who does not know the subject watch it once.** Ask what the
+   video said, not whether they liked it. Short 2 v1 followed every style rule
+   and still lost a first-time viewer.
+5. **Only then publish.** Link to the playlist, not a single video, so a later
+   replacement does not break the link.
+
+## Publishing on YouTube
+
+Channel `@useclaimright`, playlist **Reading your own medical bill**
+(`PLYCXBRe11FUU`). Studio → **Create** → **Upload videos**, then:
+
+- **Title:** the surprise, in plain words, under about 60 characters. Match the
+  video: when Short 1 changed from hospital to urgent care, its title did too.
+- **Description:** five short paragraphs, in this order:
+  1. the surprise, in one or two sentences
+  2. the explanation, with the jargon named
+  3. what to do about it
+  4. `Check yours before you dispute, or upload them free at useclaimright.com`
+  5. `General information, not legal or medical advice. Always check figures against your own documents before disputing a charge.`
+- **Playlist:** Reading your own medical bill.
+- **Audience:** No, it's not made for kids.
+- **Visibility:** Private, until the checklist is done.
+- **Order in the playlist:** it is sorted manually, and new uploads land at the
+  bottom. Studio cannot reorder it. On the public playlist page, use a video's
+  ⋮ menu → **Move to top** / **Move to bottom**, then reload to confirm, because
+  the move does not always stick.
+
+Then record the video id in the Status table below and in `channel-setup.md`.
+
+### Replacing a published Short
+
+1. Upload the new cut as above: Private, same playlist, title and description
+   updated to match.
+2. Move it into the old one's place in the playlist.
+3. Publish the new one first, so the playlist never has a gap.
+4. Delete the old one by hand in Studio (⋮ → **Delete forever**). Deleting also
+   removes it from the playlist.
+5. Fix anything that linked to the old video directly.
 
 ## Status
 
-| # | Short | Folder | Made | Published |
+| # | Short | Folder | Length | YouTube |
 |---|---|---|---|---|
-| 1 | Two numbers — the bill and the letter | `short-01-two-numbers` | ✅ 42.1s (v2) | v2 uploaded, Private (v1 Public, to delete) |
-| 2 | The January reset (deductible) | `short-02-january` | ✅ 34.5s (v2) | v2 uploaded, Private (v1 to delete) |
-| 3 | Copay or coinsurance | `short-03-copay` | ✅ 42.5s | uploaded, Private |
-| 4 | A charge your insurance has never seen | `short-04-never-seen` | ✅ 34.9s | not yet — checklist |
+| 1 | Urgent care and your insurance don't talk to each other | `short-01-two-numbers` | 42.1s (v2) | `l0g-GiNdqbQ` Private; v1 `GVPbBuHbwBg` Public, to delete |
+| 2 | Your body doesn't know it's January | `short-02-january` | 34.5s (v2) | `YKheiL2nerE` Private; v1 `w64EEe5ZBqM` Private, to delete |
+| 3 | You tripped over your cat. Now: copay or coinsurance? | `short-03-copay` | 42.5s | `aaO_pqBPpSs` Public |
+| 4 | A charge on your bill your insurance has never seen | `short-04-never-seen` | 35.4s | `dvOpGw7camA` Private |
 | 5–10 | see `docs/CONTENT.md` | — | — | — |
 
-**`short-NN-` matches the number in `docs/CONTENT.md`.** It briefly did not:
-folders were numbered as they were built, so the superseded document version sat
-on 01 and pushed everything after it out by one. `superseded-document-short/`
-holds that version — the real bill and EOB on screen, three hook variants — kept
-because the writing is still good, and `video/render.py` still builds it.
+## Superseded, awaiting removal
 
-Superseded by the format change, kept because the writing is still good:
-`superseded-document-short/` (the document version, three hook variants) and
-`05-eob-is-not-a-bill/script.md` (long-form, absorbed into Short 1).
+`render.py`, `superseded-document-short/` and `05-eob-is-not-a-bill/` are from
+the first format: screen recordings of the real test bill and EOB, three to five
+minutes long. It was replaced on 2026-09-15 because a real document is not
+legible at phone size. Nothing uses them now; `whiteboard.py` has its own
+caption helpers in `captions.py`. `package.json` still lists `@google/genai`,
+which nothing imports since Gemini TTS was dropped.

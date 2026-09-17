@@ -169,9 +169,10 @@ everything drawn so far shrinks the art as the story grows.
 
 ## How one gets made
 
-    node video/tts.mjs short-01-two-numbers        # WAVs, en-US-Studio-Q
-    python3 video/align.py short-01-two-numbers    # word timings, local Whisper
-    python3 video/whiteboard.py short-01-two-numbers
+**The steps live in `video/README.md`**: setup, writing `lines.json`, voice and
+timings, drawing, rendering, the checklist before anything goes public, and
+publishing or replacing a Short on YouTube. This section keeps only the
+reasoning behind them.
 
 About ten minutes to write `lines.json`, twenty to thirty to draw whatever shapes
 are new, two to run the pipeline. Everything regenerates from the script, so
@@ -180,35 +181,18 @@ changing a line changes the video and nothing drifts.
 **The voice is `en-US-Studio-Q`**, chosen by audition. It rejects SSML `<mark>`,
 which is where the caption timings used to come from, so the timings are measured
 afterwards by whisper.cpp on this machine — forced alignment against a known
-script, not transcription. `video/README.md` has the setup.
+script, not transcription.
 
 **Verify pronunciation rather than guessing it.** Studio-Q was reading
 useclaimright.com letter by letter. Four spellings were synthesised and run back
 through Whisper; `UseClaimRight.com` comes back as one word and the lowercase
-form spells out. That loop costs nothing and should be used on every domain,
-abbreviation and dollar figure.
+form spells out.
 
-### Before it goes public
-
-YouTube cannot replace a video's file. Every fix after publishing is a new
-upload, the views stay behind on the old one, the old one has to be deleted by
-hand, and every link to it breaks: Short 1's LinkedIn comment pointed at a
-video that no longer exists. Both rewrites on 2026-09-17 would have been caught
-by this list, so run it before anything goes Public:
-
-1. **Check a still from the end of every line.** Clipped text, a black bar at
-   the board edge and a half-framed comparison all hid in playback and were
-   obvious in stills. Seconds per line.
-2. **Keep the previous cut beside the new one** as `<name>-v1.mp4` and watch
-   them back to back. The difference is obvious side by side and easy to
-   argue yourself out of from memory.
-3. **Upload Private.**
-4. **Have someone who does not know the subject watch it once.** Not a
-   reviewer who knows what a deductible is: every rule in the house style was
-   followed by Short 2 v1, and one viewing by someone new still found it hard
-   to follow. Ask what the video said, not whether they liked it.
-5. **Only then publish**, and link to the playlist rather than a single video
-   so a later replacement does not break the link.
+**The release checklist exists because YouTube cannot replace a video's file.**
+Every fix after publishing costs the views and breaks links; Short 1's LinkedIn
+comment pointed at a video that was then replaced. Both rewrites on 2026-09-17
+would have been caught by checking stills and by one first-time viewer, which is
+why those two steps come before Public.
 
 ### The art library, which compounds
 
@@ -573,10 +557,10 @@ Shorts are a cheap bet placed alongside that page, never instead of it.
 
 ## Open work
 
-- **Publish Short 1.** Requires a person; the channel needs a sign-in.
-- **Apply the channel description and keywords** from `video/channel-setup.md`.
 - **Write the page for Google.** Still the highest-evidence recommendation in
   this document and still unstarted.
-- **Decide what happens to `video/render.py`**, the document renderer. It works,
-  it is tested against the fixtures, and nothing currently plans to use it. Keep
-  it or retire it deliberately rather than letting it rot.
+- **Retire the document renderer** (`video/render.py`, `superseded-document-short/`,
+  `05-eob-is-not-a-bill/`) and the unused `@google/genai` dependency. Nothing uses
+  them since the whiteboard format; git history keeps them.
+- **Replace the two remaining v1 uploads** (Shorts 1 and 2): publish the new cuts,
+  then delete the old ones by hand. See `video/README.md`.

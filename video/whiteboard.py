@@ -3,8 +3,9 @@
 
     python3 video/whiteboard.py short-01-two-numbers
 
-Needs audio/*.wav and audio/timings.json from tts.mjs. Writes frames/ and the
-mp4 beside them.
+Needs audio/*.wav and audio/timings.json from tts.mjs. Writes the mp4 and
+stills.png (the last frame of every line) beside them. Frames are deleted after
+the mux unless --keep-frames is passed.
 
 The trick is the same one VideoScribe and Doodly use, and it is only three
 things:
@@ -25,12 +26,12 @@ without touching any of the timing code.
 Elements are shared out across each spoken line in proportion to their length,
 so the last stroke of an element lands as its line finishes.
 """
-import json, math, re, subprocess, sys
+import json, math, re, shutil, subprocess, sys
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from render import audio_track, caption, CAP_STEP, CAP_LINES     # noqa: E402
+from captions import audio_track, caption                       # noqa: E402
 
 HERE = Path(__file__).resolve().parent
 W, H, FPS = 1080, 1920, 15
@@ -651,6 +652,7 @@ def main():
     MOVE = 0.55                        # seconds for the camera to settle
     MARGIN = 900                       # white overhang, so a wide shot near the board edge never shows black
     n, plan, done = 0, [], []          # `done` accumulates: a whiteboard keeps what was drawn
+    ends = []                          # last frame of each line, for stills.png
     cam, prev_els = None, []
     for b in beats:
         t = timings[b["id"]]
@@ -712,6 +714,7 @@ def main():
             im.save(frames / f"f{n:05d}.png")
             n += 1
         done.extend(els)
+        ends.append(n - 1)
         cam, prev_els = want, els
 
     wav = dir_ / "audio" / "_track.wav"
@@ -722,7 +725,26 @@ def main():
                     "-c:v", "libx264", "-pix_fmt", "yuv420p", "-r", "30",
                     "-c:a", "aac", "-b:a", "192k", "-shortest", str(out)], check=True)
     wav.unlink()
-    print(f"{n} frames · {n / FPS:.1f}s · {out}")
+    stills(frames, ends, [b["id"] for b in beats], dir_ / "stills.png")
+    # The frames are ~100MB a Short and the mp4 is the product; stills.png is
+    # what the release checklist actually needs from them.
+    if "--keep-frames" not in sys.argv:
+        shutil.rmtree(frames)
+    print(f"{n} frames · {n / FPS:.1f}s · {out} · {dir_ / 'stills.png'}")
+
+
+def stills(frames, ends, ids, out, cols=5, tw=270, th=480):
+    """The last frame of every line on one sheet. Step 1 of the release
+    checklist: clipped text, black edges and half-framed comparisons hide in
+    playback and are obvious here."""
+    rows = -(-len(ends) // cols)
+    sheet = Image.new("RGB", (cols * tw, rows * (th + 36)), (255, 255, 255))
+    d = ImageDraw.Draw(sheet)
+    for k, (e, beat) in enumerate(zip(ends, ids)):
+        x, y = (k % cols) * tw, (k // cols) * (th + 36)
+        sheet.paste(Image.open(frames / f"f{e:05d}.png").resize((tw, th)), (x, y))
+        d.text((x + 8, y + th + 6), beat, font=font(24), fill=GREY)
+    sheet.save(out)
 
 
 if __name__ == "__main__":

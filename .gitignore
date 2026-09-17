@@ -31,19 +31,14 @@ test-fixtures/carrier/*.pdf
 test-fixtures/private/*
 !test-fixtures/private/README.md
 
-# Video exports are build artefacts — the scripts in video/ are the source.
-video/**/*.mov
+# video/: lines.json and the .py/.mjs files are the source; everything a render
+# produces is a build artefact. Rebuild a Short with the three commands in
+# video/README.md.
 video/**/*.mp4
+video/**/*.mov
 video/**/*.png
-video/**/_*.png
 video/**/*.wav
-
-# video/ has its own deps, like test/browser
-video/node_modules/
 video/**/audio/
-
-# Video frames and cuts — rebuild with:
-#   node video/tts.mjs <folder> && python3 video/render.py <folder>
 video/*/frames/
-video/*/*.mp4
+video/node_modules/
 __pycache__/
