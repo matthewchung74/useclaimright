@@ -342,6 +342,33 @@ def bar(x0, y0, w, h, seed=467):
     return box(x0, y0, x0 + w, y0 + h, seed=seed)
 
 
+def bandaid(x, y, w, h, seed=487):
+    """A plaster: rounded ends, a pad in the middle, and the little holes in it.
+    Drawn flat-on, because a bandaid at an angle reads as a sticking plaster in
+    mid-air."""
+    r = h / 2
+    ends = [wobble([(x + r + r * math.cos(a), y + r + r * math.sin(a))
+                    for a in [math.pi / 2 + i * math.pi / 10 for i in range(11)]], amp=1.6, seed=seed),
+            wobble([(x + w - r + r * math.cos(a), y + r + r * math.sin(a))
+                    for a in [-math.pi / 2 + i * math.pi / 10 for i in range(11)]], amp=1.6, seed=seed + 1)]
+    sides = [line((x + r, y), (x + w - r, y), seed=seed + 2),
+             line((x + r, y + h), (x + w - r, y + h), seed=seed + 3)]
+    pad = box(x + w * 0.34, y + h * 0.18, x + w * 0.66, y + h * 0.82, seed=seed + 4)
+    holes = [circle(x + w * (0.40 + 0.07 * i), y + h * f, 3.5, n=8, seed=seed + 8 + i)
+             for i in range(4) for f in (0.34, 0.66)]
+    return ends + sides + pad + holes
+
+
+def door(x0, y0, w, h, seed=491):
+    """A hotel room door, seen from inside: handle, and the little framed card
+    of prices nobody has ever paid."""
+    return (box(x0, y0, x0 + w, y0 + h, seed=seed)
+            + [circle(x0 + w - 34, y0 + h * 0.54, 13, seed=seed + 4)]
+            + box(x0 + w * 0.18, y0 + h * 0.16, x0 + w * 0.78, y0 + h * 0.40, seed=seed + 5)
+            + [line((x0 + w * 0.26, y0 + h * 0.24), (x0 + w * 0.68, y0 + h * 0.24), n=4, seed=seed + 9),
+               line((x0 + w * 0.26, y0 + h * 0.31), (x0 + w * 0.60, y0 + h * 0.31), n=4, seed=seed + 10)])
+
+
 def ice(x, y, w, seed=79):
     """A patch of it. The short marks underneath are what stop the long line
     reading as the ground."""
@@ -645,30 +672,35 @@ ART = {"short-01-two-numbers": {
             T((300, 3740), "useclaimright.com", 100, ACCENT),
             S([line((300, 3870), (1160, 3870), n=14, seed=439)], colour=ACCENT, width=8)],
 }, "short-06-sticker-price": {
-    # The joke is the gap between the injury and the number, so both are in the
-    # first shot and nothing else is.
-    "hook-splinter": [S(finger(300, 320, 190, 400)), S(tweezers(560, 170, s=1.3)),
-                      T((700, 330), "$2,000", 150, ACCENT)],
-    "m2": [T((700, 540), "nobody pays this", 66, GREY),
-           S([line((680, 420), (1220, 396), n=8, seed=471)], colour=ACCENT, width=8)],
+    # The joke is the gap between the treatment and the number: a splinter, a
+    # bandaid, and $2,000. Nothing else is in the first shot.
+    "hook-splinter": [S(finger(300, 320, 190, 400)), S(bandaid(276, 470, 238, 96)),
+                      S(tweezers(600, 170, s=1.3)), T((760, 330), "$2,000", 150, ACCENT)],
+    "m2": [T((760, 560), "nobody pays this", 66, GREY),
+           S([line((740, 420), (1280, 396), n=8, seed=471)], colour=ACCENT, width=8)],
     # Three bars to scale: 1000px, 150px, 30px. The lengths are the argument.
-    "m3": [T((250, 830), "billed", 58, GREY), S(bar(250, 900, 1000, 90)),
-           T((250, 1010), "$2,000", 76),
-           T((250, 1180), "allowed", 58, GREY), S(bar(250, 1250, 150, 90)),
-           T((440, 1265), "$300", 76)],
-    "m4": [T((250, 1440), "the allowed amount", 104),
-           S([line((250, 1590), (1230, 1590), n=14, seed=473)], width=8),
-           T((250, 1630), "the only real number", 58, ACCENT)],
-    "m5": [T((250, 1810), "your share", 58, GREY), S(bar(250, 1880, 30, 90)),
-           T((330, 1895), "$60", 76, ACCENT),
-           T((250, 2010), "20% of the allowed, not the billed", 56, GREY)],
-    "m6": [T((250, 2170), "sticker price", 96),
-           T((250, 2300), "there so there is something", 56, GREY),
-           T((250, 2370), "to discount", 56, GREY)],
-    "m7": [T((250, 2530), "read the letter", 90),
-           T((250, 2640), "before you panic", 90)],
-    "m8": [T((300, 2830), "useclaimright.com", 100, ACCENT),
-           S([line((300, 2960), (1160, 2960), n=14, seed=479)], colour=ACCENT, width=8)],
+    "m3": [T((250, 860), "billed", 58, GREY), S(bar(250, 930, 1000, 90)),
+           T((250, 1040), "$2,000", 76),
+           T((250, 1210), "allowed", 58, GREY), S(bar(250, 1280, 150, 90)),
+           T((440, 1295), "$300", 76)],
+    "m4": [T((250, 1470), "the allowed amount", 104),
+           S([line((250, 1620), (1230, 1620), n=14, seed=473)], width=8),
+           T((250, 1660), "the only real number", 58, ACCENT)],
+    "m5": [T((250, 1820), "sticker price", 96),
+           T((250, 1950), "there so there is something to discount", 54, GREY)],
+    # The analogy lands on its own image, straight after the definition.
+    "m6": [S(door(320, 2080, 340, 560)), T((720, 2230), "the rate on the", 62),
+           T((720, 2310), "back of the door", 62),
+           T((720, 2420), "nobody has ever", 56, GREY), T((720, 2490), "paid it", 56, GREY)],
+    "m7": [T((250, 2740), "your share", 58, GREY), S(bar(250, 2810, 30, 90)),
+           T((330, 2825), "$60", 76, ACCENT),
+           T((250, 2940), "your plan's coinsurance: 20%", 56, GREY),
+           T((250, 3010), "of the allowed, not the billed", 56, GREY)],
+    "m8": [T((250, 3160), "read the letter", 90),
+           T((250, 3270), "before you panic", 90)],
+    "m9": [T((300, 3460), "useclaimright.com", 100, ACCENT),
+           S([line((300, 3590), (1160, 3590), n=14, seed=479)], colour=ACCENT, width=8)],
+
 }}
 
 # Beats that pull back to show everything drawn so far, instead of the usual

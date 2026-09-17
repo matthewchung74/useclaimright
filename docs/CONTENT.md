@@ -365,26 +365,39 @@ future Short that tells someone not to pay something does the same.
 reads it as letters either way, and "E O B" made the caption break the letters
 across lines.
 
-### 6. The sticker price is fiction · MADE — 35.1s
+### 6. The sticker price is fiction · MADE — 42.1s
 
-**Hook:** *"A splinter. One pair of tweezers. The bill says two thousand dollars."*
-**Opens on:** a fingertip with a splinter, a pair of tweezers, and $2,000 in red.
-**Injury:** a splinter — the gap between the injury and the number is the joke.
+**Hook:** *"A splinter. One pair of tweezers, one bandaid. The bill says two
+thousand dollars."*
+**Opens on:** a fingertip with a bandaid on it, a pair of tweezers, and $2,000 in red.
+**Injury:** a splinter — the gap between the treatment and the number is the joke.
 
 **Teaching beat:** billed $2,000, allowed $300, your share $60. Only the allowed
-amount is real; your share comes out of that, not out of the sticker price. The
-$2,000 exists so there is something to discount.
+amount is real; your share comes out of that, not out of the sticker price.
 
-**New art added:** `bar` (one bar of a chart), `finger`, `tweezers`.
+**New art added:** `bar` (one bar of a chart, drawn to scale), `finger`,
+`tweezers`, `bandaid`, `door`.
 
-**The bars are drawn to scale** — 1000px, 150px and 30px — so the sticker price
-looks as absurd as it is. The scale is the argument, so it is not fudged to make
-the last bar easier to label.
+**The most valuable Short in the series so far**, measured rather than guessed:
+of 68 audits in Firestore, **53 flagged `billed_vs_allowed_mismatch`** — billing
+above the EOB allowed amount. It is the single most common finding the product
+makes, it is the finding that drives the letter's strongest paragraph, and the
+allowed amount has a column of its own on every EOB, so a viewer can go and look
+at it the moment the video ends. (Caveat: most of those audits are our own
+fixtures, so the frequency reflects the documents fed in more than the world.)
 
-**What it deliberately does not do.** Short 1 is which paper is which and Short 5
-is being billed for the discount; this one only sorts out which of the three
-numbers is real, and never mentions disputing anything. The 20% is the same 20%
-as Short 3, so the plan stays consistent across the series.
+**The bars are drawn to scale** — 1000px, 150px and 30px. The scale is the
+argument, so the last bar is not fudged to make it easier to label.
+
+**An analogy, straight after the definition.** "It is the rate printed on the back
+of a hotel room door. Nobody has ever paid it." A real price, printed, that
+everyone has already seen and ignored. It gets its own image — a door with the
+little framed card — rather than being said over the chart.
+
+**Say where a number came from.** An earlier cut said "at twenty percent, that is
+sixty dollars" with no source, which is the same fault as Short 2 v1 implying the
+price had changed. It now says "your plan says you pay twenty percent of it", and
+the board reads "your plan's coinsurance: 20%".
 
 ### 7. A family deductible is not two of yours
 
