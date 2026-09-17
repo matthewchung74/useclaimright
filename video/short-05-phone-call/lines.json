@@ -1,0 +1,45 @@
+{
+  "_comment": "Short 5 in docs/CONTENT.md: balance billing, and the sentence to read down the phone. The payload is the sentence, not the explanation.",
+  "_injury": "Fell off a ladder, arm in a sling: already treated, now arguing about the bill.",
+  "_stakes": "The highest-stakes Short in the set: it tells someone not to pay a bill. Two consequences. (1) The limit is said in the second line, not buried: this is about a provider IN your network. (2) The disclaimer is DRAWN, in words on the board, not left to a description nobody opens.",
+  "_numbers": "Three, all round: charged $1,000, allowed $400, and the $600 between them. The sentence deliberately says 'what I owe' instead of a fourth figure.",
+  "_accuracy": "In-network providers accept the allowed amount by contract, so the difference is written off, not billed. Out of network the rules differ, which k8 says rather than implies; emergencies and out-of-network care at in-network facilities have their own protections and are left to another Short.",
+  "variants": {
+    "sling": "You fell off a ladder and broke your arm. Insurance paid its share. Then the clinic billed you for the rest."
+  },
+  "body": [
+    {
+      "id": "k2",
+      "text": "That has a name. It is balance billing, and if the clinic is in your network, it is not allowed."
+    },
+    {
+      "id": "k3",
+      "text": "Here is what happened. The clinic charged a thousand dollars."
+    },
+    {
+      "id": "k4",
+      "text": "Your insurance letter says the allowed amount is four hundred."
+    },
+    {
+      "id": "k5",
+      "text": "That six hundred dollar difference is the discount the clinic agreed to when it joined the network."
+    },
+    {
+      "id": "k6",
+      "text": "So it comes off the bill. It does not come to you."
+    },
+    {
+      "id": "k7",
+      "text": "Call the number on the bill, and read this out."
+    },
+    {
+      "id": "k8",
+      "text": "You are in my network. My EOB says what I owe. Please correct the balance. Out of network, the rules are different."
+    },
+    {
+      "id": "k9",
+      "text": "Check yours before you dispute. Or upload them free at UseClaimRight.com."
+    }
+  ],
+  "_pronunciation": "'EOB' is written as one word: Studio-Q reads it as letters, verified by synthesising it and running Whisper back over it. Spelling it 'E O B' made the caption break the letters across lines."
+}

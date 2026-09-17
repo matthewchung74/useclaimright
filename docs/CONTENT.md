@@ -328,27 +328,36 @@ First Short written after the "Before it goes public" checklist and the
 concept; one number, the $100 shot; top to bottom. The gap in the letter's list
 sits level with the shot, so the missing row is visible before it is said.
 
-### 5. The phone call
+### 5. The phone call · MADE — 41.2s
 
-**Hook:** *"They paid. Then the hospital billed you for the discount. Here is the
-sentence to say."*
-**Opens on:** a phone, and one sentence written out to be read aloud.
-**Injury:** an arm in a sling — already treated, now arguing.
+**Hook:** *"You fell off a ladder and broke your arm. Insurance paid its share.
+Then the clinic billed you for the rest."*
+**Opens on:** a ladder, and a figure with an arm in a sling.
+**Injury:** a broken arm — already treated, now arguing.
 
-**Teaching beat:** balance billing, and that a network contract forbids it — but
-the payload is **the sentence**, written on screen, that a viewer reads down the
-phone.
+**Teaching beat:** the clinic charged $1,000, the EOB allows $400, and the $600
+between them is the discount the clinic agreed to when it joined the network. It
+comes off the bill; it does not come to you. That is **balance billing**, and in
+network it is not allowed. The payload is the sentence to read down the phone:
 
-**Recast from an explainer to a procedure**, because as an explainer it was the
-same drawing as Short 1: two papers with different numbers. The earlier review
-had already reached this conclusion about old video 3 and it did not carry over.
-As a procedure it is the most valuable Short in the set.
+> I'm in network. My EOB says what I owe. Please correct the balance.
 
-**Highest stakes in the series.** It tells someone not to pay a bill, and a stick
-figure is weak authority for that. The disclaimer goes **on screen, in words**,
-drawn like everything else — not in a description nobody opens.
+**New art added:** `person_sling`, `ladder`, `bubble` (a speech bubble, for words
+meant to be said out loud rather than read).
 
-**New art:** a speech bubble with words in it, a contract with two signatures.
+**The limit is in the second line, not a footnote.** This Short tells someone not
+to pay a bill, so "if the clinic is in your network" is said as the word is named,
+and "out of network, the rules are different" is both spoken and written. Emergencies
+and out-of-network care at in-network facilities have their own protections and
+are left to another Short.
+
+**The disclaimer is drawn.** General information, not legal or medical advice, in
+grey on the board above the address — not left to a description nobody opens. Any
+future Short that tells someone not to pay something does the same.
+
+**Pronunciation, checked not guessed.** "EOB" is written as one word: Studio-Q
+reads it as letters either way, and "E O B" made the caption break the letters
+across lines.
 
 ### 6. The sticker price is fiction
 

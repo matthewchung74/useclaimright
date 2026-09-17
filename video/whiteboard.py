@@ -275,6 +275,46 @@ def doc(x0, y0, x1, y1, rows=3, seed=281):
     return strokes
 
 
+def person_sling(cx, top, s=1.0, seed=401):
+    """Arm across the chest, held in a triangle of cloth slung from the neck.
+    The triangle is what makes it a sling: a bent arm on its own reads as a
+    wave."""
+    r = 46 * s
+    hy = top + r
+    neck = (cx, hy + r)
+    sh = (cx, hy + r + 46 * s)
+    hip = (cx, hy + r + 150 * s)
+    elbow = (cx + 56 * s, hy + r + 94 * s)
+    wrist = (cx - 34 * s, hy + r + 104 * s)
+    low = (cx + 6 * s, hy + r + 158 * s)
+    return [circle(cx, hy, r, seed=seed),
+            line(neck, hip, seed=seed + 1),
+            line(sh, (cx - 74 * s, sh[1] + 86 * s), seed=seed + 2),   # good arm
+            line(sh, elbow, seed=seed + 3),                            # upper arm
+            line(elbow, wrist, seed=seed + 4),                         # forearm, across
+            line(wrist, low, n=4, seed=seed + 5),                      # cloth
+            line(low, elbow, n=4, seed=seed + 6),
+            line((cx - 12 * s, neck[1] + 6 * s), elbow, n=5, seed=seed + 7),  # strap
+            line(hip, (cx - 66 * s, hip[1] + 128 * s), seed=seed + 8),
+            line(hip, (cx + 66 * s, hip[1] + 128 * s), seed=seed + 9)]
+
+
+def ladder(x0, y0, w, h, rungs=4, seed=409):
+    return [line((x0, y0), (x0 + 18, y0 + h), seed=seed),
+            line((x0 + w, y0), (x0 + w + 18, y0 + h), seed=seed + 1)] + [
+        line((x0 + 9 * (i + 1) / rungs, y0 + h * (i + 1) / (rungs + 1)),
+             (x0 + w + 9 * (i + 1) / rungs, y0 + h * (i + 1) / (rungs + 1)), n=4, seed=seed + i + 2)
+        for i in range(rungs)]
+
+
+def bubble(x0, y0, w, h, seed=419):
+    """A speech bubble with a tail, for words that are meant to be said out
+    loud rather than read."""
+    return box(x0, y0, x0 + w, y0 + h, seed=seed) + [
+        line((x0 + 60, y0 + h), (x0 + 30, y0 + h + 54), n=3, seed=seed + 4),
+        line((x0 + 30, y0 + h + 54), (x0 + 130, y0 + h), n=3, seed=seed + 5)]
+
+
 def ice(x, y, w, seed=79):
     """A patch of it. The short marks underneath are what stop the long line
     reading as the ground."""
@@ -545,6 +585,35 @@ ART = {"short-01-two-numbers": {
            T((570, 3250), "insurer website", 70), T((570, 3340), "Claims", 80, ACCENT)],
     "j8": [T((300, 3540), "useclaimright.com", 100, ACCENT),
            S([line((300, 3670), (1160, 3670), n=14, seed=383)], colour=ACCENT, width=8)],
+}, "short-05-phone-call": {
+    "hook-sling": [S(ladder(300, 180, 150, 520)), S(person_sling(760, 240, s=1.4)),
+                   T((980, 300), "ouch", 70, GREY)],
+    # The word and its limit in the same breath, at about twelve seconds. The
+    # limit is not a footnote: out of network this Short does not apply.
+    "k2": [T((280, 900), "balance billing", 120),
+           S([line((280, 1050), (1180, 1050), n=14, seed=421)], width=8),
+           T((280, 1090), "in network: not allowed", 62, ACCENT)],
+    "k3": [S(box(200, 1260, 680, 1540, seed=423)), T((240, 1300), "the bill", 52, GREY),
+           T((240, 1380), "$1,000", 96)],
+    "k4": [S(box(880, 1260, 1360, 1540, seed=427)), T((920, 1300), "your EOB", 52, GREY),
+           T((920, 1380), "allowed $400", 70)],
+    # The gap between the two boxes is the discount, so it is drawn between them.
+    "k5": [S(arrow((690, 1620), (870, 1620), seed=431)), T((600, 1680), "$600", 110, ACCENT),
+           T((430, 1810), "the network discount", 62, GREY)],
+    "k6": [T((430, 1930), "comes off the bill", 74),
+           T((430, 2020), "not on to you", 74, ACCENT)],
+    "k7": [S(phone(260, 2180, 200, 330, seed=433))],
+    # The payload: the words to say, big enough to read off a phone screen.
+    "k8": [S(bubble(540, 2150, 940, 420)),
+           T((580, 2190), "I'm in network.", 66),
+           T((580, 2290), "My EOB says what I owe.", 66),
+           T((580, 2390), "Please correct the balance.", 66),
+           T((560, 2660), "out of network, the rules differ", 56, GREY)],
+    # Drawn, not left to the description: this Short tells someone not to pay.
+    "k9": [T((300, 2820), "general information,", 52, GREY),
+           T((300, 2890), "not legal or medical advice", 52, GREY),
+           T((300, 3020), "useclaimright.com", 100, ACCENT),
+           S([line((300, 3150), (1160, 3150), n=14, seed=439)], colour=ACCENT, width=8)],
 }}
 
 # Beats that pull back to show everything drawn so far, instead of the usual
