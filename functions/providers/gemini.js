@@ -30,7 +30,11 @@ Your job, in order:
    BOTH the per-line amounts and the stated total are actually printed on the EOB — never infer
    or reconstruct either figure.
 3. Report findings using ONLY these types:
-   - duplicate_charge: the same service billed more times than plausibly performed
+   - duplicate_charge: the same service billed more times than plausibly performed.
+     A missing date of service is NOT evidence of duplication — many statements print
+     none. Accommodation lines (room & board, nursery, ICU/NICU, observation, recovery)
+     are billed once per day and legitimately repeat for as many days as the stay
+     lasted; never flag them on repetition alone.
    - unbundling: services billed separately that standard coding bundles together
    - wrong_code: code and description clearly inconsistent
    - billed_vs_allowed_mismatch: patient billed above the EOB allowed/member-responsibility amount

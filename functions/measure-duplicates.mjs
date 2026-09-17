@@ -45,16 +45,30 @@ const KEY = process.env.GEMINI_API_KEY || execFileSync(
 // lines are indistinguishable from one line billed three times, and the model has
 // nothing to reason from. The real bills that produced the $3,523 were the second
 // kind — their stored occurrenceTable rows carry no code and no date.
+//
+// The third strips the header as well — no provider, no admission range, no
+// patient, just description-and-charge rows. That is what the upload behind the
+// real $3,523 actually was: 843 characters, provider/serviceDates/statementId/
+// patientName all extracted empty. "Billed more times than plausibly performed"
+// has to be decided with no stay to measure it against.
+//
+// The fourth is the real document as closely as it can be reconstructed: a
+// newborn's own statement, bare rows, whose only repeat is a NURSERY line once a
+// night. There is no duplicate on it at all, so the right answer is zero
+// findings. It exists because the model spares "Room & Board" by knowing that
+// room and board is per-night — and the line it charged $3,523 for was Nursery,
+// which is per-night in exactly the same way.
 const FIXTURES = [
-  ["with dates   ", "dup-perdiem-bill.txt"],
-  ["without dates", "dup-perdiem-bill-nodates.txt"],
+  ["with dates   ", "dup-perdiem-bill.txt", 4951],
+  ["without dates", "dup-perdiem-bill-nodates.txt", 4951],
+  ["bare rows    ", "dup-perdiem-bill-bare.txt", 4951],
+  ["nursery only ", "dup-nursery-bare.txt", null],   // null = no duplicate exists
 ];
-const DOUBLE = 4951;            // the one real duplicate
 const LEGIT = [3523, 6.44];     // per-diem and daily-dose repeats: must NOT be flagged
 const money = (n) => (typeof n === "number" ? `$${n.toFixed(2)}` : "—");
 
 let passes = 0, total = 0;
-for (const [label, file] of FIXTURES) {
+for (const [label, file, DOUBLE] of FIXTURES) {
 const BILL = readFileSync(join(HERE, "../test-fixtures/", file), "utf8");
 console.log(`\n=== ${label} (${file}) ===`);
 for (let i = 1; i <= RUNS; i++) {
@@ -68,17 +82,17 @@ for (let i = 1; i <= RUNS; i++) {
   const { result } = verifyEvidence(data, { bill: data.billText || BILL, eob: "", sbc: "" });
   const dups = (result.findings || []).filter((f) => f.type === "duplicate_charge");
 
-  const caught = dups.some((f) => Math.abs((f.amountAtStake ?? 0) - DOUBLE) < 0.01);
+  const caught = DOUBLE === null || dups.some((f) => Math.abs((f.amountAtStake ?? 0) - DOUBLE) < 0.01);
   const falsePos = dups.filter((f) => LEGIT.some((n) => Math.abs((f.amountAtStake ?? 0) - n) < 0.01));
-  const ok = caught && falsePos.length === 0 && dups.length === 1;
+  const ok = caught && falsePos.length === 0 && dups.length === (DOUBLE === null ? 0 : 1);
   if (ok) passes++;
 
   console.log(`\nrun ${i}  ${ok ? "PASS" : "FAIL"}`);
-  console.log(`  caught the real double-bill   ${caught ? "✓" : "✗"}  (expected ${money(DOUBLE)})`);
+  console.log(`  caught the real double-bill   ${caught ? "✓" : "✗"}  (expected ${DOUBLE === null ? "no duplicate at all" : money(DOUBLE)})`);
   console.log(`  flagged a legitimate repeat   ${falsePos.length === 0 ? "✓ none" : `✗ ${falsePos.length}`}`);
   for (const f of dups) console.log(`    - ${money(f.amountAtStake)}  ${f.lineRef}  ${String(f.description).slice(0, 96)}`);
   console.log(`  other findings   ${(result.findings || []).filter((f) => f.type !== "duplicate_charge").map((f) => `${f.type} ${money(f.amountAtStake)}`).join(", ") || "none"}`);
-  console.log(`  worth disputing  ${money(computeAtStake(result.findings, result.totals?.billed))}   (correct answer: ${money(DOUBLE)})`);
+  console.log(`  worth disputing  ${money(computeAtStake(result.findings, result.totals?.billed))}   (correct answer: ${money(DOUBLE ?? 0)})`);
 }
 }
 
