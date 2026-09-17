@@ -365,7 +365,7 @@ future Short that tells someone not to pay something does the same.
 reads it as letters either way, and "E O B" made the caption break the letters
 across lines.
 
-### 6. The sticker price is fiction · MADE — 42.1s
+### 6. The sticker price is fiction · MADE — 46.1s
 
 **Hook:** *"A splinter. One pair of tweezers, one bandaid. The bill says two
 thousand dollars."*
@@ -376,7 +376,7 @@ thousand dollars."*
 amount is real; your share comes out of that, not out of the sticker price.
 
 **New art added:** `bar` (one bar of a chart, drawn to scale), `finger`,
-`tweezers`, `bandaid`, `door`.
+`tweezers`, `bandaid`, `car`.
 
 **The most valuable Short in the series so far**, measured rather than guessed:
 of 68 audits in Firestore, **53 flagged `billed_vs_allowed_mismatch`** — billing
@@ -389,10 +389,14 @@ fixtures, so the frequency reflects the documents fed in more than the world.)
 **The bars are drawn to scale** — 1000px, 150px and 30px. The scale is the
 argument, so the last bar is not fudged to make it easier to label.
 
-**An analogy, straight after the definition.** "It is the rate printed on the back
-of a hotel room door. Nobody has ever paid it." A real price, printed, that
-everyone has already seen and ignored. It gets its own image — a door with the
-little framed card — rather than being said over the chart.
+**An analogy, straight after the definition.** "Like the sticker price on a car.
+Nobody pays it. Someone always negotiates it down. Here, your insurance did the
+negotiating, years before you walked in." The comparison is the phrase's own
+home — *sticker price* is a car term — so it explains the word and the mechanism
+at once: there is always a discount, and someone always does the negotiating. It
+gets its own image, a car with the price sticker still in the window, rather than
+being said over the chart. (An earlier cut used a hotel rack rate. True, but a
+step further from the phrase, and it did not explain who negotiates.)
 
 **Say where a number came from.** An earlier cut said "at twenty percent, that is
 sixty dollars" with no source, which is the same fault as Short 2 v1 implying the

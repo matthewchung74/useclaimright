@@ -359,14 +359,22 @@ def bandaid(x, y, w, h, seed=487):
     return ends + sides + pad + holes
 
 
-def door(x0, y0, w, h, seed=491):
-    """A hotel room door, seen from inside: handle, and the little framed card
-    of prices nobody has ever paid."""
-    return (box(x0, y0, x0 + w, y0 + h, seed=seed)
-            + [circle(x0 + w - 34, y0 + h * 0.54, 13, seed=seed + 4)]
-            + box(x0 + w * 0.18, y0 + h * 0.16, x0 + w * 0.78, y0 + h * 0.40, seed=seed + 5)
-            + [line((x0 + w * 0.26, y0 + h * 0.24), (x0 + w * 0.68, y0 + h * 0.24), n=4, seed=seed + 9),
-               line((x0 + w * 0.26, y0 + h * 0.31), (x0 + w * 0.60, y0 + h * 0.31), n=4, seed=seed + 10)])
+def car(x0, y0, w, h, seed=491):
+    """A car from the side, with the price sticker still on the window. The
+    sticker is the point, so it is drawn last and it is the only square thing
+    on a drawing made of curves."""
+    body = wobble([(x0, y0 + h), (x0, y0 + h * 0.58), (x0 + w * 0.20, y0 + h * 0.56),
+                   (x0 + w * 0.34, y0 + h * 0.06), (x0 + w * 0.64, y0 + h * 0.06),
+                   (x0 + w * 0.80, y0 + h * 0.56), (x0 + w, y0 + h * 0.60),
+                   (x0 + w, y0 + h)], amp=2.0, seed=seed)
+    wheels = [circle(x0 + w * 0.26, y0 + h, h * 0.17, seed=seed + 1),
+              circle(x0 + w * 0.76, y0 + h, h * 0.17, seed=seed + 2)]
+    window = [line((x0 + w * 0.36, y0 + h * 0.14), (x0 + w * 0.60, y0 + h * 0.14), n=4, seed=seed + 3),
+              line((x0 + w * 0.36, y0 + h * 0.14), (x0 + w * 0.26, y0 + h * 0.52), n=3, seed=seed + 4),
+              line((x0 + w * 0.60, y0 + h * 0.14), (x0 + w * 0.70, y0 + h * 0.52), n=3, seed=seed + 5)]
+    sticker = box(x0 + w * 0.40, y0 + h * 0.20, x0 + w * 0.58, y0 + h * 0.46, seed=seed + 6)
+    return [body] + wheels + window + sticker
+
 
 
 def ice(x, y, w, seed=79):
@@ -689,17 +697,21 @@ ART = {"short-01-two-numbers": {
     "m5": [T((250, 1820), "sticker price", 96),
            T((250, 1950), "there so there is something to discount", 54, GREY)],
     # The analogy lands on its own image, straight after the definition.
-    "m6": [S(door(320, 2080, 340, 560)), T((720, 2230), "the rate on the", 62),
-           T((720, 2310), "back of the door", 62),
-           T((720, 2420), "nobody has ever", 56, GREY), T((720, 2490), "paid it", 56, GREY)],
-    "m7": [T((250, 2740), "your share", 58, GREY), S(bar(250, 2810, 30, 90)),
-           T((330, 2825), "$60", 76, ACCENT),
-           T((250, 2940), "your plan's coinsurance: 20%", 56, GREY),
-           T((250, 3010), "of the allowed, not the billed", 56, GREY)],
-    "m8": [T((250, 3160), "read the letter", 90),
-           T((250, 3270), "before you panic", 90)],
-    "m9": [T((300, 3460), "useclaimright.com", 100, ACCENT),
-           S([line((300, 3590), (1160, 3590), n=14, seed=479)], colour=ACCENT, width=8)],
+    # The analogy gets its own image, straight after the definition.
+    "m6": [S(car(260, 2100, 620, 330)), T((940, 2180), "sticker price", 66),
+           T((940, 2270), "on a car", 66),
+           T((940, 2380), "nobody pays it", 56, GREY)],
+    "m7": [T((260, 2540), "your insurance", 74),
+           T((260, 2640), "negotiated it", 74),
+           T((260, 2760), "years before you walked in", 54, GREY)],
+    "m8": [T((250, 2920), "your share", 58, GREY), S(bar(250, 2990, 30, 90)),
+           T((330, 3005), "$60", 76, ACCENT),
+           T((250, 3120), "your plan's coinsurance: 20%", 56, GREY),
+           T((250, 3190), "of the allowed, not the billed", 56, GREY)],
+    "m9": [T((250, 3340), "read the letter", 90),
+           T((250, 3450), "before you panic", 90)],
+    "m10": [T((300, 3640), "useclaimright.com", 100, ACCENT),
+            S([line((300, 3770), (1160, 3770), n=14, seed=479)], colour=ACCENT, width=8)],
 
 }}
 

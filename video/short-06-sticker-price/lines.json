@@ -2,19 +2,47 @@
   "_comment": "Short 6 in docs/CONTENT.md: billed, allowed, your share — three numbers, and only one is real. It explains the number behind the product's most common finding: 53 of 68 audits flagged billing above the EOB allowed amount.",
   "_injury": "A splinter, and a bandaid. The gap between the treatment and the number is the joke.",
   "_numbers": "$2,000 billed, $300 allowed, $60 your share. The 20% is named as the plan's coinsurance, not dropped in: an earlier cut said 'at twenty percent' with no source, which is the same mistake Short 2 v1 made with its split.",
-  "_analogy": "The hotel rack rate, straight after the definition: a real price, printed, that nobody has ever paid. It is the one comparison most people have already noticed in the wild.",
+  "_analogy": "The car sticker price, straight after the definition. 'Sticker price' is a car term to begin with, so the comparison is the word's own home: nobody pays the number on the window, someone always negotiates it down, and here the insurer did the negotiating years before you walked in. It replaced a hotel rack-rate analogy, which was true but further from the phrase.",
   "_distinct": "Short 1 is which paper is which; Short 5 is being billed for the discount. This one only sorts out which of the three numbers is real, and never mentions disputing anything.",
   "variants": {
     "splinter": "A splinter. One pair of tweezers, one bandaid. The bill says two thousand dollars."
   },
   "body": [
-    { "id": "m2", "text": "Nobody pays that. Not you, and not your insurance." },
-    { "id": "m3", "text": "Your insurance agreed a price for that visit years ago. Three hundred dollars." },
-    { "id": "m4", "text": "That is the allowed amount, and it is the only number here that is real." },
-    { "id": "m5", "text": "The two thousand is a sticker price. It exists so there is something to discount." },
-    { "id": "m6", "text": "It is the rate printed on the back of a hotel room door. Nobody has ever paid it." },
-    { "id": "m7", "text": "Your share comes out of the three hundred, not the two thousand. Your plan says you pay twenty percent of it, so sixty dollars." },
-    { "id": "m8", "text": "So when a bill looks enormous, read the letter before you panic." },
-    { "id": "m9", "text": "Check yours before you dispute. Or upload them free at UseClaimRight.com." }
+    {
+      "id": "m2",
+      "text": "Nobody pays that. Not you, and not your insurance."
+    },
+    {
+      "id": "m3",
+      "text": "Your insurance has its own price for that visit. Three hundred dollars."
+    },
+    {
+      "id": "m4",
+      "text": "That is the allowed amount, and it is the only number here that is real."
+    },
+    {
+      "id": "m5",
+      "text": "The two thousand is a sticker price. It exists so there is something to discount."
+    },
+    {
+      "id": "m6",
+      "text": "Like the sticker price on a car. Nobody pays it. Someone always negotiates it down."
+    },
+    {
+      "id": "m7",
+      "text": "Here, your insurance did the negotiating, years before you walked in."
+    },
+    {
+      "id": "m8",
+      "text": "Your share comes out of the three hundred, not the two thousand. Your plan says you pay twenty percent of it, so sixty dollars."
+    },
+    {
+      "id": "m9",
+      "text": "So when a bill looks enormous, read the letter before you panic."
+    },
+    {
+      "id": "m10",
+      "text": "Check yours before you dispute. Or upload them free at UseClaimRight.com."
+    }
   ]
 }
