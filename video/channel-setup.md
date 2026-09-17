@@ -22,8 +22,9 @@ single videos, so replacing a Short does not break them.
 | 5 | 3 | Copay vs coinsurance: why one is fixed and one isn't | `aaO_pqBPpSs` |
 | 6 | 4 | Not on your EOB? The charge is probably pending | `dvOpGw7camA` |
 | 7 | 5 | Balance billing: the sentence to say on the phone | `nBb35s9oAJM` | Private |
+| 8 | 6 | The allowed amount: the only real number on your bill | `wbxIFh5_97c` | Private |
 
-All are Public as of 2026-09-17 except Short 5, which is Private pending a
+All are Public as of 2026-09-17 except Shorts 5 and 6, which are Private pending a
 watch-through. **Titles say what the viewer will learn**,
 not what happens in the video: the hook is the video's job, the title's job is to
 be picked out of a feed by someone with that exact question.
