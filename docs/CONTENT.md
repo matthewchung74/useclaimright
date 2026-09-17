@@ -365,7 +365,7 @@ future Short that tells someone not to pay something does the same.
 reads it as letters either way, and "E O B" made the caption break the letters
 across lines.
 
-### 6. The sticker price is fiction · MADE — 46.1s
+### 6. The sticker price is fiction · MADE — 50.7s
 
 **Hook:** *"A splinter. One pair of tweezers, one bandaid. The bill says two
 thousand dollars."*
@@ -401,6 +401,15 @@ step further from the phrase, and it did not explain who negotiates.)
 **Say where a number came from.** An earlier cut said "at twenty percent, that is
 sixty dollars" with no source, which is the same fault as Short 2 v1 implying the
 price had changed. It now says "your plan says you pay twenty percent of it".
+
+**In network, said with the number.** The allowed amount is the insurer's
+negotiated price with a clinic **in its network**, so the condition arrives in the
+same line as the $300 and is written in red beside the allowed bar. Out of
+network the provider is not bound by it and can bill the difference — Short 5's
+subject — so the closing line says "out of network, the rules are different"
+rather than leaving a viewer to assume. It was missing from the first cut of this
+Short, which is the second time that limit has had to be put back: worth treating
+as a standing check on any Short that talks about allowed amounts.
 
 **Coinsurance is the percentage, not the dollars.** The 20% is the coinsurance;
 the $60 is your share. The board writes the arithmetic out — *20% coinsurance of

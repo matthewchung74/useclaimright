@@ -690,7 +690,9 @@ ART = {"short-01-two-numbers": {
     "m3": [T((250, 860), "billed", 58, GREY), S(bar(250, 930, 1000, 90)),
            T((250, 1040), "$2,000", 76),
            T((250, 1210), "allowed", 58, GREY), S(bar(250, 1280, 150, 90)),
-           T((440, 1295), "$300", 76)],
+           T((440, 1295), "$300", 76),
+           # The condition belongs with the number, not in a footnote.
+           T((640, 1310), "in network", 56, ACCENT)],
     "m4": [T((250, 1470), "the allowed amount", 104),
            S([line((250, 1620), (1230, 1620), n=14, seed=473)], width=8),
            T((250, 1660), "the only real number", 58, ACCENT)],
@@ -711,9 +713,10 @@ ART = {"short-01-two-numbers": {
            T((250, 3120), "20% coinsurance", 56, GREY),
            T((250, 3190), "of the $300 allowed, not the $2,000 billed", 56, GREY)],
     "m9": [T((250, 3340), "read the letter", 90),
-           T((250, 3450), "before you panic", 90)],
-    "m10": [T((300, 3640), "useclaimright.com", 100, ACCENT),
-            S([line((300, 3770), (1160, 3770), n=14, seed=479)], colour=ACCENT, width=8)],
+           T((250, 3450), "before you panic", 90),
+           T((250, 3570), "out of network, the rules differ", 54, GREY)],
+    "m10": [T((300, 3700), "useclaimright.com", 100, ACCENT),
+            S([line((300, 3830), (1160, 3830), n=14, seed=479)], colour=ACCENT, width=8)],
 
 }}
 

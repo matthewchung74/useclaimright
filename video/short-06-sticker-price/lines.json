@@ -14,7 +14,7 @@
     },
     {
       "id": "m3",
-      "text": "Your insurance has its own price for that visit. Three hundred dollars."
+      "text": "If the clinic is in your network, your insurance already has its own price for that visit. Three hundred dollars."
     },
     {
       "id": "m4",
@@ -38,11 +38,12 @@
     },
     {
       "id": "m9",
-      "text": "So when a bill looks enormous, read the letter before you panic."
+      "text": "So when a bill looks enormous, read the letter before you panic. Out of network, the rules are different."
     },
     {
       "id": "m10",
       "text": "Check yours before you dispute. Or upload them free at UseClaimRight.com."
     }
-  ]
+  ],
+  "_network": "The allowed amount is the insurer's negotiated price with a clinic IN its network, so the condition is stated with the number in m3 and written on the board beside the allowed bar. Out of network the provider is not bound by it and can bill the difference, which is Short 5's subject, so m9 says so rather than leaving the viewer to assume."
 }
