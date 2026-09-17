@@ -1,0 +1,19 @@
+{
+  "_comment": "Short 9 in docs/CONTENT.md: same day, same code is not a duplicate; same PERSON, same day, same code is. The Short that teaches when not to dispute.",
+  "_why_now": "Made out of plan order. Of 68 audits in Firestore, duplicate_charge was the second most common finding (16 audits) after billed_vs_allowed_mismatch (53), while deductible_misapplied — Short 7's subject — never fired once.",
+  "_injury": "Flu shots: two people, two sore arms. The only Short where nobody is hurt, which is why it can be the one that says 'this bill is fine'.",
+  "_numbers": "One: a $40 flu shot, the same figure on both lines.",
+  "_trust": "It teaches when NOT to dispute. A tool that only ever finds problems is a tool nobody believes; saying 'this one is fine' is what makes the other six worth listening to.",
+  "variants": {
+    "shots": "You and your daughter got flu shots on the same afternoon. The bill has two identical lines."
+  },
+  "body": [
+    { "id": "n2", "text": "That is not a duplicate. Two people, two shots, two charges." },
+    { "id": "n3", "text": "A duplicate is the same person, the same day, the same code, billed twice." },
+    { "id": "n4", "text": "And two identical lines often have a reason. Two X-rays. One knee each side. A second dose." },
+    { "id": "n5", "text": "So check the name on the line, check the date, and look for a reason there would be two." },
+    { "id": "n6", "text": "If there is no reason, that is the line to ask about." },
+    { "id": "n7", "text": "Your insurance letter is the tiebreaker. If it lists the charge once, the letter already agrees with you." },
+    { "id": "n8", "text": "Check yours before you dispute. Or upload them free at UseClaimRight.com." }
+  ]
+}

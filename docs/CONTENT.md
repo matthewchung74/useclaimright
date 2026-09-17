@@ -442,19 +442,33 @@ reads that far. Running out costs care, not just money.
 
 **New art:** six boxes, ticks.
 
-### 9. Same day, same code, not a duplicate
+### 9. Same day, same code, not a duplicate · MADE — 37.8s
 
-**Hook:** *"Two identical charges, same day, same clinic. This one is fine."*
-**Opens on:** two figures with matching plasters on their arms.
-**Injury:** flu shots — two people, two sore arms.
+**Hook:** *"You and your daughter got flu shots on the same afternoon. The bill
+has two identical lines."*
+**Opens on:** two figures, one smaller, both with plasters on their arms.
+**Injury:** flu shots — the only Short where nobody is hurt.
 
-**Teaching beat:** same day and same code is not a duplicate; two people can get
-the same shot. **Same day, same code, same person** is.
+**Teaching beat:** two identical lines are not automatically a duplicate. A
+duplicate is the **same person, same day, same code, billed twice**. Two X-rays,
+one knee each side, or a second dose are honest reasons for two. Check the name
+on the line, the date, and whether there is a reason; if the EOB lists the charge
+once, the letter already agrees with you.
 
-The Short that teaches when *not* to dispute, which buys more trust than the ones
-that teach when to.
+**New art added:** `tick`. Reuses `bandaid` from Short 6 as a plaster, and
+`person` at two sizes for the parent and the child.
 
-**New art:** a plaster, a second smaller figure holding a matching sheet.
+**Made out of plan order, on evidence.** Of 68 audits in Firestore,
+`duplicate_charge` was the second most common finding (16 audits) after
+`billed_vs_allowed_mismatch` (53), while `deductible_misapplied` — Short 7's
+subject — never fired once. The counts are from our own fixtures as much as the
+world, but the ranking is stark enough to reorder on.
+
+**It teaches when *not* to dispute**, which is the reason to make it early. A tool
+that only ever finds problems is a tool nobody believes; the Short that says
+"this bill is fine" is what makes the other six worth listening to. The plasters
+do that work in the first shot: the reason there are two charges is standing
+right there.
 
 ### 10. One line, no explanation
 

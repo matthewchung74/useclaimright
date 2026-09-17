@@ -377,6 +377,12 @@ def car(x0, y0, w, h, seed=491):
 
 
 
+def tick(x, y, s=1.0, seed=503):
+    """A check mark: short down-stroke, long up-stroke, drawn as one."""
+    return [wobble([(x, y + 22 * s), (x + 18 * s, y + 42 * s), (x + 52 * s, y - 16 * s)],
+                   amp=1.6, seed=seed)]
+
+
 def ice(x, y, w, seed=79):
     """A patch of it. The short marks underneath are what stop the long line
     reading as the ground."""
@@ -717,7 +723,31 @@ ART = {"short-01-two-numbers": {
            T((250, 3570), "out of network, the rules differ", 54, GREY)],
     "m10": [T((300, 3700), "useclaimright.com", 100, ACCENT),
             S([line((300, 3830), (1160, 3830), n=14, seed=479)], colour=ACCENT, width=8)],
-
+}, "short-09-duplicate": {
+    # Two people, and the plasters are the evidence: the reason there are two
+    # charges is standing right there in the first shot.
+    "hook-shots": [S(person(400, 200, s=1.3)), S(bandaid(300, 430, 120, 48)),
+                   S(person(820, 330, s=0.95)), S(bandaid(752, 500, 96, 40)),
+                   T((1010, 250), "flu shots", 70, GREY)],
+    "n2": [S(box(220, 900, 1180, 1280, seed=509)), T((220, 820), "the bill", 58, GREY),
+           T((260, 960), "flu vaccine", 62, GREY), T((880, 955), "$40", 70),
+           T((260, 1110), "flu vaccine", 62, GREY), T((880, 1105), "$40", 70)],
+    "n3": [T((250, 1420), "a duplicate is", 74),
+           T((250, 1540), "same person", 66, ACCENT), T((250, 1630), "same day", 66, ACCENT),
+           T((250, 1720), "same code", 66, ACCENT), T((250, 1810), "billed twice", 66, ACCENT)],
+    # The other half of the lesson: reasons two identical lines are honest.
+    "n4": [T((250, 1970), "or a good reason for two", 66),
+           T((290, 2080), "two X-rays", 58, GREY),
+           T((290, 2160), "one knee each side", 58, GREY),
+           T((290, 2240), "a second dose", 58, GREY)],
+    "n5": [S(tick(250, 2400)), T((350, 2380), "the name on the line", 62),
+           S(tick(250, 2510)), T((350, 2490), "the date", 62),
+           S(tick(250, 2620)), T((350, 2600), "a reason for two", 62)],
+    "n6": [T((250, 2780), "no reason?", 84), T((250, 2890), "ask about that one", 84, ACCENT)],
+    "n7": [S(doc(300, 3060, 1100, 3360, rows=2, seed=521)),
+           T((340, 3090), "your EOB", 56, GREY), T((690, 3270), "listed once", 62, ACCENT)],
+    "n8": [T((300, 3520), "useclaimright.com", 100, ACCENT),
+           S([line((300, 3650), (1160, 3650), n=14, seed=523)], colour=ACCENT, width=8)],
 }}
 
 # Beats that pull back to show everything drawn so far, instead of the usual
