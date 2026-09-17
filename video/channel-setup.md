@@ -16,9 +16,11 @@ no #Shorts tag needed). It is waiting on a watch-through before it goes Public.
     Short 1   Your hospital and your insurance don't talk to each other
               0:42 · Public since 2026-09-15
     Short 2   Your body doesn't know it's January. Your insurance does.
-              0:47 · Private, waiting on a watch-through
+              0:35 · v2, `YKheiL2nerE` · Private, waiting to go Public
+              (v1, 0:47, `w64EEe5ZBqM`, removed from the playlist and
+              waiting to be deleted — YouTube cannot swap a video's file)
     Short 3   You tripped over your cat. Now: copay or coinsurance?
-              0:43 · Private, waiting on a watch-through
+              0:43 · Public since 2026-09-17
 
     Audience     not made for kids, both
     Disclosure   none declared — see below
