@@ -24,8 +24,10 @@ single videos, so replacing a Short does not break them.
 | 7 | 5 | Balance billing: the sentence to say on the phone | `nBb35s9oAJM` | Public |
 | 8 | 6 | The allowed amount: the only real number on your bill | `wbxIFh5_97c` | Public |
 | 9 | 9 | Two identical charges? Not always a duplicate | `N4S7QEC_7M8` | Public |
+| 10 | 10 | Ask for the itemized bill: one line can't be checked | `fkRKqSXxDBQ` | Public |
+| 11 | 13 | Charity care: the question to ask before a payment plan | `vfln_dcCGWQ` | Public |
 
-All nine are Public as of 2026-09-17. **Titles say what the viewer will learn**,
+All eleven are Public as of 2026-09-17. **Titles say what the viewer will learn**,
 not what happens in the video: the hook is the video's job, the title's job is to
 be picked out of a feed by someone with that exact question.
 
