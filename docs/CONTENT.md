@@ -212,40 +212,40 @@ and the insurer's letter is the one that says what you owe.
 **Absorbs old videos 1 and 5**, which the earlier review flagged as nearly the
 same video. Drawn, they are one.
 
-### 2. The January reset · MADE — 46.0s
+### 2. The January reset · MADE — 34.5s (v2)
 
-**Hook:** *"Your January bill is not a mistake. It is a reset."*
-**Opens on:** an empty bucket with **1 JANUARY** written over it.
+**Hook:** *"Your body does not know it is January. Your insurance does."*
+**Opens on:** a figure down on ice, **1 JANUARY** above it.
 **Injury:** slipped on ice — which is also why it is January.
 
-**Teaching beat:** you pay the first $X of the year yourself, and on 1 January
-the counter goes back to zero. That is why the same visit costs more in January
-than in November, and it is the most common "my bill is wrong" that isn't.
+**Teaching beat:** you pay the first $1,000 of the year yourself, and on 1 January
+the bucket empties. That is why the same visit costs more in January than in
+November, and it is the most common "my bill is wrong" that isn't.
 
 **New art added:** `person_down`, `ice`, `bucket`, `bucket_fill`, `Spin` (art
 that rotates about a pivot, with an option to drain a fill as it turns),
 `Coins` (dollar signs that fall together).
 
-Two things worth carrying to the next one. The bucket fills by **ordering the
-hatch lines bottom to top** — the ordinary stroke reveal then fills it, with no
-new kind of element. And "they empty it" is a **second bucket**, because a
-whiteboard cannot un-draw; the same rule that made the hurt figure a second
-drawing in Short 1.
+The bucket fills by **ordering the hatch lines bottom to top** — the ordinary
+stroke reveal then fills it, with no new kind of element.
 
-**Name the word, then define it.** An earlier cut named it and stopped, which
-teaches a label rather than a meaning. The bucket is explained first, named
-second to last, and defined last — by which point the viewer has watched the
-mechanism run twice and the sentence lands on something they already understand.
+**v1 was too hard to follow, and why.** A first-time viewer said so, and the
+script explains it: it ran November then January, so the viewer carried a year
+in their head before the point; the word arrived at 0:35; two hospital trips
+each had a bill and an EOB; the November split ($100 you / $300 insurance)
+quietly raised a second question — why pay anything if the bucket is full? —
+which is coinsurance, Short 3's subject; and a held-open "why did they pay three
+hundred?" added one more thing to carry. Each choice was defensible alone.
+Together they were five things to track in 46 seconds.
 
-**Hold a question open.** After the November split, one beat asks "why did they
-pay three hundred of it?" and refuses to answer. It is a retention device — the
-payoff is two lines away — and it is honest, because the answer genuinely is the
-definition of the word the Short is about. The red "?" stays on the board until
-the definition is written under it.
+**v2 opens on the confusion the viewer would actually have** — same visit,
+$100 in November, $400 today — names the word straight after it, defines it in
+the same breath, and shows the bucket once. November says "insurance paid most
+of the bill" with no split, so there is no arithmetic and no second concept.
 
-**Show the split, not the price.** The first cut of this compared $40 against
-$400 as though the price had changed, which is the exact confusion the Short
-exists to undo. Both visits now show BILL $400 and the split underneath.
+**The lesson for the rest:** start from the surprise the viewer already has, not
+from the mechanism that explains it. Name the word within the first ten seconds.
+One number per beat. Anything that belongs to another Short gets left to it.
 
 Second because deductible is load-bearing for Shorts 7 and 8.
 

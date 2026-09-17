@@ -343,40 +343,36 @@ ART = {"short-01-two-numbers": {
     # wide and short, and a wide-and-short shot in a 9:16 frame is mostly white.
     "hook-ice": [T((170, 340), "1 JANUARY", 96), S(person_down(200, 640)),
                  S(ice(120, 760, 520))],
-    # The bucket is explained before it is named, so it is drawn before the word
-    # "deductible" is ever said.
-    "e2": [S(bucket(220, 960, 380, 420)), T((238, 860), "$1,000", 80)],
-    "e3": [S(bucket_fill(220, 960, 380, 420, 0.86))],
-    # November: the visit, the bill, and how the bill was split.
-    "e4": [S(hospital(150, 1700, 150, 130, seed=131)),
-           S(box(140, 1880, 420, 2120, seed=95)),
-           T((165, 1900), "BILL", 46, GREY), T((165, 1970), "$400", 80)],
-    "e5": [S(box(450, 1880, 860, 2120, seed=97)),
-           T((475, 1900), "you $100", 70), T((475, 2000), "insurance $300", 46, GREY)],
-    # January: the same bucket, turned over. Not a second drawing of an
-    # upside-down bucket — the same strokes, rotated, with the money falling out.
-    # Asks and does not answer. The "?" stays on the board until e11 earns it.
-    "e6": [T((640, 1680), "?", 150, ACCENT)],
-    "e7": [S(arrow((660, 1130), (890, 1130))),
-           Spin(bucket(950, 960, 380, 420, seed=101), (1140, 1170),
-                drains=(950, 960, 380, 420, 0.86)),
-           # Kept clear of where the January hospital lands, or the money
-           # falls through its roof.
-           Coins([(1120, 1395, 86), (1210, 1425, 86), (1300, 1395, 86),
-                  (1388, 1430, 86)], dy=190)],
-    "e8": [S(hospital(920, 1700, 150, 130, seed=137)),
-           S(box(910, 1880, 1190, 2120, seed=107)),
-           T((935, 1900), "BILL", 46, GREY), T((935, 1970), "$400", 80)],
-    "e9": [S(box(1220, 1880, 1580, 2120, seed=109)),
-           T((1245, 1900), "you $400", 70, ACCENT),
-           T((1245, 2000), "insurance $0", 46, GREY)],
-    "e10": [T((430, 2220), "deductible", 110),
-            S([line((430, 2345), (1020, 2345), n=12, seed=113)], width=8)],
-    # The definition, and the answer to the "?" — written out, not just said.
-    "e11": [T((300, 2400), "what you pay before they do", 58, GREY),
-            T((300, 2490), "$1,000 a year, in this case", 58, GREY)],
-    "e12": [T((330, 2640), "useclaimright.com", 96, ACCENT),
-            S([line((330, 2770), (1160, 2770), n=14, seed=119)], colour=ACCENT, width=8)],
+    # v2 opens on the confusion itself: the same visit, two prices. v1 made the
+    # viewer carry November in their head for thirty seconds before this landed.
+    "g1": [S(box(160, 1000, 600, 1330, seed=95)), T((190, 1025), "NOVEMBER", 50, GREY),
+           T((190, 1095), "you pay", 50, GREY), T((190, 1160), "$100", 110),
+           S(box(820, 1000, 1260, 1330, seed=97)), T((850, 1025), "JANUARY", 50, GREY),
+           T((850, 1095), "you pay", 50, GREY), T((850, 1160), "$400", 110, ACCENT)],
+    "g2": [S(ellipse(982, 1232, 175, 88), colour=ACCENT, width=8)],
+    # Named straight after the question, defined in the same breath.
+    "g3": [T((330, 1470), "deductible", 110),
+           S([line((330, 1610), (830, 1610), n=12, seed=113)], width=8),
+           T((330, 1650), "what you pay yourself", 54, GREY),
+           T((330, 1725), "before insurance helps", 54, GREY)],
+    "g4": [S(bucket(220, 1930, 380, 420)), T((238, 1830), "$1,000", 80)],
+    "g5": [S(bucket_fill(220, 1930, 380, 420, 0.86)),
+           T((250, 2400), "full by November", 54, GREY),
+           T((250, 2480), "insurance pays most", 54, GREY)],
+    # The same bucket, turned over: the same strokes rotated, with the money
+    # falling out, because a whiteboard cannot un-draw.
+    "g6": [T((980, 1790), "1 JANUARY", 66, ACCENT), S(arrow((650, 2110), (890, 2110))),
+           Spin(bucket(950, 1900, 380, 420, seed=101), (1140, 2110),
+                drains=(950, 1900, 380, 420, 0.86)),
+           Coins([(1120, 2335, 86), (1210, 2365, 86), (1300, 2335, 86),
+                  (1388, 2370, 86)], dy=150)],
+    # The arrow back to the full bucket is "until it fills back up" -- and it
+    # widens the shot, which otherwise cut the full bucket in half on the one
+    # line that compares the two.
+    "g7": [T((840, 2640), "empty: you pay it all", 62, ACCENT),
+           S(arrow((1080, 2580), (300, 2580), seed=121), colour=GREY, width=5)],
+    "g8": [T((330, 2750), "useclaimright.com", 96, ACCENT),
+           S([line((330, 2875), (1160, 2875), n=14, seed=119)], colour=ACCENT, width=8)],
 }, "short-03-copay": {
     # The 20% goes down FIRST. Beat time is shared by stroke length, and the
     # hopping figure is much the longest element — drawn first it ate three of
@@ -411,7 +407,7 @@ ART = {"short-01-two-numbers": {
 # comparison in frame — e7 was cutting off the $40 bill it argues against.
 # f4 names coinsurance, which only means anything against the copay beside it,
 # so it needs the wide shot as much as the summary does.
-FRAME_ALL = {"short-02-january": {"e10"}, "short-03-copay": {"f4", "f7"}}
+FRAME_ALL = {"short-03-copay": {"f4", "f7"}}
 
 
 
@@ -584,7 +580,7 @@ def main():
 
     VW, VH = W, H - 380                # viewport: the board above the captions
     MOVE = 0.55                        # seconds for the camera to settle
-    MARGIN = 500                       # white overhang, so a wide shot has edges
+    MARGIN = 900                       # white overhang, so a wide shot near the board edge never shows black
     n, plan, done = 0, [], []          # `done` accumulates: a whiteboard keeps what was drawn
     cam, prev_els = None, []
     for b in beats:
