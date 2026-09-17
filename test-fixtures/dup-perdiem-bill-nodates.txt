@@ -1,0 +1,26 @@
+MERCY GENERAL HOSPITAL
+4100 Alder Parkway, Springfield, OH 45502
+A not-for-profit 501(c)(3) hospital
+
+ITEMIZED STATEMENT
+Patient: Jane Q. Testpatient          Account: 7741-99820
+Admitted: 2026-08-12   Discharged: 2026-08-15
+Statement date: 2026-09-02
+
+DESCRIPTION                                                      CHARGE
+Room & Board, Semi-Private                                      3,523.00
+Room & Board, Semi-Private                                      3,523.00
+Room & Board, Semi-Private                                      3,523.00
+Delivery Room / Labor                                           4,951.00
+Delivery Room / Labor                                           4,951.00
+Lab - ABO Blood Group Typing                                      247.00
+Lab - Rh Factor Typing                                             87.00
+Pharmacy - acetaminophen 325mg                                      6.44
+Pharmacy - acetaminophen 325mg                                      6.44
+Pharmacy - acetaminophen 325mg                                      6.44
+Med-Surg Supplies                                                 122.00
+Newborn Hearing Screen                                            164.92
+
+                                       TOTAL CHARGES            21,111.24
+                                       PAYMENTS/ADJUSTMENTS          0.00
+                                       AMOUNT DUE               21,111.24
