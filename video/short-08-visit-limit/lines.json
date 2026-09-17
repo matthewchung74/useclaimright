@@ -1,0 +1,20 @@
+{
+  "_comment": "Short 8 in docs/CONTENT.md: a covered-visit limit that nobody counts out loud. The one Short where running out costs care, not money.",
+  "_injury": "A bad back and a course of physical therapy — the injury that takes a lot of visits.",
+  "_numbers": "Six covered visits. One number, and the whole video is about knowing where you are in it.",
+  "_accuracy": "'Often' and 'usually': some EOBs print the running count for a limited benefit and some do not, and insurer portals vary. The video tells you to count them yourself as the reliable method, and to ask the clinic to check before booking.",
+  "_stakes": "Running out costs care, not just money: visit seven is the whole price, and people stop going. That is why the close is 'ask before you book' rather than 'dispute it'.",
+  "variants": {
+    "back": "You threw your back out. Physical therapy, twice a week, for as long as it takes." 
+  },
+  "body": [
+    { "id": "r2", "text": "Your plan covers six visits a year." },
+    { "id": "r3", "text": "You are on visit five, and nothing has told you so." },
+    { "id": "r4", "text": "Not the clinic, who are not counting. Not the bill, which says nothing about limits." },
+    { "id": "r5", "text": "Your insurance letters often print the count. One arrives after every visit." },
+    { "id": "r6", "text": "Count them yourself, or ask the clinic to check what is left before they book the next one." },
+    { "id": "r7", "text": "Because visit seven is not a copay. It is the whole price." },
+    { "id": "r8", "text": "Running out of covered visits costs you care, not just money." },
+    { "id": "r9", "text": "Check yours before you dispute. Or upload them free at UseClaimRight.com." }
+  ]
+}

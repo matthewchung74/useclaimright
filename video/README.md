@@ -198,7 +198,8 @@ Then record the video id in the Status table below and in `channel-setup.md`.
 | 9 | 9 | Two identical charges? Not always a duplicate | `short-09-duplicate` | 37.8s | `N4S7QEC_7M8` Public |
 | 10 | 10 | Ask for the itemized bill | `short-10-itemized` | 34.6s | `fkRKqSXxDBQ` Public |
 | 11 | 13 | Charity care | `short-13-charity-care` | 36.9s | `vfln_dcCGWQ` Public |
-| — | 7, 8 | see `docs/CONTENT.md` | — | — | — |
+| — | 7 | A family deductible is not two of yours | `short-07-family-deductible` | 41.3s | not yet uploaded |
+| — | 8 | Six visits, and nobody says where you are | `short-08-visit-limit` | 36.6s | not yet uploaded |
 
 **`#` is the number in `docs/CONTENT.md`; `Order` is the playlist's teaching
 order.** They differ on purpose: 11 and 12 were written last and belong second

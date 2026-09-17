@@ -1,0 +1,20 @@
+{
+  "_comment": "Short 7 in docs/CONTENT.md: a family plan has a limit for each person and a limit for the household, and the family one is not the sum.",
+  "_injury": "A child's broken arm, and a parent who has not been to a doctor all year. The point needs two people with very different years.",
+  "_numbers": "$1,500 each, $3,000 for the family. Round, and deliberately NOT double-counted: the line says 'not six thousand' out loud, because that is the wrong answer everyone reaches for.",
+  "_accuracy": "Two plan shapes exist. Embedded: each person has their own deductible and the family one is a cap on the household. Non-embedded (common on family high-deductible plans): nothing is covered until the family limit is met. The video teaches the embedded shape, then says plainly that some plans work the other way and the SBC says which — rather than leaving a viewer on the wrong kind of plan with the wrong expectation.",
+  "_depends_on": "Short 4 (the January reset) defines a deductible with the bucket. This one assumes that and adds a second bucket, which is why it is later in the order.",
+  "variants": {
+    "arm": "Your daughter broke her arm falling off the monkey bars. You have not been to a doctor all year."
+  },
+  "body": [
+    { "id": "q2", "text": "On a family plan, you each have your own deductible. Say fifteen hundred dollars." },
+    { "id": "q3", "text": "But the household has one too, and it is not the sum of yours." },
+    { "id": "q4", "text": "Three thousand, say. Not six." },
+    { "id": "q5", "text": "Her bills fill her bucket, and the family bucket, at the same time." },
+    { "id": "q6", "text": "So one person having a bad year can fill the family one on their own." },
+    { "id": "q7", "text": "And when the family bucket is full, the plan starts paying for everyone. Including you, who has not been sick once." },
+    { "id": "q8", "text": "Some plans work the other way, and pay nothing until the family one is full. Your plan summary says which." },
+    { "id": "q9", "text": "Check yours before you dispute. Or upload them free at UseClaimRight.com." }
+  ]
+}

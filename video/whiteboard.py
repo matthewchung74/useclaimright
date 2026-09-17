@@ -834,6 +834,57 @@ ART = {"short-01-two-numbers": {
            T((300, 3340), "not legal or medical advice", 54, GREY),
            T((300, 3460), "useclaimright.com", 100, ACCENT),
            S([line((300, 3590), (1160, 3590), n=14, seed=619)], colour=ACCENT, width=8)],
+}, "short-07-family-deductible": {
+    # A parent who is fine and a child who is not: the whole point needs two
+    # people having very different years.
+    "hook-arm": [S(person(380, 200, s=1.25)), S(person_sling(800, 300, s=1.0)),
+                 T((1020, 330), "monkey bars", 58, GREY)],
+    # Two small buckets. Short 4 built the bucket; this adds a second one.
+    "q2": [S(bucket(250, 900, 320, 340)), T((270, 820), "you", 58, GREY),
+           T((260, 1270), "$1,500", 72),
+           S(bucket(700, 900, 320, 340, seed=631)), T((720, 820), "her", 58, GREY),
+           T((710, 1270), "$1,500", 72)],
+    "q3": [T((250, 1420), "and one for the household", 68)],
+    # The wrong answer, said out loud and struck through.
+    "q4": [S(bucket(250, 1560, 620, 420, seed=641)), T((300, 2010), "$3,000", 96),
+           T((640, 2020), "not $6,000", 62, GREY),
+           S([line((630, 2050), (1000, 2040), n=6, seed=643)], colour=ACCENT, width=6)],
+    "q5": [S(arrow((880, 1180), (1010, 1400), seed=647)),
+           S(bucket_fill(250, 1560, 620, 420, 0.42, seed=653)),
+           T((950, 1500), "hers fills both", 58, ACCENT)],
+    "q6": [S(bucket_fill(250, 1560, 620, 420, 0.86, seed=659)),
+           T((950, 1620), "one bad year", 58, GREY), T((950, 1690), "can fill it", 58, GREY)],
+    "q7": [T((250, 2180), "full?", 84), T((250, 2290), "the plan pays for everyone", 74, ACCENT),
+           T((250, 2400), "including you", 58, GREY)],
+    # The other plan shape, said plainly rather than left to be discovered.
+    "q8": [T((250, 2560), "some plans: nothing covered", 60),
+           T((250, 2640), "until the family one is full", 60),
+           S(doc(250, 2740, 900, 3020, rows=2, seed=661)),
+           T((290, 2770), "your plan summary says which", 52, GREY)],
+    "q9": [T((300, 3200), "useclaimright.com", 100, ACCENT),
+           S([line((300, 3330), (1160, 3330), n=14, seed=673)], colour=ACCENT, width=8)],
+}, "short-08-visit-limit": {
+    "hook-back": [S(person_hurt(420, 220, s=1.3)), S(squiggle(360, 300, 150, seed=677)),
+                  T((820, 380), "twice a week", 66, GREY)],
+    # Six boxes, because the number has to be countable at a glance.
+    "r2": [T((250, 820), "covered visits", 58, GREY)] +
+          [S(box(250 + i * 185, 900, 390 + i * 185, 1040, seed=683 + i)) for i in range(6)],
+    "r3": [S(tick(285 + i * 185, 950)) for i in range(5)] +
+          [T((250, 1120), "you are on visit five", 70)],
+    "r4": [T((250, 1280), "the clinic is not counting", 60, GREY),
+           T((250, 1360), "the bill says nothing about limits", 60, GREY)],
+    "r5": [S(doc(250, 1500, 1000, 1820, rows=3, seed=691)),
+           T((290, 1530), "your EOB, after every visit", 54, GREY),
+           T((290, 1740), "often prints the count", 58, ACCENT)],
+    "r6": [T((250, 1960), "count them yourself", 74),
+           T((250, 2070), "or ask before they book", 74)],
+    "r7": [S(box(250, 2230, 390, 2370, seed=701)), T((280, 2255), "7", 84, ACCENT),
+           T((450, 2250), "not a copay", 70),
+           T((450, 2340), "the whole price", 70, ACCENT)],
+    "r8": [T((250, 2540), "running out costs you care,", 62),
+           T((250, 2620), "not just money", 62)],
+    "r9": [T((300, 2820), "useclaimright.com", 100, ACCENT),
+           S([line((300, 2950), (1160, 2950), n=14, seed=709)], colour=ACCENT, width=8)],
 }}
 
 # Beats that pull back to show everything drawn so far, instead of the usual

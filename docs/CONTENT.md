@@ -418,29 +418,51 @@ for the $60. Worth knowing when someone checks their own letter: real EOBs print
 a **Coinsurance** column with a dollar figure in it, so the word does double duty
 in the wild even though the plan defines the percentage.
 
-### 7. A family deductible is not two of yours
+### 7. A family deductible is not two of yours · MADE — 41.3s
 
-**Hook:** *"Two people, two deductibles — and a third one you did not know
-about."*
-**Opens on:** two figures and three buckets.
-**Injury:** a child with a broken arm, and a parent who is fine.
+**Hook:** *"Your daughter broke her arm falling off the monkey bars. You have not
+been to a doctor all year."*
+**Opens on:** a parent and a child with an arm in a sling.
+**Injury:** a child's broken arm, and a parent who is fine.
 
-**Teaching beat:** a family plan has a limit for each person and a limit for the
-household, and your bills count toward one of them. The insurer's letter is the
-only document that says which.
+**Teaching beat:** each person has a deductible ($1,500) and the household has
+one ($3,000, **not** $6,000). Her bills fill her bucket and the family bucket at
+once, so one person's bad year can fill the family one alone — and when it is
+full the plan pays for everyone, including the parent who was never sick.
 
-**New art:** buckets in two sizes, a smaller figure.
+**New art added:** none. Three `bucket`s at two sizes, `bucket_fill` and
+`person_sling`, all from earlier Shorts.
 
-### 8. Six visits, and nobody says where you are
+**The wrong answer is said out loud.** "Three thousand, say. Not six." Everyone
+reaches for the sum, so the video names it and strikes it through rather than
+hoping nobody wonders.
 
-**Hook:** *"Your plan covers six visits. Nothing tells you it is visit six."*
-**Opens on:** six boxes, five of them ticked.
-**Injury:** a bad back — the injury that takes six visits.
+**Both plan shapes, because one of them would mislead.** The video teaches the
+embedded kind, then says plainly that some plans pay nothing until the family
+limit is met and that the plan summary says which. Without that line, a viewer on
+a non-embedded family plan gets exactly the wrong expectation.
 
-**Teaching beat:** the count is often printed on the insurer's letter and nobody
-reads that far. Running out costs care, not just money.
+### 8. Six visits, and nobody says where you are · MADE — 36.6s
 
-**New art:** six boxes, ticks.
+**Hook:** *"You threw your back out. Physical therapy, twice a week, for as long
+as it takes."*
+**Opens on:** a figure bent over, "twice a week".
+**Injury:** a bad back — the injury that takes a course of visits.
+
+**Teaching beat:** the plan covers six visits; you are on five and nothing has
+told you. The clinic is not counting and the bill says nothing about limits. The
+EOBs often print the count, one arrives after every visit, and the reliable method
+is to count them yourself or ask before the next booking. **Visit seven is not a
+copay, it is the whole price.**
+
+**New art added:** none. Six `box`es and five `tick`s.
+
+**The only Short where the stake is care, not money.** People stop going when a
+bill surprises them, so it closes on "ask before you book" rather than on
+disputing anything.
+
+**Hedged where the world varies:** "often print the count", "ask the clinic" —
+some EOBs carry a running total for a limited benefit and some do not.
 
 ### 9. Same day, same code, not a duplicate · MADE — 37.8s
 
