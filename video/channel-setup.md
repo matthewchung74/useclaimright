@@ -13,8 +13,11 @@ when the channel was created and which changes what Studio reports.
 classified it as a Short on its own from the 1080x1920 frame and 0:42 runtime —
 no #Shorts tag needed). It is waiting on a watch-through before it goes Public.
 
-    Short 1   Your hospital and your insurance don't talk to each other
-              0:42 · Public since 2026-09-15
+    Short 1   Urgent care and your insurance don't talk to each other
+              0:43 · v2, `l0g-GiNdqbQ` · Private, top of the playlist, waiting
+              to go Public (v1 "Your hospital and your insurance...", 0:42,
+              `GVPbBuHbwBg`, Public with 12 views: take it out of the playlist
+              and delete it once v2 is Public)
     Short 2   Your body doesn't know it's January. Your insurance does.
               0:35 · v2, `YKheiL2nerE` · Private, waiting to go Public
               (v1, 0:47, `w64EEe5ZBqM`, removed from the playlist and
