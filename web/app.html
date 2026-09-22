@@ -97,7 +97,7 @@
      as another page of reading, which is the opposite of the offer. */
   /* Inline in a sentence, but still a 44px tap target on a phone. */
   a.vid{display:inline-flex;align-items:center;min-height:44px}
-  .play{color:var(--brand);font-size:11px;vertical-align:1px;margin-right:3px}
+  .play{display:inline-block;width:15px;height:10px;margin-right:5px;vertical-align:0;background:var(--brand);-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 16'%3E%3Cpath d='M2 1h13a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2Zm17 5.1 5-3.4v10.6l-5-3.4V6.1Z'/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 16'%3E%3Cpath d='M2 1h13a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2Zm17 5.1 5-3.4v10.6l-5-3.4V6.1Z'/%3E%3C/svg%3E") center/contain no-repeat}
   /* usage tracker */
   .usage-card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin:10px 0;display:flow-root}
   .usage-head{display:flex;justify-content:space-between;align-items:center;gap:10px}
@@ -510,7 +510,7 @@
         <p>A standard 4–8 page document every plan must provide — a grid of what you pay per visit type.
         Find it: your insurer's website → your plan → “Summary of Benefits and Coverage” (PDF);
         your enrollment packet or open-enrollment email; or ask HR.</p>
-        <p class="watch">Never opened one? <span class="play">▶</span><a class="vid" href="https://youtube.com/shorts/D7ZMQ1V1-ts" target="_blank" rel="noopener">Watch: what an SBC is and where to find it</a> — 39-second video</p>
+        <p class="watch">Never opened one? <span class="play" aria-hidden="true"></span><a class="vid" href="https://youtube.com/shorts/D7ZMQ1V1-ts" target="_blank" rel="noopener">Watch: what an SBC is and where to find it</a> — 39-second video</p>
       </details>
       <div id="onboarding-error" class="error" hidden></div>
       <p style="text-align:center;margin-top:18px"><a href="#" id="skip-onboarding" style="font-size:14px">Skip for now — audit a bill first</a></p>
@@ -551,7 +551,7 @@
          about them: nobody counts your visits for you, and a family deductible
          is not two of yours. Both are 40 seconds. -->
     <p class="muted" style="margin-bottom:12px;font-size:13.5px">
-      <span class="play">▶</span>Short videos, under a minute each:
+      <span class="play" aria-hidden="true"></span>Short videos, under a minute each:
       <a class="vid" href="https://youtube.com/shorts/YdNgvwyEhvs" target="_blank" rel="noopener">why covered visits run out without warning</a> ·
       <a class="vid" href="https://youtube.com/shorts/mHDQy70sc9o" target="_blank" rel="noopener">a family deductible isn't two of yours</a>
     </p>
@@ -622,7 +622,7 @@
       <!-- The link goes where the itemized bill is asked for, not in the EOB
            box further down: someone who only has a summary bill is stuck HERE. -->
       <p class="muted" style="margin:-4px 0 10px 34px;font-size:13.5px">Only got a one-line bill?
-        <span class="play">▶</span><a class="vid" href="https://youtube.com/shorts/fkRKqSXxDBQ" target="_blank" rel="noopener">Watch: how to ask for the itemized one</a> — 35-second video</p>
+        <span class="play" aria-hidden="true"></span><a class="vid" href="https://youtube.com/shorts/fkRKqSXxDBQ" target="_blank" rel="noopener">Watch: how to ask for the itemized one</a> — 35-second video</p>
       <div class="dropzones" style="grid-template-columns:1fr">
         <label class="dz" id="dz-bill">
           <span class="ico">🧾</span>
@@ -675,31 +675,10 @@
           <li><b>Don't confuse it with the bill:</b> the bill comes from the <i>hospital or doctor</i> and asks for money; the EOB comes from <i>insurance</i> and says what you should owe.</li>
         </ul>
         <p><b>The itemized bill</b> comes from your provider: their portal → <i>Billing</i> → request or download the <i>itemized statement</i> (line-by-line charges with codes — not just a total).</p>
-        <p class="watch"><span class="play">▶</span>Short videos, about 40 seconds each:
+        <p class="watch"><span class="play" aria-hidden="true"></span>Short videos, about 40 seconds each:
           <a class="vid" href="https://youtube.com/shorts/l0g-GiNdqbQ" target="_blank" rel="noopener">which paper is which</a> ·
           <a class="vid" href="https://youtube.com/shorts/J5W0eRzFsW8" target="_blank" rel="noopener">claim, EOB, bill</a></p>
       </details>
-      <div class="ask" id="ask-eob" data-where="eob-help">
-        <div class="ask-form">
-          <label class="ask-title" for="ask-eob-text">Stuck? Ask us.</label>
-          <p class="ask-sub">Not sure what an EOB is, or can't find yours? Type your question — a person reads every one and replies by email.</p>
-          <textarea id="ask-eob-text" maxlength="1000" placeholder="e.g. I got a letter from my insurer, but it doesn't say EOB anywhere. Is that it?"></textarea>
-          <div class="ask-foot"><button type="button" class="btn sm ask-send">Send question</button><span class="muted ask-status">Replies go to <span class="ask-email"></span></span></div>
-        </div>
-      </div>
-      <div class="ask" id="ask-skip" data-where="eob-skip" hidden>
-        <div class="ask-form">
-          <label class="ask-title" for="ask-skip-text">Before you skip it — want help finding it?</label>
-          <p class="ask-sub">If you have insurance there's usually one — often in your insurer's app or website, not the mail. Pick one or type your own.</p>
-          <div class="ask-chips">
-            <button type="button">Where do I find my EOB?</button>
-            <button type="button">My insurer never sent one</button>
-            <button type="button">I don't have insurance</button>
-          </div>
-          <textarea id="ask-skip-text" maxlength="1000" placeholder="Anything you can tell us helps — who your insurer is, when the visit was."></textarea>
-          <div class="ask-foot"><button type="button" class="btn sm ask-send">Send question</button><span class="muted ask-status">You can keep going — the audit doesn't wait on the reply.</span></div>
-        </div>
-      </div>
 
       <p class="muted" style="margin-top:8px">With several documents we pair each bill to its EOB by filename, review them all once, then run the audits back to back.</p>
 
@@ -789,6 +768,7 @@
           <div class="ask-form">
             <label class="ask-title" for="ask-report-text">Not sure where the EOB is? Ask us.</label>
             <p class="ask-sub">A person replies by email. This report goes with your question, so you don't have to explain it.</p>
+            <p class="ask-sub" style="margin:-8px 0 12px"><span class="play" aria-hidden="true"></span><a class="vid" href="https://youtube.com/shorts/l0g-GiNdqbQ" target="_blank" rel="noopener">Watch: bill or EOB — which paper is which</a> — 42-second video</p>
             <textarea id="ask-report-text" maxlength="1000" placeholder="e.g. Who sends the EOB — the hospital or my insurance?"></textarea>
             <div class="ask-foot"><button type="button" class="btn sm ask-send">Send question</button><span class="muted ask-status">Replies go to <span class="ask-email"></span></span></div>
           </div>

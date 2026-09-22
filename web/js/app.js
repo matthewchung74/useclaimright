@@ -643,10 +643,6 @@ function resetState() {
 $("no-eob").onchange = () => {
   const skip = $("no-eob").checked;
   $("no-eob-note").hidden = !skip;
-  // Ticking "no EOB" is the moment someone gives up on the letter; offer help
-  // finding it there, in place of the general box above.
-  $("ask-skip").hidden = !skip;
-  $("ask-eob").hidden = skip;
   $("dz-eob").classList.toggle("disabled", skip);
   if (skip) {
     batchFiles = batchFiles.filter((b) => b.role !== "eob");
