@@ -28,3 +28,10 @@ test("validateFeedback: rejects unknown categories and oversized context", () =>
   assert.equal(validateFeedback({ message: "hi", category: "bug", auditId: "a".repeat(201) }).ok, false);
   assert.equal(validateFeedback({ message: "hi" }).ok, false); // missing category
 });
+
+test("validateFeedback: accepts a question, with the step it was asked from", () => {
+  const r = validateFeedback({ message: "Where do I find my EOB?", category: "question", screen: "upload:eob-skip" });
+  assert.equal(r.ok, true);
+  assert.equal(r.value.category, "question");
+  assert.equal(r.value.screen, "upload:eob-skip");
+});

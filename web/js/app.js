@@ -36,6 +36,7 @@ const show = (id) => {
   // Feedback bubble lives on the calm screens only — never over a review or spinner.
   const fbVisible = id === "bills" || id === "upload" || id === "report";
   $("fb-bubble").hidden = !fbVisible;
+  fillAskEmails();
   if (!fbVisible) $("fb-card").hidden = true;
   window.scrollTo(0, 0);
 };
@@ -642,6 +643,10 @@ function resetState() {
 $("no-eob").onchange = () => {
   const skip = $("no-eob").checked;
   $("no-eob-note").hidden = !skip;
+  // Ticking "no EOB" is the moment someone gives up on the letter; offer help
+  // finding it there, in place of the general box above.
+  $("ask-skip").hidden = !skip;
+  $("ask-eob").hidden = skip;
   $("dz-eob").classList.toggle("disabled", skip);
   if (skip) {
     batchFiles = batchFiles.filter((b) => b.role !== "eob");
@@ -1205,7 +1210,7 @@ let lastAuditId = null;
 
 // ---------- Feedback widget ----------
 
-let fbCategory = "bug";
+let fbCategory = "question";
 $("fb-bubble").onclick = () => {
   $("fb-card").hidden = !$("fb-card").hidden;
   if (!$("fb-card").hidden) $("fb-text").focus();
@@ -1236,6 +1241,66 @@ $("fb-send").onclick = async () => {
     $("fb-send").disabled = false;
   }
 };
+
+// ---------- Inline "ask us" boxes ----------
+// Same callable as the bubble, sent as a question, tagged with the step it was
+// asked from (e.g. "upload:eob-skip") so the reply can be about that step.
+
+for (const box of document.querySelectorAll(".ask")) {
+  const form = box.querySelector(".ask-form");
+  const text = box.querySelector("textarea");
+  const send = box.querySelector(".ask-send");
+  const status = box.querySelector(".ask-status");
+  const statusHtml = status.innerHTML;
+  for (const chip of box.querySelectorAll(".ask-chips button")) {
+    chip.onclick = () => { text.value = chip.textContent; text.focus(); };
+  }
+  send.onclick = async () => {
+    const message = text.value.trim();
+    if (!message) { text.focus(); return; }
+    send.disabled = true;
+    status.textContent = "Sending…";
+    try {
+      await submitFeedbackFn({
+        message, category: "question", screen: `${currentSection}:${box.dataset.where}`,
+        auditId: currentSection === "report" ? lastAuditId : null,
+      });
+      form.hidden = true;
+      const done = document.createElement("div");
+      done.className = "ask-done";
+      done.innerHTML = `
+        <div class="tick"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
+        <div>
+          <b>Sent. We'll reply to <span class="ask-email"></span></b>
+          <p class="ask-sub" style="margin:4px 0 0">You can carry on meanwhile — nothing here waits on the reply.</p>
+          <blockquote></blockquote>
+          <a href="#" class="ask-again" style="font-weight:700;font-size:14px">Send another question</a>
+        </div>`;
+      done.querySelector(".ask-email").textContent = auth.currentUser?.email ?? "your sign-in email";
+      done.querySelector("blockquote").textContent = message;
+      done.querySelector(".ask-again").onclick = (ev) => {
+        ev.preventDefault();
+        done.remove();
+        text.value = "";
+        form.hidden = false;
+        text.focus();
+      };
+      box.append(done);
+      status.innerHTML = statusHtml;
+      fillAskEmails();
+    } catch (e) {
+      console.error(e);
+      status.textContent = serverMessage(e) ?? "Couldn't send — try again.";
+    }
+    send.disabled = false;
+  };
+}
+function fillAskEmails() {
+  for (const el of document.querySelectorAll(".ask-form .ask-email")) {
+    el.textContent = auth.currentUser?.email ?? "your sign-in email";
+  }
+}
+$("report-add-eob").onclick = () => { resetState(); show("upload"); };
 
 const PLAN_TYPES = new Set(["copay_mismatch", "coinsurance_mismatch", "deductible_misapplied", "not_covered_per_plan"]);
 
@@ -1299,11 +1364,16 @@ function renderReport(data, { ocrLow, model, planApplied, planReason, pairUnrela
       `⚠️ ${why} Check you paired the right EOB before acting on the total below.`;
   }
 
+  // Without an EOB these two come back as $0.00, which reads as "you owe
+  // nothing" — say what's missing instead of printing a number.
+  const needsEob = `<b class="muted" style="font-size:15px">needs EOB</b>`;
   $("report-totals").innerHTML = `
     <div class="tot"><span>Billed</span><b>${fmt(totals.billed)}</b></div>
-    <div class="tot"><span>EOB allowed</span><b>${fmt(totals.eobAllowed)}</b></div>
-    <div class="tot"><span>Your responsibility</span><b>${fmt(totals.patientResponsibility)}</b></div>
+    <div class="tot"><span>EOB allowed</span>${noEob ? needsEob : `<b>${fmt(totals.eobAllowed)}</b>`}</div>
+    <div class="tot"><span>Your responsibility</span>${noEob ? needsEob : `<b>${fmt(totals.patientResponsibility)}</b>`}</div>
     <div class="tot hi"><span>Worth disputing</span><b>${fmt(totals.totalAtStake)}</b></div>`;
+
+  $("report-noeob").hidden = !noEob;
 
   const byType = {};
   for (const f of findings) (byType[f.type] ||= []).push(f);

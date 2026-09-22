@@ -95,6 +95,8 @@
   details.explain .watch{margin-top:12px;font-size:13.5px;color:var(--ink-soft)}
   /* Say it is a video. Without the play mark and the word "watch", these read
      as another page of reading, which is the opposite of the offer. */
+  /* Inline in a sentence, but still a 44px tap target on a phone. */
+  a.vid{display:inline-flex;align-items:center;min-height:44px}
   .play{color:var(--brand);font-size:11px;vertical-align:1px;margin-right:3px}
   /* usage tracker */
   .usage-card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin:10px 0;display:flow-root}
@@ -215,8 +217,11 @@
   .just-head .money-pill{margin-left:auto;text-transform:none;letter-spacing:0}
   .just-block .bill-row:first-of-type{border-top:none}
   /* feedback widget */
-  #fb-bubble{position:fixed;right:18px;bottom:18px;width:48px;height:48px;border-radius:50%;background:var(--brand);
-    border:none;cursor:pointer;z-index:15;box-shadow:0 4px 14px rgba(18,50,50,.25);display:flex;align-items:center;justify-content:center}
+  /* A labelled pill, not a bare icon: an unlabelled chat bubble reads as a
+     support widget nobody answers, and the two real users so far never opened it. */
+  #fb-bubble{position:fixed;right:18px;bottom:18px;height:50px;padding:0 20px 0 16px;border-radius:9999px;background:var(--brand);
+    border:none;cursor:pointer;z-index:15;box-shadow:0 4px 14px rgba(18,50,50,.25);display:flex;align-items:center;gap:8px;
+    color:#fff;font:700 15px/1 inherit;font-family:inherit}
   #fb-bubble:hover{background:var(--brand-dark)}
   #fb-card{position:fixed;bottom:78px;right:18px;width:min(360px,calc(100vw - 36px));background:#fff;border:1px solid var(--line);
     border-radius:16px;padding:18px;z-index:15;box-shadow:0 8px 24px rgba(18,50,50,.12)}
@@ -229,6 +234,25 @@
   .or-rule::before,.or-rule::after{content:"";flex:1;height:1px;background:var(--line)}
   .fb-chips{margin-bottom:10px}
   .fb-chips button{padding:6px 12px;font-size:13px;border-radius:999px}
+  /* Inline "ask us" boxes, placed on the step where someone gets stuck rather
+     than behind a corner widget. Same callable as the bubble, category "question". */
+  .ask{background:var(--accent);border-radius:16px;padding:20px 22px;margin-top:14px}
+  .ask .ask-title{font-size:16px;font-weight:700;display:block}
+  .ask .ask-sub{font-size:14px;color:var(--ink-soft);margin:3px 0 12px}
+  .ask textarea{width:100%;height:84px;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:16px;font-family:inherit;resize:vertical;background:#fff}
+  .ask .ask-foot{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:10px}
+  .ask .ask-foot .muted{font-size:13px}
+  .ask .ask-email{font-family:ui-monospace,Menlo,monospace;color:var(--ink)}
+  .ask-chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+  .ask-chips button{min-height:44px;padding:0 14px;border:1px solid var(--brand);border-radius:9999px;background:#fff;color:var(--brand-dark);
+    font:600 13px/1 inherit;font-family:inherit;cursor:pointer}
+  .ask-chips button:hover{background:var(--brand);color:#fff}
+  .ask-done{display:flex;gap:14px;align-items:flex-start}
+  .ask-done .ask-again{display:inline-flex;align-items:center;min-height:44px}
+  .ask-done .tick{width:36px;height:36px;border-radius:9999px;background:var(--good);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .ask-done blockquote{border-left:3px solid var(--brand);background:#fff;border-radius:0 8px 8px 0;padding:6px 12px;margin:8px 0;font-size:14px;color:var(--ink)}
+  #report-noeob{background:#fff;border:1px solid var(--line);border-radius:16px;padding:20px 22px;margin:14px 0}
+  #report-noeob .ask{margin-left:0}
   #fb-text{width:100%;height:96px;border:1px solid var(--line);border-radius:10px;padding:10px;font-size:14px;font-family:inherit;resize:vertical}
   .fb-foot{display:flex;align-items:center;gap:10px;margin-top:10px}
   #tracker-form select,#tracker-form input{border:1px solid var(--line);border-radius:10px;padding:9px;background:#fff;font-size:14px;width:100%}
@@ -486,7 +510,7 @@
         <p>A standard 4–8 page document every plan must provide — a grid of what you pay per visit type.
         Find it: your insurer's website → your plan → “Summary of Benefits and Coverage” (PDF);
         your enrollment packet or open-enrollment email; or ask HR.</p>
-        <p class="watch">Never opened one? <span class="play">▶</span><a href="https://youtube.com/shorts/D7ZMQ1V1-ts" target="_blank" rel="noopener">Watch: what an SBC is and where to find it</a> — 39-second video</p>
+        <p class="watch">Never opened one? <span class="play">▶</span><a class="vid" href="https://youtube.com/shorts/D7ZMQ1V1-ts" target="_blank" rel="noopener">Watch: what an SBC is and where to find it</a> — 39-second video</p>
       </details>
       <div id="onboarding-error" class="error" hidden></div>
       <p style="text-align:center;margin-top:18px"><a href="#" id="skip-onboarding" style="font-size:14px">Skip for now — audit a bill first</a></p>
@@ -528,8 +552,8 @@
          is not two of yours. Both are 40 seconds. -->
     <p class="muted" style="margin-bottom:12px;font-size:13.5px">
       <span class="play">▶</span>Short videos, under a minute each:
-      <a href="https://youtube.com/shorts/YdNgvwyEhvs" target="_blank" rel="noopener">why covered visits run out without warning</a> ·
-      <a href="https://youtube.com/shorts/mHDQy70sc9o" target="_blank" rel="noopener">a family deductible isn't two of yours</a>
+      <a class="vid" href="https://youtube.com/shorts/YdNgvwyEhvs" target="_blank" rel="noopener">why covered visits run out without warning</a> ·
+      <a class="vid" href="https://youtube.com/shorts/mHDQy70sc9o" target="_blank" rel="noopener">a family deductible isn't two of yours</a>
     </p>
     <div id="bills-error" class="error" hidden></div>
     <div id="plan-card"></div>
@@ -598,7 +622,7 @@
       <!-- The link goes where the itemized bill is asked for, not in the EOB
            box further down: someone who only has a summary bill is stuck HERE. -->
       <p class="muted" style="margin:-4px 0 10px 34px;font-size:13.5px">Only got a one-line bill?
-        <span class="play">▶</span><a href="https://youtube.com/shorts/fkRKqSXxDBQ" target="_blank" rel="noopener">Watch: how to ask for the itemized one</a> — 35-second video</p>
+        <span class="play">▶</span><a class="vid" href="https://youtube.com/shorts/fkRKqSXxDBQ" target="_blank" rel="noopener">Watch: how to ask for the itemized one</a> — 35-second video</p>
       <div class="dropzones" style="grid-template-columns:1fr">
         <label class="dz" id="dz-bill">
           <span class="ico">🧾</span>
@@ -652,9 +676,30 @@
         </ul>
         <p><b>The itemized bill</b> comes from your provider: their portal → <i>Billing</i> → request or download the <i>itemized statement</i> (line-by-line charges with codes — not just a total).</p>
         <p class="watch"><span class="play">▶</span>Short videos, about 40 seconds each:
-          <a href="https://youtube.com/shorts/l0g-GiNdqbQ" target="_blank" rel="noopener">which paper is which</a> ·
-          <a href="https://youtube.com/shorts/J5W0eRzFsW8" target="_blank" rel="noopener">claim, EOB, bill</a></p>
+          <a class="vid" href="https://youtube.com/shorts/l0g-GiNdqbQ" target="_blank" rel="noopener">which paper is which</a> ·
+          <a class="vid" href="https://youtube.com/shorts/J5W0eRzFsW8" target="_blank" rel="noopener">claim, EOB, bill</a></p>
       </details>
+      <div class="ask" id="ask-eob" data-where="eob-help">
+        <div class="ask-form">
+          <label class="ask-title" for="ask-eob-text">Stuck? Ask us.</label>
+          <p class="ask-sub">Not sure what an EOB is, or can't find yours? Type your question — a person reads every one and replies by email.</p>
+          <textarea id="ask-eob-text" maxlength="1000" placeholder="e.g. I got a letter from my insurer, but it doesn't say EOB anywhere. Is that it?"></textarea>
+          <div class="ask-foot"><button type="button" class="btn sm ask-send">Send question</button><span class="muted ask-status">Replies go to <span class="ask-email"></span></span></div>
+        </div>
+      </div>
+      <div class="ask" id="ask-skip" data-where="eob-skip" hidden>
+        <div class="ask-form">
+          <label class="ask-title" for="ask-skip-text">Before you skip it — want help finding it?</label>
+          <p class="ask-sub">If you have insurance there's usually one — often in your insurer's app or website, not the mail. Pick one or type your own.</p>
+          <div class="ask-chips">
+            <button type="button">Where do I find my EOB?</button>
+            <button type="button">My insurer never sent one</button>
+            <button type="button">I don't have insurance</button>
+          </div>
+          <textarea id="ask-skip-text" maxlength="1000" placeholder="Anything you can tell us helps — who your insurer is, when the visit was."></textarea>
+          <div class="ask-foot"><button type="button" class="btn sm ask-send">Send question</button><span class="muted ask-status">You can keep going — the audit doesn't wait on the reply.</span></div>
+        </div>
+      </div>
 
       <p class="muted" style="margin-top:8px">With several documents we pair each bill to its EOB by filename, review them all once, then run the audits back to back.</p>
 
@@ -733,6 +778,22 @@
       <div id="report-pair-warning" class="banner" hidden></div>
       <div id="report-usage"></div>
       <div id="report-totals" class="totals"></div>
+      <!-- A bill-only audit shows real dollar figures with nothing to say whose
+           they are. Both real users so far ran without an EOB; this is the
+           moment they are most likely to act on a number that may not be theirs. -->
+      <div id="report-noeob" hidden>
+        <b style="font-size:16px">This audit ran on the bill alone</b>
+        <p class="muted" style="margin:4px 0 12px;font-size:14px">Without your insurance letter we can't tell how much of this is actually yours — your insurer may already have caught it. Add the EOB and we'll run the full check.</p>
+        <button type="button" class="btn sm" id="report-add-eob">Add my EOB and rerun</button>
+        <div class="ask" id="ask-report" data-where="report-no-eob">
+          <div class="ask-form">
+            <label class="ask-title" for="ask-report-text">Not sure where the EOB is? Ask us.</label>
+            <p class="ask-sub">A person replies by email. This report goes with your question, so you don't have to explain it.</p>
+            <textarea id="ask-report-text" maxlength="1000" placeholder="e.g. Who sends the EOB — the hospital or my insurance?"></textarea>
+            <div class="ask-foot"><button type="button" class="btn sm ask-send">Send question</button><span class="muted ask-status">Replies go to <span class="ask-email"></span></span></div>
+          </div>
+        </div>
+      </div>
       <div id="report-findings"></div>
       <h2 style="margin-top:24px">Charge occurrence table</h2>
       <table id="report-occurrences"></table>
@@ -839,17 +900,18 @@
   </div>
 </dialog>
 
-<button id="fb-bubble" class="no-print" aria-label="Send feedback" hidden>
-  <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v8a2.5 2.5 0 0 1-2.5 2.5H9.4l-4 3.2c-.6.5-1.4.1-1.4-.6V5.5Z" fill="#fff"/></svg>
+<button id="fb-bubble" class="no-print" hidden>
+  <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v8a2.5 2.5 0 0 1-2.5 2.5H9.4l-4 3.2c-.6.5-1.4.1-1.4-.6V5.5Z" fill="#fff"/></svg>
+  Questions?
 </button>
 <div id="fb-card" class="no-print" hidden>
-  <div class="fb-head"><b>Send feedback</b><button id="fb-close" aria-label="Close">✕</button></div>
+  <div class="fb-head"><b>Ask us anything</b><button id="fb-close" aria-label="Close">✕</button></div>
   <div class="tabs fb-chips">
-    <button data-cat="bug" class="active">Bug</button>
+    <button data-cat="question" class="active">Question</button>
+    <button data-cat="bug">Something broke</button>
     <button data-cat="idea">Idea</button>
-    <button data-cat="other">Other</button>
   </div>
-  <textarea id="fb-text" maxlength="1000" placeholder="What happened, or what would make this better?"></textarea>
+  <textarea id="fb-text" maxlength="1000" aria-label="Your message" placeholder="What are you stuck on? A person reads every one."></textarea>
   <div class="fb-foot"><button id="fb-send" class="btn sm">Send</button><span id="fb-status" class="muted"></span></div>
 </div>
 
