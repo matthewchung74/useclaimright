@@ -334,18 +334,16 @@ test("every real report path decides whether the bill could be identified", () =
     .includes('id="report-thin-warning"'), "report-thin-warning is missing from app.html");
 });
 
-// The page and the script it loads must expire together. With the page at
-// no-cache and the script at max-age=300, a deploy served the new app.html
-// against a five-minute-old app.js: on 2026-09-22 the new markup rendered with
-// the old code, and the "Replies go to <email>" line came up blank until a
-// reload. Versioning the script tag would not have caught it either — app.js
-// imports eight sibling modules by bare path, and those carry their own
-// lifetimes. Same rule for both, or the mismatch comes back.
-test("the page and its scripts share one cache lifetime", () => {
-  const hosting = JSON.parse(read("firebase.json")).hosting;
-  const lifetime = (pattern) => hosting.headers
-    .find((h) => h.source === pattern)?.headers
-    .find((x) => x.key === "Cache-Control")?.value;
-  assert.equal(lifetime("**/*.js"), lifetime("**/*.html"),
+// Nothing under web/ may be served from cache without revalidating. The page is
+// already no-cache; the script it loads was not, so a deploy served new markup
+// against a five-minute-old app.js and the "Replies go to <email>" line came up
+// blank until a reload. Asserting the two globs merely MATCH would pass with both
+// at max-age=300 — the failing case. Assert the property instead, which also
+// covers the /app route block and any header added later.
+test("nothing is served from cache without revalidating", () => {
+  const stale = JSON.parse(read("firebase.json")).hosting.headers
+    .flatMap((h) => h.headers.map((x) => ({ source: h.source, ...x })))
+    .filter((x) => x.key === "Cache-Control" && x.value !== "no-cache");
+  assert.deepEqual(stale, [],
     "a script that outlives its page serves old code against new markup");
 });

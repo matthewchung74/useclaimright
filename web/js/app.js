@@ -36,7 +36,6 @@ const show = (id) => {
   // Feedback bubble lives on the calm screens only — never over a review or spinner.
   const fbVisible = id === "bills" || id === "upload" || id === "report";
   $("fb-bubble").hidden = !fbVisible;
-  fillAskEmails();
   if (!fbVisible) $("fb-card").hidden = true;
   window.scrollTo(0, 0);
 };
@@ -540,14 +539,11 @@ onAuthStateChanged(auth, async (user) => {
     return;
   }
   $("user-email").textContent = user.email || "";
-  // `signed_in` fires from the sign-in click, and that misses nearly everyone.
-  // Firebase keeps a session, so a returning member never clicks anything —
-  // on 2026-09-22 the account that ran two audits had last signed in on the
-  // 11th. It also missed a genuine first sign-in the same day: the new account
-  // created at 14:58 UTC has its audits in analytics and no `signed_in` at all,
-  // so the promise callback did not survive the transition. Auth state is the
-  // thing that is actually true on every authenticated load, so measure that.
-  // `fresh` separates the day's new accounts from sessions carried over.
+  for (const el of document.querySelectorAll(".ask-email")) {
+    el.textContent = user.email || "your sign-in email";
+  }
+  // Arrivals are counted from auth state, not the sign-in click: Firebase keeps
+  // the session, so a returning member never clicks. See docs/ANALYTICS.md.
   track("session_authed", {
     fresh: Date.now() - Date.parse(user.metadata?.creationTime ?? 0) < 120_000,
     verified: !!user.emailVerified,
@@ -1218,6 +1214,21 @@ let lastAuditId = null;
 
 // ---------- Feedback widget ----------
 
+// `screen` reads section:origin for every sender, so a value in the alert email
+// says both which screen it came from and which control was used.
+async function sendFeedback({ message, category, screen }) {
+  try {
+    await submitFeedbackFn({
+      message, category, screen,
+      auditId: currentSection === "report" ? lastAuditId : null,
+    });
+    return null;
+  } catch (e) {
+    console.error(e);
+    return serverMessage(e) ?? "Couldn't send — try again.";
+  }
+}
+
 let fbCategory = "question";
 $("fb-bubble").onclick = () => {
   $("fb-card").hidden = !$("fb-card").hidden;
@@ -1235,80 +1246,54 @@ $("fb-send").onclick = async () => {
   if (!message) return;
   $("fb-send").disabled = true;
   $("fb-status").textContent = "Sending…";
-  try {
-    await submitFeedbackFn({
-      message, category: fbCategory, screen: currentSection,
-      auditId: currentSection === "report" ? lastAuditId : null,
-    });
-    $("fb-status").textContent = "Thanks — we read every note.";
-    $("fb-text").value = "";
-    setTimeout(() => { $("fb-card").hidden = true; $("fb-status").textContent = ""; $("fb-send").disabled = false; }, 1200);
-  } catch (e) {
-    console.error(e);
-    $("fb-status").textContent = serverMessage(e) ?? "Couldn't send — try again.";
+  const error = await sendFeedback({ message, category: fbCategory, screen: `${currentSection}:bubble` });
+  if (error) {
+    $("fb-status").textContent = error;
     $("fb-send").disabled = false;
+    return;
   }
+  $("fb-status").textContent = "Thanks — we read every note.";
+  $("fb-text").value = "";
+  setTimeout(() => { $("fb-card").hidden = true; $("fb-status").textContent = ""; $("fb-send").disabled = false; }, 1200);
 };
 
-// ---------- Inline "ask us" boxes ----------
-// Same callable as the bubble, sent as a question, tagged with the step it was
-// asked from (e.g. "upload:eob-skip") so the reply can be about that step.
+// ---------- Inline "ask us" box ----------
+// The same callable as the bubble, sent as a question and tagged with the step
+// it was asked from, so the reply can be about that step.
 
-for (const box of document.querySelectorAll(".ask")) {
+{
+  const box = $("ask-report");
   const form = box.querySelector(".ask-form");
+  const done = box.querySelector(".ask-done");
   const text = box.querySelector("textarea");
   const send = box.querySelector(".ask-send");
   const status = box.querySelector(".ask-status");
-  const statusHtml = status.innerHTML;
-  for (const chip of box.querySelectorAll(".ask-chips button")) {
-    chip.onclick = () => { text.value = chip.textContent; text.focus(); };
-  }
   send.onclick = async () => {
     const message = text.value.trim();
     if (!message) { text.focus(); return; }
     send.disabled = true;
-    status.textContent = "Sending…";
-    try {
-      await submitFeedbackFn({
-        message, category: "question", screen: `${currentSection}:${box.dataset.where}`,
-        auditId: currentSection === "report" ? lastAuditId : null,
-      });
-      form.hidden = true;
-      const done = document.createElement("div");
-      done.className = "ask-done";
-      done.innerHTML = `
-        <div class="tick"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
-        <div>
-          <b>Sent. We'll reply to <span class="ask-email"></span></b>
-          <p class="ask-sub" style="margin:4px 0 0">You can carry on meanwhile — nothing here waits on the reply.</p>
-          <blockquote></blockquote>
-          <a href="#" class="ask-again" style="font-weight:700;font-size:14px">Send another question</a>
-        </div>`;
-      done.querySelector(".ask-email").textContent = auth.currentUser?.email ?? "your sign-in email";
+    send.textContent = "Sending…";
+    const error = await sendFeedback({ message, category: "question", screen: "report:no-eob" });
+    if (error) {
+      status.textContent = error;
+    } else {
       done.querySelector("blockquote").textContent = message;
-      done.querySelector(".ask-again").onclick = (ev) => {
-        ev.preventDefault();
-        done.remove();
-        text.value = "";
-        form.hidden = false;
-        text.focus();
-      };
-      box.append(done);
-      status.innerHTML = statusHtml;
-      fillAskEmails();
-    } catch (e) {
-      console.error(e);
-      status.textContent = serverMessage(e) ?? "Couldn't send — try again.";
+      form.hidden = true;
+      done.hidden = false;
     }
     send.disabled = false;
+    send.textContent = "Send question";
+  };
+  box.querySelector(".ask-again").onclick = (e) => {
+    e.preventDefault();
+    done.hidden = true;
+    text.value = "";
+    form.hidden = false;
+    text.focus();
   };
 }
-function fillAskEmails() {
-  for (const el of document.querySelectorAll(".ask-form .ask-email")) {
-    el.textContent = auth.currentUser?.email ?? "your sign-in email";
-  }
-}
-$("report-add-eob").onclick = () => { resetState(); show("upload"); };
+
+$("report-add-eob").onclick = startAudit;
 
 const PLAN_TYPES = new Set(["copay_mismatch", "coinsurance_mismatch", "deductible_misapplied", "not_covered_per_plan"]);
 

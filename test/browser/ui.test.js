@@ -142,6 +142,25 @@ test("phone: tap targets reach 44px", async () => {
   assert.deepEqual(short, [], `tap targets under 44px:\n${short.join("\n")}`);
 });
 
+// The static pages are outside the sweep above, which is how the guide shipped
+// with its video links at 38px while /app's were fixed: nothing visits it. Scoped
+// to the video links — the dense in-page anchors and footer links on those pages
+// are a pre-existing question, not this rule.
+test("phone: video links on the static pages reach 44px", async () => {
+  const short = [];
+  for (const path of ["/dispute-a-medical-bill"]) {
+    const p = await browser.newPage({ viewport: { width: 375, height: 812 } });
+    await p.goto(`${origin}${path}`, { waitUntil: "domcontentloaded" });
+    short.push(...(await p.evaluate((where) =>
+      [...document.querySelectorAll("a.vid")]
+        .map((el) => ({ r: el.getBoundingClientRect(), t: (el.textContent || "").trim() }))
+        .filter((x) => x.r.height < 44)
+        .map((x) => `${where}: "${x.t.slice(0, 30)}" ${Math.round(x.r.height)}px`), path)));
+    await p.close();
+  }
+  assert.deepEqual(short, [], `video links under 44px:\n${short.join("\n")}`);
+});
+
 test("phone: 'Worth disputing' is the first totals card", async () => {
   // The cards stack in one column below 560px. This figure is the product's
   // whole moment; fourth puts it off the bottom of an iPhone SE.

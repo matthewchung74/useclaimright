@@ -30,8 +30,8 @@ test("validateFeedback: rejects unknown categories and oversized context", () =>
 });
 
 test("validateFeedback: accepts a question, with the step it was asked from", () => {
-  const r = validateFeedback({ message: "Where do I find my EOB?", category: "question", screen: "upload:eob-skip" });
+  const r = validateFeedback({ message: "Where do I find my EOB?", category: "question", screen: "report:no-eob" });
   assert.equal(r.ok, true);
   assert.equal(r.value.category, "question");
-  assert.equal(r.value.screen, "upload:eob-skip");
+  assert.equal(r.value.screen, "report:no-eob");
 });

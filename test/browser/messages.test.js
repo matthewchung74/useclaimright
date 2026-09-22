@@ -125,8 +125,7 @@ test("both document paths surface the errors a member can act on", () => {
   const sites = [...body.matchAll(/(serverMessage|docMessage)\(e\)/g)].map((m) => m[1]);
   assert.equal(sites.filter((s) => s === "docMessage").length, 4,
     "analyze (single and batch), extractPlan and the plan chooser must all use docMessage");
-  // Two sites, both submitFeedback: the bubble and the inline "ask us" boxes.
-  assert.equal(sites.filter((s) => s === "serverMessage").length, 2,
+  assert.equal(sites.filter((s) => s === "serverMessage").length, 1,
     "only submitFeedback stays on serverMessage — its invalid-argument is ajv text");
   assert.match(app, /const docMessage[\s\S]{0,200}functions\/invalid-argument/,
     "docMessage is what adds invalid-argument on top of serverMessage");
