@@ -540,6 +540,18 @@ onAuthStateChanged(auth, async (user) => {
     return;
   }
   $("user-email").textContent = user.email || "";
+  // `signed_in` fires from the sign-in click, and that misses nearly everyone.
+  // Firebase keeps a session, so a returning member never clicks anything —
+  // on 2026-09-22 the account that ran two audits had last signed in on the
+  // 11th. It also missed a genuine first sign-in the same day: the new account
+  // created at 14:58 UTC has its audits in analytics and no `signed_in` at all,
+  // so the promise callback did not survive the transition. Auth state is the
+  // thing that is actually true on every authenticated load, so measure that.
+  // `fresh` separates the day's new accounts from sessions carried over.
+  track("session_authed", {
+    fresh: Date.now() - Date.parse(user.metadata?.creationTime ?? 0) < 120_000,
+    verified: !!user.emailVerified,
+  });
   // Before anything loads. Nothing below this line runs for an unconfirmed
   // address, so no plan, no history and no checkout resumption happens behind
   // the gate.

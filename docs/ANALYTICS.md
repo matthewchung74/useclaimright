@@ -24,6 +24,7 @@ medical bill into a third-party analytics system.
 |---|---|---|
 | `stage_viewed` | any screen transition (`show()`) | `stage`: signin \| onboarding \| bills \| upload \| review \| processing \| report |
 | `signed_in` | a sign-in succeeds | `method`: google \| password \| password_signup |
+| `session_authed` | every authenticated page load, from `onAuthStateChanged` | `fresh` (bool: account made in the last 2 min), `verified` (bool) |
 | `audit_requested` | "Prepare audit" clicked — **before** extraction, before any model call | `pairs`, `bill_only` (counts), `saved_eob`, `no_eob` (bool) |
 | `audit_prepared` | extraction finished, review screen ready | — |
 | `audit_started` | "Looks right — analyze" clicked — **the click that spends money** | `kind`: single \| batch \| plan |
@@ -35,6 +36,15 @@ medical bill into a third-party analytics system.
 | `error_shown` | **any** visible error (`setError()`) | `where` (element id), `reason` (enum below) |
 | `eob_saved`, `plan_added`, `tracker_warning_shown` | feature use | — |
 | `tracker_created` | a plan limit starts being tracked | `source`: sbc \| remark \| manual |
+
+**Count arrivals with `session_authed`, not `signed_in`.** `signed_in` fires from the
+sign-in click, which almost nobody performs: Firebase keeps the session, so a returning
+member is authenticated without touching anything. On 2026-09-22 the account that ran two
+audits had last signed in on the 11th, and `signed_in` had fired 19 times in 28 days
+against 141 `audit_completed`. The same day it also missed a genuine first sign-in — an
+account created at 14:58 UTC has its audits in the property and no `signed_in` at all, so
+the promise callback did not survive the transition. `signed_in` still answers *which
+method* people choose; it does not answer *how many arrived*.
 
 `stage_viewed` and `error_shown` are wired into `show()` and `setError()` rather than
 sprinkled at call sites, so they cannot drift out of date: a new screen or a new error
